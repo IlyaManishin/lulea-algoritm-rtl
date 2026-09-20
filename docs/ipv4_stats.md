@@ -23,6 +23,8 @@ The most common prefix lengths are:
 | /18           |           14,046 |                  1.2% |
 | /17           |            8,682 |                  0.8% |
 | /16           |           13,979 |                  1.2% |
+| Other         |           ~5,750 |                 ~0.5% |
+
 
 Source: RIPE RIS BGP Full View snapshot (September 2026).  
 https://bgp.internet-registry.net/ :contentReference[oaicite:0]{index=0}
