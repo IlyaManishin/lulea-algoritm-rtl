@@ -1,4 +1,12 @@
-from dataclasses import dataclass, field
+"""
+Luleå Algorithm BRAM Memory Consumption Simulator.
+
+Estimates bit-map overheads (bitmaps + chunk sums), cell sizes (pointer vs port ID widths),
+and total memory usage for 16-8-8 and 20-4-8 Luleå routing table configurations across 
+varying route limit scales (2^10 to 2^21).
+"""
+
+from dataclasses import dataclass
 import math
 
 
@@ -18,6 +26,11 @@ class LevelConfig:
     @property
     def chunks_count(self) -> int:
         return self.total_entries // self.chunk_size
+
+    def __post_init__(self):
+        if self.chunk_size <= 0 or (self.chunk_size & (self.chunk_size - 1)) != 0:
+            raise ValueError(
+                f"chunk_size must be a power of 2, got {self.chunk_size}")
 
 
 @dataclass
@@ -71,7 +84,7 @@ def calculate_memory_for_limit(
     ref_l2_bits = math.ceil(math.log2(l2_nodes)) if l2_nodes > 1 else 1
     ref_l3_bits = math.ceil(math.log2(l3_nodes)) if l3_nodes > 1 else 1
 
-    # 4. Calculate cell sizes
+    # 4. Calculate cell sizes (1 spec bit for flag - ref or port)
     cell1_bits = 1 + max(cfg.port_size_bits, ref_l2_bits)
     cell2_bits = 1 + max(cfg.port_size_bits, ref_l3_bits)
     cell3_bits = 1 + cfg.port_size_bits
