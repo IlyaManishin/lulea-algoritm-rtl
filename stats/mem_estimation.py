@@ -66,6 +66,15 @@ class SimulationResult:
 # Core Memory Calculation
 # =========================================================================
 
+def align_by_bram_cell_size(raw_size: int):
+    bram_base_cell_size = 18
+
+    res = bram_base_cell_size
+    while res < raw_size:
+        res *= 2
+    return res
+
+
 def calculate_memory_for_limit(
     limit: int, cfg: LuleaConfig
 ) -> SimulationResult:
@@ -85,11 +94,16 @@ def calculate_memory_for_limit(
     ref_l3_bits = math.ceil(math.log2(l3_nodes)) if l3_nodes > 1 else 1
 
     # 4. Calculate cell sizes (1 spec bit for flag - ref or port)
-    cell1_bits = 1 + max(cfg.port_size_bits, ref_l2_bits)
-    cell2_bits = 1 + max(cfg.port_size_bits, ref_l3_bits)
-    cell3_bits = 1 + cfg.port_size_bits
+    cell1_bits_raw = 1 + max(cfg.port_size_bits, ref_l2_bits)
+    cell2_bits_raw = 1 + max(cfg.port_size_bits, ref_l3_bits)
+    cell3_bits_raw = 1 + cfg.port_size_bits
 
-    # 5. Calculate overhead (bitmaps + chunk sums)
+    # 5. Align cells by bram cell sizes
+    cell1_bits = align_by_bram_cell_size(cell1_bits_raw)
+    cell2_bits = align_by_bram_cell_size(cell2_bits_raw)
+    cell3_bits = align_by_bram_cell_size(cell3_bits_raw)
+
+    # 6. Calculate overhead (bitmaps + chunk sums)
     overhead1_bits = l1_nodes * (
         cfg.l1.total_entries + cfg.l1.chunks_count * 16
     )
@@ -100,7 +114,7 @@ def calculate_memory_for_limit(
         cfg.l3.total_entries + cfg.l3.chunks_count * 16
     )
 
-    # 6. Estimate maptable lengths and sizes
+    # 7. Estimate maptable lengths and sizes
     seq1_len = min(
         l1_nodes * cfg.l1.total_entries, int(masks_l1 * 2 + l2_nodes)
     )
@@ -113,7 +127,7 @@ def calculate_memory_for_limit(
     seq2_bits = seq2_len * cell2_bits
     seq3_bits = seq3_len * cell3_bits
 
-    # 7. Convert bits to KB
+    # 8. Convert bits to KB
     overhead_kb = (overhead1_bits + overhead2_bits + overhead3_bits) / 8192
     seq_kb = (seq1_bits + seq2_bits + seq3_bits) / 8192
     total_kb = overhead_kb + seq_kb
