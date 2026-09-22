@@ -17,6 +17,9 @@ import math
 MAX_NODE_FILL_FACTOR = 0.5  # part of endpoint in certain cache limit
 BRAM_BASE_CELL_SIZE = 18
 
+# Flag to enable/disable rounding node counts to power of 2
+ROUND_NODES_TO_POWER_OF_2 = True
+
 # =========================================================================
 # Data Structures & Models
 # =========================================================================
@@ -83,6 +86,13 @@ def align_by_bram_cell_size(raw_size: int) -> int:
     return res
 
 
+def round_up_pow2(n: int) -> int:
+    """Round up integer to the next power of 2."""
+    if n <= 0:
+        return 0
+    return 1 << (n - 1).bit_length()
+
+
 def estimate_node_counts(
     limit: int, cfg: LuleaConfig, fill_factor: float = MAX_NODE_FILL_FACTOR
 ) -> tuple[int, int, int]:
@@ -98,7 +108,11 @@ def estimate_node_counts(
     l2_nodes = min(max_l2_nodes, int(masks_l2))
     l3_nodes = min(max_l3_nodes, int(masks_l3))
 
-    return l1_nodes, l2_nodes, l3_nodes  # round by power 2 ?
+    if ROUND_NODES_TO_POWER_OF_2:
+        l2_nodes = round_up_pow2(l2_nodes)
+        l3_nodes = round_up_pow2(l3_nodes)
+
+    return l1_nodes, l2_nodes, l3_nodes
 
 
 def estimate_ref_bits(
@@ -242,6 +256,7 @@ def calculate_memory_for_limit(
 # =========================================================================
 # Simulation Runner & Output
 # =========================================================================
+
 
 def run_simulation(cfg: LuleaConfig, limits: list[int]):
     print(f"=== Configuration: {cfg.name} ===")
