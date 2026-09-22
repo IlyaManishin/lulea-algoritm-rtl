@@ -2,8 +2,8 @@
 Luleå Algorithm BRAM Memory Consumption Simulator.
 
 Estimates bitmap and chunk sum sizes, cell sizes (pointer vs port ID widths),
-and total memory usage for 16-8-8 and 20-4-8 Luleå routing table configurations across 
-varying route limit scales (2^10 to 2^21).
+and total memory usage for 16-8-8, 18-6-8, and 20-4-8 Luleå routing table
+configurations across varying route limit scales (2^10 to 2^21).
 """
 
 from dataclasses import dataclass
@@ -263,6 +263,13 @@ def main():
             l2=LevelConfig(bits=8, chunk_size=16),
             l3=LevelConfig(bits=8, chunk_size=16),
             dist=(0.005, 0.990, 0.005),
+        ),
+        LuleaConfig(
+            name="18-6-8",
+            l1=LevelConfig(bits=18, chunk_size=64),
+            l2=LevelConfig(bits=6, chunk_size=16),
+            l3=LevelConfig(bits=8, chunk_size=16),
+            dist=(0.033, 0.962, 0.005),
         ),
         LuleaConfig(
             name="20-4-8",
