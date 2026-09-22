@@ -168,7 +168,9 @@ def estimate_seq_ptr_cell_bits(
 def calculate_memory_for_limit(
     limit: int, cfg: LuleaConfig
 ) -> SimulationResult:
-    # Base values
+    # -------------------------------------------------------------------------
+    # 1. Base Node Counts & Cell Sizes
+    # -------------------------------------------------------------------------
     l1_nodes, l2_nodes, l3_nodes = estimate_node_counts(limit, cfg)
 
     ref1_bits, ref2_bits, ref3_bits = estimate_ref_bits(
@@ -178,7 +180,9 @@ def calculate_memory_for_limit(
         cfg
     )
 
-    # Ref array length
+    # -------------------------------------------------------------------------
+    # 2. Reference Sequence Lengths & Pointer Sizes
+    # -------------------------------------------------------------------------
     seq1_len, seq2_len, seq3_len = estimate_seq_lens(
         cfg, l1_nodes, l2_nodes, l3_nodes
     )
@@ -187,28 +191,36 @@ def calculate_memory_for_limit(
         seq1_len, seq2_len, seq3_len
     )
 
-    # Popcount arrays
+    # -------------------------------------------------------------------------
+    # 3. Popcount Arrays Size
+    # -------------------------------------------------------------------------
     pop_arr1_bits = l1_nodes * cfg.l1.chunks_count * chunk_cell1_bits
     pop_arr2_bits = l2_nodes * cfg.l2.chunks_count * chunk_cell2_bits
     pop_arr3_bits = l3_nodes * cfg.l3.chunks_count * chunk_cell3_bits
 
     pop_arr_bits = pop_arr1_bits + pop_arr2_bits + pop_arr3_bits
 
-    # Chunk sums
+    # -------------------------------------------------------------------------
+    # 4. Chunk Sums Size
+    # -------------------------------------------------------------------------
     chunk_sums1_bits = l1_nodes * cfg.l1.chunks_count * seq_ptr1_bits
     chunk_sums2_bits = l2_nodes * cfg.l2.chunks_count * seq_ptr2_bits
     chunk_sums3_bits = l3_nodes * cfg.l3.chunks_count * seq_ptr3_bits
 
     chunk_sums_bits = chunk_sums1_bits + chunk_sums2_bits + chunk_sums3_bits
 
-    # Reference sequence
+    # -------------------------------------------------------------------------
+    # 5. Reference Sequences Size
+    # -------------------------------------------------------------------------
     seq1_bits = seq1_len * ref1_bits
     seq2_bits = seq2_len * ref2_bits
     seq3_bits = seq3_len * ref3_bits
 
     seq_bits = seq1_bits + seq2_bits + seq3_bits
 
-    # Results
+    # -------------------------------------------------------------------------
+    # 6. Total Aggregation (Bits to KB)
+    # -------------------------------------------------------------------------
     pop_arr_kb = pop_arr_bits / 8192
     chunk_sums_kb = chunk_sums_bits / 8192
     seq_kb = seq_bits / 8192
@@ -226,7 +238,6 @@ def calculate_memory_for_limit(
         seq_kb=seq_kb,
         total_kb=total_kb,
     )
-
 
 # =========================================================================
 # Simulation Runner & Output
