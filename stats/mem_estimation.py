@@ -18,7 +18,10 @@ import math
 IP_COUNT_MIN = 10
 IP_COUNT_MAX = 20
 
-MAX_NODE_FILL_FACTOR = 0.5  # part of endpoint in certain cache limit
+# Part of endpoint in certain cache limit
+MAX_NODE_FILL_FACTOR = 0.5
+
+# Xilinx Artix 7 basys 3 feature
 BRAM_BASE_CELL_SIZE = 18
 
 # Flag to enable/disable rounding node counts to power of 2
