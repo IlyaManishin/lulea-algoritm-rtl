@@ -153,19 +153,21 @@ def estimate_chunk_cell_bits(cfg: LuleaConfig) -> tuple[int, int, int]:
 
 
 def estimate_seq_lens(
-    cfg: LuleaConfig, l1_nodes: int, l2_nodes: int, l3_nodes: int
+    limit: int,
+    cfg: LuleaConfig,
+    l1_nodes: int,
+    l2_nodes: int,
+    l3_nodes: int,
 ) -> tuple[int, int, int]:
-    """ Estimate ref array lengths
-    """
-    seq1_len = min(
-        l1_nodes * cfg.l1.total_entries, int(l1_nodes * 2 + l2_nodes)
-    )
-    seq2_len = min(
-        l2_nodes * cfg.l2.total_entries, int(l2_nodes * 2 + l3_nodes)
-    )
-    seq3_len = min(
-        l3_nodes * cfg.l3.total_entries, int(l3_nodes * 2)
-    )
+    """Estimate ref array lengths considering value transitions and default ports."""
+
+    # Account for entry transitions (route enter + return to default)
+    seq1_len = min(l1_nodes * cfg.l1.total_entries,
+                   2 * (l1_nodes + l2_nodes))
+    seq2_len = min(l2_nodes * cfg.l2.total_entries,
+                   2 * (l2_nodes + l3_nodes))
+    seq3_len = min(l3_nodes * cfg.l3.total_entries,
+                   2 * l3_nodes)
 
     return seq1_len, seq2_len, seq3_len
 
@@ -198,14 +200,13 @@ def calculate_memory_for_limit(
         cfg, l2_nodes, l3_nodes
     )
     chunk_cell1_bits, chunk_cell2_bits, chunk_cell3_bits = estimate_chunk_cell_bits(
-        cfg
-    )
+        cfg)
 
     # -------------------------------------------------------------------------
     # 2. Reference Sequence Lengths & Pointer Sizes
     # -------------------------------------------------------------------------
     seq1_len, seq2_len, seq3_len = estimate_seq_lens(
-        cfg, l1_nodes, l2_nodes, l3_nodes
+        limit, cfg, l1_nodes, l2_nodes, l3_nodes
     )
 
     seq_ptr1_bits, seq_ptr2_bits, seq_ptr3_bits = estimate_seq_ptr_cell_bits(
@@ -259,6 +260,7 @@ def calculate_memory_for_limit(
         seq_kb=seq_kb,
         total_kb=total_kb,
     )
+
 
 # =========================================================================
 # Simulation Runner & Output
