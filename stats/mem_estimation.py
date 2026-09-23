@@ -7,12 +7,16 @@ configurations across varying route limit scales (2^10 to 2^21).
 """
 
 from dataclasses import dataclass
+from tabulate import tabulate
 import math
 
 
 # =========================================================================
 # Configuration Constants
 # =========================================================================
+
+IP_COUNT_MIN = 10
+IP_COUNT_MAX = 20
 
 MAX_NODE_FILL_FACTOR = 0.5  # part of endpoint in certain cache limit
 BRAM_BASE_CELL_SIZE = 18
@@ -258,28 +262,44 @@ def calculate_memory_for_limit(
 # =========================================================================
 
 
-def run_simulation(cfg: LuleaConfig, limits: list[int]):
-    print(f"=== Configuration: {cfg.name} ===")
-    print(
-        f"{'Limit':>8} | {'L2 Nodes':>8} | {'L3 Nodes':>8} | {'C1':>3} | {'C2':>3} | "
-        f"{'Pop_arr(KB)':>12} | {'Ch_sums(KB)':>12} | {'Seq(KB)':>12} | {'Total(KB)':>12}"
-    )
-    print("-" * 99)
+def print_result(cfg_name: str, results: list[SimulationResult]) -> None:
+    print(f"=== Configuration: {cfg_name} ===")
 
-    for limit in limits:
-        res = calculate_memory_for_limit(limit, cfg)
-        print(
-            f"{res.limit:>8} | {res.l2_nodes:>8} | {res.l3_nodes:>8} | "
-            f"{res.cell1_bits:>3} | {res.cell2_bits:>3} | "
-            f"{res.pop_arr_kb:>12.2f} | {res.chunk_sums_bits:>12.2f} | "
-            f"{res.seq_kb:>12.2f} | {res.total_kb:>12.2f}"
-        )
+    headers = [
+        "Limit", "L2 Nodes", "L3 Nodes", "C1", "C2",
+        "Pop_arr (KB)", "Ch_sums (KB)", "Seq (KB)", "Total (KB)"
+    ]
+
+    table_data = [
+        [
+            res.limit,
+            res.l2_nodes,
+            res.l3_nodes,
+            res.cell1_bits,
+            res.cell2_bits,
+            f"{res.pop_arr_kb:.2f}",
+            f"{res.chunk_sums_bits:.2f}",
+            f"{res.seq_kb:.2f}",
+            f"{res.total_kb:.2f}"
+        ]
+        for res in results
+    ]
+
+    print(tabulate(table_data, headers=headers,
+          tablefmt="simple", numalign="right", stralign="right"))
     print("\n")
 
+
+def run_simulation(cfg: LuleaConfig, limits: list[int]) -> list[SimulationResult]:
+    result: list[SimulationResult] = []
+    for limit in limits:
+        result.append(calculate_memory_for_limit(limit, cfg))
+    return result
 
 # =========================================================================
 # Main Entrypoint
 # =========================================================================
+
 
 def main():
     configs = [
@@ -306,10 +326,11 @@ def main():
         ),
     ]
 
-    limits = [2**i for i in range(10, 22)]
+    limits = [2**i for i in range(IP_COUNT_MIN, IP_COUNT_MAX)]
 
     for cfg in configs:
-        run_simulation(cfg, limits)
+        result = run_simulation(cfg, limits)
+        print_result(cfg.name, result)
 
 
 if __name__ == "__main__":
