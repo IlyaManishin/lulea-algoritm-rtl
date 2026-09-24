@@ -1,9 +1,8 @@
 import ipaddress
 import random
 from pathlib import Path
-from config import BUILD_DIR
+from config import BUILD_DIR, ROUTE_COUNT
 
-DEFAULT_ROUTE_COUNT = 4000
 DEFAULT_OUTPUT_FILE = "routes.txt"
 
 DEFAULT_MASK_WEIGHTS = {
@@ -24,7 +23,7 @@ PORT_RANGE = (1, 255)
 
 
 def generate_routes(
-    count: int = DEFAULT_ROUTE_COUNT,
+    count: int = ROUTE_COUNT,
     output_filename: str | Path = DEFAULT_OUTPUT_FILE,
     mask_weights: dict[int, float] | None = None,
     seed: int | None = None,
