@@ -4,7 +4,7 @@ from pathlib import Path
 from config import BUILD_DIR
 
 DEFAULT_ROUTE_COUNT = 4000
-DEFAULT_OUTPUT_FILE = BUILD_DIR / "routes.txt"
+DEFAULT_OUTPUT_FILE = "routes.txt"
 
 DEFAULT_MASK_WEIGHTS = {
     **{mask: 0.25 / 15 for mask in range(1, 16)},
@@ -25,7 +25,7 @@ PORT_RANGE = (1, 255)
 
 def generate_routes(
     count: int = DEFAULT_ROUTE_COUNT,
-    output_path: str | Path = DEFAULT_OUTPUT_FILE,
+    output_filename: str | Path = DEFAULT_OUTPUT_FILE,
     mask_weights: dict[int, float] | None = None,
     seed: int | None = None,
 ) -> list[tuple[str, int]]:
@@ -51,10 +51,10 @@ def generate_routes(
                 routes.append((str(net), port_id))
                 break
 
-    out_file = Path(output_path)
-    out_file.parent.mkdir(parents=True, exist_ok=True)
+    output_filepath = BUILD_DIR / output_filename
+    output_filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(out_file, "w") as f:
+    with open(output_filepath, "w") as f:
         for prefix, port in routes:
             f.write(f"{prefix} {port}\n")
 
