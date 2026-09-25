@@ -1,8 +1,9 @@
 import ipaddress
-import random
-from pathlib import Path
 
-DEFAULT_OUTPUT_PATH = "random_routes.txt"
+from pathlib import Path
+import random
+
+from gen_types import RouteRecord
 
 DEFAULT_MASK_WEIGHTS = {
     **{mask: 0.25 / 15 for mask in range(1, 16)},
@@ -18,15 +19,13 @@ DEFAULT_MASK_WEIGHTS = {
     **{mask: 0.25 / 8 for mask in range(25, 33)},
 }
 
-PORT_RANGE = (1, 255)
 
-
-def generate_routes(
+def generate_random_routes(
     count: int,
-    output_path: str | Path = DEFAULT_OUTPUT_PATH,
+    output_path: str | Path | None = None,
     mask_weights: dict[int, float] | None = None,
     seed: int | None = None,
-) -> list[tuple[str, int]]:
+) -> list[RouteRecord]:
     if seed is not None:
         random.seed(seed)
 
@@ -36,7 +35,7 @@ def generate_routes(
 
     assigned_masks = random.choices(masks, weights=probs, k=count)
 
-    routes = []
+    routes: list[RouteRecord] = []
     seen = set()
 
     for mask in assigned_masks:
@@ -45,23 +44,22 @@ def generate_routes(
             net = ipaddress.IPv4Network((ip_int, mask), strict=False)
             if net not in seen:
                 seen.add(net)
-                port_id = random.randint(*PORT_RANGE)
-                routes.append((str(net), port_id))
+                # Next hop format matches real BGP IP addresses
+                fake_next_hop = f"10.0.0.{random.randint(1, 254)}"
+                routes.append(
+                    RouteRecord(
+                        prefix=str(net),
+                        mask=mask,
+                        next_hop=fake_next_hop,
+                    )
+                )
                 break
 
-    filepath = Path(output_path)
-    filepath.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(filepath, "w") as f:
-        for prefix, port in routes:
-            f.write(f"{prefix} {port}\n")
+    if output_path is not None:
+        filepath = Path(output_path)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        with open(filepath, "w", encoding="utf-8") as f:
+            for route in routes:
+                f.write(f"{route.prefix} {route.next_hop}\n")
 
     return routes
-
-
-def main():
-    generate_routes()
-
-
-if __name__ == "__main__":
-    main()
