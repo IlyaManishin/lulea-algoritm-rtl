@@ -3,7 +3,7 @@ import random
 from pathlib import Path
 from config import BUILD_DIR, ROUTE_COUNT
 
-DEFAULT_OUTPUT_FILE = "routes.txt"
+DEFAULT_OUTPUT_FILE = "random_routes.txt"
 
 DEFAULT_MASK_WEIGHTS = {
     **{mask: 0.25 / 15 for mask in range(1, 16)},
