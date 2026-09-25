@@ -3,7 +3,7 @@ import socket
 from pathlib import Path
 from enum import Enum, auto
 
-from gen_types import RouteRecord
+from ..gen_types import RouteRecord
 
 
 class MRTFileType(Enum):
