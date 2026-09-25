@@ -19,6 +19,8 @@ DEFAULT_MASK_WEIGHTS = {
     **{mask: 0.25 / 8 for mask in range(25, 33)},
 }
 
+IP_WORD_RANGE = (1, 255)
+
 
 def generate_random_routes(
     count: int,
@@ -45,12 +47,12 @@ def generate_random_routes(
             if net not in seen:
                 seen.add(net)
                 # Next hop format matches real BGP IP addresses
-                fake_next_hop = f"10.0.0.{random.randint(1, 254)}"
+                next_hop = f"10.0.{random.randint(*IP_WORD_RANGE)}.{random.randint(*IP_WORD_RANGE)}"
                 routes.append(
                     RouteRecord(
                         prefix=str(net),
                         mask=mask,
-                        next_hop=fake_next_hop,
+                        next_hop=next_hop,
                     )
                 )
                 break
