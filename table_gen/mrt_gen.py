@@ -1,13 +1,13 @@
 import sys
 import os
-import re
 import random
 from collections import defaultdict
-from pathlib import Path
 
-from config import BUILD_DIR, ROUTE_COUNT, DEFAULT_OUTPUT_FILE
+from config import BUILD_DIR, ROUTE_COUNT
+from gen_types import RouteRecord
+from .utils import mrt_loader
 
-DEFAULT_INPUT_PATH = "mrt_routes.txt"
+DEFAULT_INPUT_PATH = "routes.txt"
 DEFAULT_OUTPUT_FILE = "mrt_routes.txt"
 
 
@@ -15,61 +15,39 @@ def parse_and_sample_mrt(
         file_path=DEFAULT_INPUT_PATH,
         output_filename=DEFAULT_OUTPUT_FILE,
         target_count=ROUTE_COUNT,
+        file_type=mrt_loader.MRTFileType.TEXT,
         seed=42):
 
     random.seed(seed)
 
-    unique_routes = {}
-    next_hop_to_id = {}
+    print(f"Parsing MRT dump file: {file_path}")
+    routes = mrt_loader.load_mrt_routes(file_path, file_type=file_type)
+
+    next_hop_to_id: dict[str, int] = {}
     current_port_id = 1
 
-    print(f"Parsing MRT dump file: {file_path}")
-    current_record = {}
+    for route in routes:
+        if route.next_hop not in next_hop_to_id:
+            next_hop_to_id[route.next_hop] = current_port_id
+            current_port_id += 1
 
-    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-        for line in f:
-            line = line.strip()
-
-            if not line:
-                if current_record:
-                    prefix = current_record.get('PREFIX')
-                    next_hop = current_record.get('NEXT_HOP')
-
-                    if prefix and next_hop and prefix not in unique_routes:
-                        unique_routes[prefix] = next_hop
-                        if next_hop not in next_hop_to_id:
-                            next_hop_to_id[next_hop] = current_port_id
-                            current_port_id += 1
-
-                    current_record = {}
-                continue
-
-            if ':' in line:
-                key, val = line.split(':', 1)
-                current_record[key.strip()] = val.strip()
-
-    total_unique = len(unique_routes)
+    total_unique = len(routes)
     print(f"Total unique prefixes parsed: {total_unique}")
     print(f"Mapped {len(next_hop_to_id)} unique NEXT_HOPs to port_ids.")
 
-    # Group routes by exact mask size (1 to 32)
-    mask_buckets = defaultdict(list)
-    for prefix, nh_ip in unique_routes.items():
-        mask = int(prefix.split('/')[1])
-        mask_buckets[mask].append((prefix, nh_ip))
+    mask_buckets: dict[int, list[RouteRecord]] = defaultdict(list)
+    for route in routes:
+        mask_buckets[route.mask].append(route)
 
-    # Stratified sampling: calculate quota for each exact mask length
-    selected_routes = []
+    selected_routes: list[RouteRecord] = []
     print("\nMask distribution sampling statistics:")
 
     for mask in sorted(mask_buckets.keys()):
         bucket = mask_buckets[mask]
         bucket_size = len(bucket)
 
-        # Calculate exact quota for this mask size
         quota = round((bucket_size / total_unique) * target_count)
 
-        # Handle edge cases (at least 1 item if quota rounds to 0, but don't exceed bucket size)
         if quota == 0 and bucket_size > 0:
             quota = 1
         quota = min(quota, bucket_size)
@@ -81,7 +59,6 @@ def parse_and_sample_mrt(
         print(
             f"  /{mask:2d}: Original = {bucket_size:6d} ({percentage:5.2f}%) -> Sampled = {len(sampled):4d}")
 
-    # Adjust sample size if rounding produced slightly more/fewer than target_count
     if len(selected_routes) > target_count:
         random.shuffle(selected_routes)
         selected_routes = selected_routes[:target_count]
@@ -89,15 +66,13 @@ def parse_and_sample_mrt(
     print(
         f"\nFinal sampled dataset size: {len(selected_routes)} routes (limit: {target_count})")
 
-    # Ensure output directory exists
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Export base routing table: PREFIX/MASK PORT_ID
     output_path = BUILD_DIR / output_filename
     with open(output_path, 'w', encoding='utf-8') as f:
-        for prefix, nh_ip in selected_routes:
-            port_id = next_hop_to_id[nh_ip]
-            f.write(f"{prefix} {port_id}\n")
+        for route in selected_routes:
+            port_id = next_hop_to_id[route.next_hop]
+            f.write(f"{route.prefix} {port_id}\n")
 
     print(f"Base routing table written to '{output_path}'.")
 
