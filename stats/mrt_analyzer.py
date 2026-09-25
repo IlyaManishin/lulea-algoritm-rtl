@@ -7,18 +7,23 @@ DEFAULT_PATH = "routes.txt"
 
 
 def parse_mrt_record(record: dict, stats: dict) -> None:
+    if "PREFIX" not in record:
+        return
+
+    prefix = record["PREFIX"]
+
+    if prefix in stats["unique_prefixes"]:
+        return
+
+    stats["unique_prefixes"].add(prefix)
     stats["total_records"] += 1
 
-    if "PREFIX" in record:
-        prefix = record["PREFIX"]
-        stats["unique_prefixes"].add(prefix)
-
-        if "/" in prefix:
-            try:
-                mask_len = int(prefix.split("/")[1])
-                stats["mask_distribution"][mask_len] += 1
-            except ValueError:
-                pass
+    if "/" in prefix:
+        try:
+            mask_len = int(prefix.split("/")[1])
+            stats["mask_distribution"][mask_len] += 1
+        except ValueError:
+            pass
 
     if "NEXT_HOP" in record:
         stats["next_hops"].add(record["NEXT_HOP"])
@@ -67,8 +72,8 @@ def read_mrt_dump(file_path: str) -> dict:
 
 
 def print_analysis_results(stats: dict) -> None:
-    print("=== Dump Analysis Results ===")
-    print(f"Total records in file: {stats['total_records']}")
+    print("=== Dump Analysis Results (Unique Prefixes Only) ===")
+    print(f"Total unique records: {stats['total_records']}")
     print(f"Unique prefixes (networks): {len(stats['unique_prefixes'])}")
     print(f"Unique NEXT_HOPs (future port_ids): {len(stats['next_hops'])}")
     print(
