@@ -1,9 +1,8 @@
 import ipaddress
 import random
 from pathlib import Path
-from config import BUILD_DIR, ROUTE_COUNT
 
-DEFAULT_OUTPUT_FILE = "random_routes.txt"
+DEFAULT_OUTPUT_PATH = "random_routes.txt"
 
 DEFAULT_MASK_WEIGHTS = {
     **{mask: 0.25 / 15 for mask in range(1, 16)},
@@ -23,8 +22,8 @@ PORT_RANGE = (1, 255)
 
 
 def generate_routes(
-    count: int = ROUTE_COUNT,
-    output_filename: str | Path = DEFAULT_OUTPUT_FILE,
+    count: int,
+    output_path: str | Path = DEFAULT_OUTPUT_PATH,
     mask_weights: dict[int, float] | None = None,
     seed: int | None = None,
 ) -> list[tuple[str, int]]:
@@ -50,10 +49,10 @@ def generate_routes(
                 routes.append((str(net), port_id))
                 break
 
-    output_filepath = BUILD_DIR / output_filename
-    output_filepath.parent.mkdir(parents=True, exist_ok=True)
+    filepath = Path(output_path)
+    filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_filepath, "w") as f:
+    with open(filepath, "w") as f:
         for prefix, port in routes:
             f.write(f"{prefix} {port}\n")
 

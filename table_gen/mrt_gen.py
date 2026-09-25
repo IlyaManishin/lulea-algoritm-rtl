@@ -3,9 +3,9 @@ import os
 import random
 from collections import defaultdict
 
-from config import BUILD_DIR, ROUTE_COUNT
-from gen_types import RouteRecord
-from .utils import mrt_loader
+from .config import BUILD_DIR, ROUTE_COUNT
+from .core.gen_types import RouteRecord
+from .core import mrt_reader
 
 DEFAULT_INPUT_PATH = "routes.txt"
 DEFAULT_OUTPUT_FILE = "mrt_routes.txt"
@@ -15,13 +15,13 @@ def parse_and_sample_mrt(
         file_path=DEFAULT_INPUT_PATH,
         output_filename=DEFAULT_OUTPUT_FILE,
         target_count=ROUTE_COUNT,
-        file_type=mrt_loader.MRTFileType.TEXT,
+        file_type=mrt_reader.MRTFileType.TEXT,
         seed=42):
 
     random.seed(seed)
 
     print(f"Parsing MRT dump file: {file_path}")
-    routes = mrt_loader.load_mrt_routes(file_path, file_type=file_type)
+    routes = mrt_reader.read_mrt_routes(file_path, file_type=file_type)
 
     next_hop_to_id: dict[str, int] = {}
     current_port_id = 1

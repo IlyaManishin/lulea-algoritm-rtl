@@ -2,7 +2,7 @@ from pathlib import Path
 from enum import Enum, auto
 from bgpkit import Parser
 
-from gen_types import RouteRecord
+from .gen_types import RouteRecord
 
 
 class MRTFileType(Enum):
