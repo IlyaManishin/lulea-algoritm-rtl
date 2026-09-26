@@ -1,5 +1,5 @@
-from pathlib import Path
 from enum import Enum, auto
+from pathlib import Path
 from bgpkit import Parser
 
 from .gen_types import RouteRecord
@@ -8,6 +8,11 @@ from .gen_types import RouteRecord
 class MRTFileType(Enum):
     TEXT = auto()
     BINARY = auto()
+
+
+class MRTParseError(Exception):
+    """Raised when parsing an MRT file fails due to format or read errors."""
+    pass
 
 
 def _process_text_record(
@@ -19,54 +24,74 @@ def _process_text_record(
 
     if prefix and next_hop and prefix not in unique_routes:
         if '/' in prefix:
-            mask = int(prefix.split('/')[1])
-            unique_routes[prefix] = RouteRecord(
-                prefix=prefix,
-                mask=mask,
-                next_hop=next_hop
-            )
-
-
-def parse_mrt_text(file_path: str | Path) -> list[RouteRecord]:
-    unique_routes: dict[str, RouteRecord] = {}
-    current_record: dict[str, str] = {}
-
-    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-        for line in f:
-            line = line.strip()
-
-            if not line:
-                if current_record:
-                    _process_text_record(current_record, unique_routes)
-                    current_record = {}
-                continue
-
-            if ':' in line:
-                key, val = line.split(':', 1)
-                current_record[key.strip()] = val.strip()
-
-        if current_record:
-            _process_text_record(current_record, unique_routes)
-
-    return list(unique_routes.values())
-
-
-def parse_mrt_binary(file_path: str | Path) -> list[RouteRecord]:
-    unique_routes: dict[str, RouteRecord] = {}
-
-    parser = Parser(str(file_path))
-    for elem in parser:
-        prefix = elem.prefix
-        next_hop = elem.next_hop
-
-        if prefix and next_hop and prefix not in unique_routes:
-            if '/' in prefix:
+            try:
                 mask = int(prefix.split('/')[1])
                 unique_routes[prefix] = RouteRecord(
                     prefix=prefix,
                     mask=mask,
                     next_hop=next_hop
                 )
+            except (ValueError, IndexError):
+                return
+
+
+def parse_mrt_text(file_path: str | Path) -> list[RouteRecord]:
+    path = Path(file_path)
+    if not path.is_file():
+        raise FileNotFoundError(f"MRT text file not found: {path}")
+
+    unique_routes: dict[str, RouteRecord] = {}
+    current_record: dict[str, str] = {}
+
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+
+                if not line:
+                    if current_record:
+                        _process_text_record(current_record, unique_routes)
+                        current_record = {}
+                    continue
+
+                if ':' in line:
+                    key, val = line.split(':', 1)
+                    current_record[key.strip()] = val.strip()
+
+            if current_record:
+                _process_text_record(current_record, unique_routes)
+    except (OSError, ValueError) as e:
+        raise MRTParseError(f"Failed to read MRT text file '{path}': {e}") from e
+
+    return list(unique_routes.values())
+
+
+def parse_mrt_binary(file_path: str | Path) -> list[RouteRecord]:
+    path = Path(file_path)
+    if not path.is_file():
+        raise FileNotFoundError(f"MRT binary file not found: {path}")
+
+    unique_routes: dict[str, RouteRecord] = {}
+
+    try:
+        parser = Parser(str(path))
+        for elem in parser:
+            prefix = elem.prefix
+            next_hop = elem.next_hop
+
+            if prefix and next_hop and prefix not in unique_routes:
+                if '/' in prefix:
+                    try:
+                        mask = int(prefix.split('/')[1])
+                        unique_routes[prefix] = RouteRecord(
+                            prefix=prefix,
+                            mask=mask,
+                            next_hop=next_hop
+                        )
+                    except (ValueError, IndexError):
+                        continue
+    except Exception as e:
+        raise MRTParseError(f"Failed to parse binary MRT file '{path}': {e}") from e
 
     return list(unique_routes.values())
 
