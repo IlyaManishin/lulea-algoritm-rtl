@@ -2,7 +2,7 @@ from collections import defaultdict
 from pathlib import Path
 import random
 
-from gen_types import RouteRecord
+from .gen_types import RouteRecord
 from .mrt_reader import read_mrt_routes, MRTFileType
 
 
@@ -46,9 +46,9 @@ def sample_routes_by_mask(
 def generate_mrt_routes(
     input_path: str | Path,
     count: int,
-    output_path: str | Path | None = None,
     file_type: MRTFileType = MRTFileType.TEXT,
     seed: int | None = 42,
+    output_path: str | Path | None = None,
 ) -> list[RouteRecord]:
     routes = read_mrt_routes(input_path, file_type=file_type)
     if not routes:

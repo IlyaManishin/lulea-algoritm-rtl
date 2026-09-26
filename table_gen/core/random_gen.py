@@ -3,7 +3,7 @@ import ipaddress
 from pathlib import Path
 import random
 
-from gen_types import RouteRecord
+from .gen_types import RouteRecord
 
 DEFAULT_MASK_WEIGHTS = {
     **{mask: 0.25 / 15 for mask in range(1, 16)},
@@ -24,9 +24,9 @@ IP_WORD_RANGE = (1, 255)
 
 def generate_random_routes(
     count: int,
-    output_path: str | Path | None = None,
     mask_weights: dict[int, float] | None = None,
     seed: int | None = None,
+    output_path: str | Path | None = None,
 ) -> list[RouteRecord]:
     if seed is not None:
         random.seed(seed)
