@@ -16,6 +16,7 @@ import math
 
 MAX_NODE_FILL_FACTOR = 0.5  # part of endpoint in certain cache limit
 BRAM_BASE_CELL_SIZE = 18
+DEFAULT_PORT_SIZE = 8
 
 # Flag to enable/disable rounding node counts to power of 2
 ROUND_NODES_TO_POWER_OF_2 = True
@@ -52,7 +53,7 @@ class LuleaConfig:
     l2: LevelConfig
     l3: LevelConfig
     dist: tuple[float, float, float]
-    port_size_bits: int = 16
+    port_size_bits: int = DEFAULT_PORT_SIZE
 
     def __post_init__(self):
         if not math.isclose(sum(self.dist), 1.0):
