@@ -101,12 +101,25 @@ def estimate_node_counts(
     masks_l2 = limit * cfg.dist[1]
     masks_l3 = limit * cfg.dist[2]
 
-    max_l2_nodes = int(cfg.l1.total_entries * fill_factor)
-    max_l3_nodes = int(max_l2_nodes * cfg.l2.total_entries * fill_factor)
+    l1_slots = cfg.l1.total_entries
+    l2_slots_per_node = cfg.l2.total_entries
+
+    # Expected number of non-empty L1 slots (= L2 nodes actually needed)
+    # when masks_l2 prefixes are thrown uniformly at random into l1_slots bins.
+    expected_l2_nodes = l1_slots * (1 - (1 - 1 / l1_slots) ** masks_l2)
+
+    max_l2_nodes = int(l1_slots * fill_factor)
+    l2_nodes = min(max_l2_nodes, int(expected_l2_nodes))
+
+    # Same logic one level down: L3 nodes needed out of the address space
+    # opened up by however many L2 nodes actually got allocated.
+    l3_bins = max(1, l2_nodes * l2_slots_per_node)
+    expected_l3_nodes = l3_bins * (1 - (1 - 1 / l3_bins) ** masks_l3)
+
+    max_l3_nodes = int(l2_nodes * cfg.l2.total_entries * fill_factor)
+    l3_nodes = min(max_l3_nodes, int(expected_l3_nodes))
 
     l1_nodes = 1
-    l2_nodes = min(max_l2_nodes, int(masks_l2))
-    l3_nodes = min(max_l3_nodes, int(masks_l3))
 
     if ROUND_NODES_TO_POWER_OF_2:
         l2_nodes = round_up_pow2(l2_nodes)
