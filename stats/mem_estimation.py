@@ -32,12 +32,12 @@ class LevelConfig:
     chunk_size: int
 
     @property
-    def total_entries(self) -> int:
+    def cells_count(self) -> int:
         return 1 << self.bits
 
     @property
     def chunks_count(self) -> int:
-        return self.total_entries // self.chunk_size
+        return self.cells_count // self.chunk_size
 
     def __post_init__(self):
         if self.chunk_size <= 0 or (self.chunk_size & (self.chunk_size - 1)) != 0:
@@ -102,8 +102,11 @@ def estimate_node_counts(
     masks_l2 = limit * cfg.dist[1]
     masks_l3 = limit * cfg.dist[2]
 
-    l1_slots = cfg.l1.total_entries
-    l2_slots_per_node = cfg.l2.total_entries
+    l1_slots = cfg.l1.cells_count
+    l2_slots_per_node = cfg.l2.cells_count
+
+    # NOTE: At small masks_l2/masks_l3 count (when these is much less than max masks capacity):
+    # expected_l3_nodes ≈ masks_l3. It needs to check real cases in route tables.
 
     # Expected number of non-empty L1 slots (= L2 nodes actually needed)
     # when masks_l2 prefixes are thrown uniformly at random into l1_slots bins.
@@ -114,10 +117,10 @@ def estimate_node_counts(
 
     # Same logic one level down: L3 nodes needed out of the address space
     # opened up by however many L2 nodes actually got allocated.
-    l3_bins = max(1, l2_nodes * l2_slots_per_node)
-    expected_l3_nodes = l3_bins * (1 - (1 - 1 / l3_bins) ** masks_l3)
+    l3_size = max(1, l2_nodes * l2_slots_per_node)
+    expected_l3_nodes = l3_size * (1 - (1 - 1 / l3_size) ** masks_l3)
 
-    max_l3_nodes = int(l2_nodes * cfg.l2.total_entries * fill_factor)
+    max_l3_nodes = int(l2_nodes * cfg.l2.cells_count * fill_factor)
     l3_nodes = min(max_l3_nodes, int(expected_l3_nodes))
 
     l1_nodes = 1
@@ -165,13 +168,13 @@ def estimate_seq_lens(
     """ Estimate ref array lengths
     """
     seq1_len = min(
-        l1_nodes * cfg.l1.total_entries, int(l1_nodes * 2 + l2_nodes)
+        l1_nodes * cfg.l1.cells_count, int(l1_nodes * 2 + l2_nodes)
     )
     seq2_len = min(
-        l2_nodes * cfg.l2.total_entries, int(l2_nodes * 2 + l3_nodes)
+        l2_nodes * cfg.l2.cells_count, int(l2_nodes * 2 + l3_nodes)
     )
     seq3_len = min(
-        l3_nodes * cfg.l3.total_entries, int(l3_nodes * 2)
+        l3_nodes * cfg.l3.cells_count, int(l3_nodes * 2)
     )
 
     return seq1_len, seq2_len, seq3_len
