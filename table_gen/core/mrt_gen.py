@@ -28,6 +28,9 @@ def sample_routes_by_mask(
         bucket = mask_buckets[mask]
         bucket_size = len(bucket)
 
+        # NOTE: Forcing quota=1 guarantees rare buckets are included.
+        # However, for small target_count, this overrepresents rare items
+        # and distorts the sample compared to the original distribution.
         quota = round((bucket_size / total_unique) * target_count)
         if quota == 0 and bucket_size > 0:
             quota = 1
