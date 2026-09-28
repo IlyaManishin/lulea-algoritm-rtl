@@ -5,10 +5,8 @@ from core.gen_types import RouteRecord
 from core.mrt_reader import MRTFileType
 from core.random_gen import generate_random_routes
 
-from config import GeneratorType, ROUTE_COUNT
-from port_mapping import map_next_hops_to_ports,save_port_map
-
-PORT_MAP_EXT = ".ports"
+from config import GeneratorType, ROUTE_COUNT, PORT_MAP_EXTENSION
+from port_mapping import map_next_hops_to_ports, save_port_map
 
 
 def generate_route_table(
@@ -21,7 +19,8 @@ def generate_route_table(
 ) -> None:
     if generator_type == GeneratorType.MRT:
         if input_path is None:
-            raise ValueError("input_path is required when generator_type is GeneratorType.MRT")
+            raise ValueError(
+                "input_path is required when generator_type is GeneratorType.MRT")
         routes: list[RouteRecord] = generate_mrt_routes(
             input_path=input_path,
             count=count,
@@ -38,7 +37,7 @@ def generate_route_table(
 
     port_map = map_next_hops_to_ports(routes)
 
-    port_map_path = Path(f"{output_path}{PORT_MAP_EXT}")
+    port_map_path = Path(f"{output_path}{PORT_MAP_EXTENSION}")
     save_port_map(port_map, port_map_path)
 
     filepath = Path(output_path)

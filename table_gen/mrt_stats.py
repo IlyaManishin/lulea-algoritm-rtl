@@ -1,9 +1,9 @@
 import sys
 from pathlib import Path
 from collections import Counter
-from core.mrt_reader import read_mrt_routes, MRTFileType
 
-DEFAULT_PATH = ""
+from core.mrt_reader import read_mrt_routes, MRTFileType
+from config import DEFAULT_MRT_PATH
 
 
 def analyze_mrt_routes(file_path: str | Path) -> None:
@@ -42,7 +42,7 @@ def analyze_mrt_routes(file_path: str | Path) -> None:
 
 
 def main():
-    file_path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PATH
+    file_path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_MRT_PATH
 
     path = Path(file_path)
     if not path.exists():

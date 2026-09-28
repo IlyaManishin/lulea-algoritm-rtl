@@ -6,7 +6,7 @@ from .gen_types import RouteRecord
 from .mrt_reader import read_mrt_routes, MRTFileType
 
 
-def sample_routes_by_mask(
+def filter_mrt_routes(
     routes: list[RouteRecord],
     target_count: int,
     seed: int | None = None,
@@ -57,7 +57,7 @@ def generate_mrt_routes(
     if not routes:
         return []
 
-    sampled_routes = sample_routes_by_mask(
+    sampled_routes = filter_mrt_routes(
         routes, target_count=count, seed=seed
     )
 
