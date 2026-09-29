@@ -6,7 +6,8 @@ from core.mrt_reader import MRTFileType
 from core.random_gen import generate_random_routes
 
 from config import GeneratorType, ROUTE_COUNT, PORT_MAP_EXTENSION
-from port_mapping import map_next_hops_to_ports, save_port_map
+from port_mapping import map_next_hops_to_ports
+from route_saver import save_routes_and_ports
 
 
 def generate_route_table(
@@ -36,13 +37,11 @@ def generate_route_table(
         raise ValueError(f"Unsupported generator type: {generator_type}")
 
     port_map = map_next_hops_to_ports(routes)
-
     port_map_path = Path(f"{output_path}{PORT_MAP_EXTENSION}")
-    save_port_map(port_map, port_map_path)
 
-    filepath = Path(output_path)
-    filepath.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(filepath, "w", encoding="utf-8") as f:
-        for route in routes:
-            f.write(f"{route.prefix} {port_map[route.next_hop]}\n")
+    save_routes_and_ports(
+        routes=routes,
+        port_map=port_map,
+        routes_output_path=output_path,
+        port_map_output_path=port_map_path,
+    )
