@@ -27,6 +27,18 @@ ROUND_NODES_TO_POWER_OF_2 = True
 OUTPUT_DIR = Path(RESULTS_DIR) / "mem_estimation"
 LIMITS_OUTPUT_DIR = OUTPUT_DIR / "limits_out"
 
+SHORTED_OUT_COLUMNS = [
+    "limit",
+    "l2_nodes",
+    "l3_nodes",
+    "cell1_bits",
+    "cell2_bits",
+    "pop_arr_kb",
+    "chunk_sums_kb",
+    "seq_kb",
+    "total_kb",
+]
+
 # =========================================================================
 # Data Structures & Models
 # =========================================================================
@@ -52,7 +64,7 @@ class SimulationResult:
     cell2_bits: int
     cell3_bits: int
     pop_arr_kb: float
-    chunk_sums_bits: float
+    chunk_sums_kb: float
     seq_kb: float
     total_kb: float
     l1: LevelMemory
@@ -269,7 +281,7 @@ def calculate_memory_for_limit(
         cell2_bits=ref2_bits,
         cell3_bits=ref3_bits,
         pop_arr_kb=pop_arr_kb,
-        chunk_sums_bits=chunk_sums_kb,
+        chunk_sums_kb=chunk_sums_kb,
         seq_kb=seq_kb,
         total_kb=total_kb,
         l1=l1_memory,
@@ -298,7 +310,7 @@ def run_simulation(cfg: LuleaConfig, limits: list[int]) -> ConfigResult:
         print(
             f"{res.limit:>8} | {res.l2_nodes:>8} | {res.l3_nodes:>8} | "
             f"{res.cell1_bits:>3} | {res.cell2_bits:>3} | "
-            f"{res.pop_arr_kb:>12.1f} | {res.chunk_sums_bits:>12.1f} | "
+            f"{res.pop_arr_kb:>12.1f} | {res.chunk_sums_kb:>12.1f} | "
             f"{res.seq_kb:>12.1f} | {res.total_kb:>12.1f}"
         )
     print("\n")
@@ -307,10 +319,15 @@ def run_simulation(cfg: LuleaConfig, limits: list[int]) -> ConfigResult:
 
 def save_config_results_to_csv(config_result: ConfigResult) -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # Full version
     filepath = OUTPUT_DIR / f"{config_result.config_name}.csv"
-
     df = pd.json_normalize([asdict(r) for r in config_result.results], sep="_")
     df.to_csv(filepath, index=False)
+
+    # Short version
+    short_filepath = OUTPUT_DIR / f"{config_result.config_name}_short.csv"
+    df[SHORTED_OUT_COLUMNS].to_csv(short_filepath, index=False)
 
 
 def save_limit_comparison_csvs(
@@ -329,6 +346,11 @@ def save_limit_comparison_csvs(
         df = pd.json_normalize(limit_rows, sep="_")
         filepath = LIMITS_OUTPUT_DIR / f"limit_{limit}.csv"
         df.to_csv(filepath, index=False)
+
+        # Short version
+        short_cols = ["config_name"] + SHORTED_OUT_COLUMNS
+        short_filepath = LIMITS_OUTPUT_DIR / f"limit_{limit}_short.csv"
+        df[short_cols].to_csv(short_filepath, index=False)
 
 
 def save_configs_totals_csv(
