@@ -12,7 +12,7 @@ from pathlib import Path
 import pandas as pd
 
 from config import RESULTS_DIR
-from lulea_configurations import LULEA_CONFIGS, LevelConfig, LuleaConfig
+from lulea_configurations import LULEA_CONFIGS, LuleaConfig
 
 # =========================================================================
 # Configuration Constants
@@ -23,6 +23,9 @@ BRAM_BASE_CELL_SIZE = 18
 
 # Flag to enable/disable rounding node counts to power of 2
 ROUND_NODES_TO_POWER_OF_2 = True
+
+OUTPUT_DIR = Path(RESULTS_DIR) / "mem_estimation"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 OUTPUT_CSV_FILENAME = "lulea_bram_simulation.csv"
 
@@ -306,11 +309,10 @@ def run_simulation(cfg: LuleaConfig, limits: list[int]) -> list[SimulationResult
 
 
 def save_results_to_csv(
-    results: list[SimulationResult], filename: str = OUTPUT_CSV_FILENAME
+    results: list[SimulationResult],
+    filename: str = OUTPUT_CSV_FILENAME
 ) -> None:
-    out_dir = Path(RESULTS_DIR)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    filepath = out_dir / filename
+    filepath = OUTPUT_DIR / filename
 
     # Flatten nested dataclasses automatically into CSV columns using pandas
     df = pd.json_normalize([asdict(r) for r in results], sep="_")
