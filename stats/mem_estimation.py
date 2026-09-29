@@ -6,9 +6,12 @@ and total memory usage for 16-8-8, 18-6-8, and 20-4-8 Luleå routing table
 configurations across varying route limit scales (2^10 to 2^21).
 """
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import math
+from pathlib import Path
+import pandas as pd
 
+from config import RESULTS_DIR
 
 # =========================================================================
 # Configuration Constants
@@ -20,6 +23,8 @@ DEFAULT_PORT_SIZE = 8
 
 # Flag to enable/disable rounding node counts to power of 2
 ROUND_NODES_TO_POWER_OF_2 = True
+
+OUTPUT_CSV_FILENAME = "lulea_bram_simulation.csv"
 
 # =========================================================================
 # Data Structures & Models
@@ -63,7 +68,19 @@ class LuleaConfig:
 
 
 @dataclass
+class LevelMemory:
+    pop_arr_kb: float
+    chunk_sums_kb: float
+    seq_kb: float
+
+    @property
+    def total_kb(self) -> float:
+        return self.pop_arr_kb + self.chunk_sums_kb + self.seq_kb
+
+
+@dataclass
 class SimulationResult:
+    config_name: str
     limit: int
     l2_nodes: int
     l3_nodes: int
@@ -74,6 +91,9 @@ class SimulationResult:
     chunk_sums_bits: float
     seq_kb: float
     total_kb: float
+    l1: LevelMemory
+    l2: LevelMemory
+    l3: LevelMemory
 
 
 # =========================================================================
@@ -250,7 +270,26 @@ def calculate_memory_for_limit(
     seq_bits = seq1_bits + seq2_bits + seq3_bits
 
     # -------------------------------------------------------------------------
-    # 6. Total Aggregation (Bits to KB)
+    # 6. Memory Stats by Levels
+    # -------------------------------------------------------------------------
+    l1_memory = LevelMemory(
+        pop_arr_kb=pop_arr1_bits / 8192,
+        chunk_sums_kb=chunk_sums1_bits / 8192,
+        seq_kb=seq1_bits / 8192,
+    )
+    l2_memory = LevelMemory(
+        pop_arr_kb=pop_arr2_bits / 8192,
+        chunk_sums_kb=chunk_sums2_bits / 8192,
+        seq_kb=seq2_bits / 8192,
+    )
+    l3_memory = LevelMemory(
+        pop_arr_kb=pop_arr3_bits / 8192,
+        chunk_sums_kb=chunk_sums3_bits / 8192,
+        seq_kb=seq3_bits / 8192,
+    )
+
+    # -------------------------------------------------------------------------
+    # 7. Total Aggregation (Bits to KB)
     # -------------------------------------------------------------------------
     pop_arr_kb = pop_arr_bits / 8192
     chunk_sums_kb = chunk_sums_bits / 8192
@@ -258,6 +297,7 @@ def calculate_memory_for_limit(
     total_kb = pop_arr_kb + chunk_sums_kb + seq_kb
 
     return SimulationResult(
+        config_name=cfg.name,
         limit=limit,
         l2_nodes=l2_nodes,
         l3_nodes=l3_nodes,
@@ -268,14 +308,17 @@ def calculate_memory_for_limit(
         chunk_sums_bits=chunk_sums_kb,
         seq_kb=seq_kb,
         total_kb=total_kb,
+        l1=l1_memory,
+        l2=l2_memory,
+        l3=l3_memory,
     )
+
 
 # =========================================================================
 # Simulation Runner & Output
 # =========================================================================
 
-
-def run_simulation(cfg: LuleaConfig, limits: list[int]):
+def run_simulation(cfg: LuleaConfig, limits: list[int]) -> list[SimulationResult]:
     print(f"=== Configuration: {cfg.name} ===")
     print(
         f"{'Limit':>8} | {'L2 Nodes':>8} | {'L3 Nodes':>8} | {'C1':>3} | {'C2':>3} | "
@@ -283,8 +326,11 @@ def run_simulation(cfg: LuleaConfig, limits: list[int]):
     )
     print("-" * 99)
 
+    results = []
     for limit in limits:
         res = calculate_memory_for_limit(limit, cfg)
+        results.append(res)
+
         print(
             f"{res.limit:>8} | {res.l2_nodes:>8} | {res.l3_nodes:>8} | "
             f"{res.cell1_bits:>3} | {res.cell2_bits:>3} | "
@@ -292,6 +338,19 @@ def run_simulation(cfg: LuleaConfig, limits: list[int]):
             f"{res.seq_kb:>12.2f} | {res.total_kb:>12.2f}"
         )
     print("\n")
+    return results
+
+
+def save_results_to_csv(
+    results: list[SimulationResult], filename: str = OUTPUT_CSV_FILENAME
+) -> None:
+    out_dir = Path(RESULTS_DIR)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    filepath = out_dir / filename
+
+    # Flatten nested dataclasses automatically into CSV columns using pandas
+    df = pd.json_normalize([asdict(r) for r in results], sep="_")
+    df.to_csv(filepath, index=False)
 
 
 # =========================================================================
@@ -324,9 +383,13 @@ def main():
     ]
 
     limits = [2**i for i in range(10, 22)]
+    all_results = []
 
     for cfg in configs:
-        run_simulation(cfg, limits)
+        results = run_simulation(cfg, limits)
+        all_results.extend(results)
+
+    save_results_to_csv(all_results)
 
 
 if __name__ == "__main__":
