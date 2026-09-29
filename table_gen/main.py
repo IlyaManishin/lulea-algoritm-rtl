@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 from config import BUILD_DIR, ROUTE_COUNT, GeneratorType
-from route_gen import generate_route_table
+from route_table_gen import generate_route_table
 from core.mrt_reader import MRTFileType
 
 
