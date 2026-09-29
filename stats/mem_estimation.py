@@ -12,6 +12,7 @@ from pathlib import Path
 import pandas as pd
 
 from config import RESULTS_DIR
+from lulea_configurations import LULEA_CONFIGS, LevelConfig, LuleaConfig
 
 # =========================================================================
 # Configuration Constants
@@ -19,7 +20,6 @@ from config import RESULTS_DIR
 
 MAX_NODE_FILL_FACTOR = 0.5  # part of endpoint in certain cache limit
 BRAM_BASE_CELL_SIZE = 18
-DEFAULT_PORT_SIZE = 8
 
 # Flag to enable/disable rounding node counts to power of 2
 ROUND_NODES_TO_POWER_OF_2 = True
@@ -29,42 +29,6 @@ OUTPUT_CSV_FILENAME = "lulea_bram_simulation.csv"
 # =========================================================================
 # Data Structures & Models
 # =========================================================================
-
-
-@dataclass
-class LevelConfig:
-    bits: int
-    chunk_size: int
-
-    @property
-    def cells_count(self) -> int:
-        return 1 << self.bits
-
-    @property
-    def chunks_count(self) -> int:
-        return self.cells_count // self.chunk_size
-
-    def __post_init__(self):
-        if self.chunk_size <= 0 or (self.chunk_size & (self.chunk_size - 1)) != 0:
-            raise ValueError(
-                f"chunk_size must be a power of 2, got {self.chunk_size}"
-            )
-
-
-@dataclass
-class LuleaConfig:
-    name: str
-    l1: LevelConfig
-    l2: LevelConfig
-    l3: LevelConfig
-    dist: tuple[float, float, float]
-    port_size_bits: int = DEFAULT_PORT_SIZE
-
-    def __post_init__(self):
-        if not math.isclose(sum(self.dist), 1.0):
-            raise ValueError(
-                f"Sum of proportions {self.dist} must equal 1.0"
-            )
 
 
 @dataclass
@@ -358,34 +322,10 @@ def save_results_to_csv(
 # =========================================================================
 
 def main():
-    configs = [
-        LuleaConfig(
-            name="16-8-8",
-            l1=LevelConfig(bits=16, chunk_size=64),
-            l2=LevelConfig(bits=8, chunk_size=16),
-            l3=LevelConfig(bits=8, chunk_size=16),
-            dist=(0.005, 0.990, 0.005),
-        ),
-        LuleaConfig(
-            name="18-6-8",
-            l1=LevelConfig(bits=18, chunk_size=64),
-            l2=LevelConfig(bits=6, chunk_size=16),
-            l3=LevelConfig(bits=8, chunk_size=16),
-            dist=(0.033, 0.962, 0.005),
-        ),
-        LuleaConfig(
-            name="20-4-8",
-            l1=LevelConfig(bits=20, chunk_size=64),
-            l2=LevelConfig(bits=4, chunk_size=16),
-            l3=LevelConfig(bits=8, chunk_size=16),
-            dist=(0.100, 0.895, 0.005),
-        ),
-    ]
-
     limits = [2**i for i in range(10, 22)]
     all_results = []
 
-    for cfg in configs:
+    for cfg in LULEA_CONFIGS:
         results = run_simulation(cfg, limits)
         all_results.extend(results)
 
