@@ -7,7 +7,7 @@ from pathlib import Path
 
 from config import PORT_MAP_FILENAME, ROUTE_FILENAME
 from core.gen_types import RouteRecord
-from core.mrt_gen import distribution_filter_mrt_routes
+from core.mrt_filter import filter_mrt_routes
 from utils.route_reader import RouteReadError, read_port_map, read_route_count, read_routes
 from utils.route_saver import FileFormat, save_converted
 
@@ -147,7 +147,7 @@ class SampleExecutor:
                 error_message=str(exc),
             )
 
-        sampled: list[RouteRecord] = distribution_filter_mrt_routes(routes, target_count=task.target_size, seed=task.seed)
+        sampled: list[RouteRecord] = filter_mrt_routes(routes, target_count=task.target_size, seed=task.seed)
         if not sampled:
             return SampleResult(
                 task=task,
