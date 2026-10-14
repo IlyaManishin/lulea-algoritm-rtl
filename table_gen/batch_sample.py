@@ -17,6 +17,8 @@ from rich.progress import (
 from config import CONVERTED_DIR, SAMPLE_FILL_COEFF, SAMPLED_DIR, TABLE_SIZES
 from pipeline.sample import (
     SampleExecutor,
+    SamplePlan,
+    SampleResult,
     SampleStatus,
     build_sample_plan,
 )
@@ -76,7 +78,7 @@ def main() -> None:
     output = args.output.resolve()
     target_sizes = sorted(set(args.sizes))
 
-    plan = build_sample_plan(
+    plan: SamplePlan = build_sample_plan(
         converted_root=converted,
         output_root=output,
         sizes=target_sizes,
@@ -119,7 +121,7 @@ def main() -> None:
                 ),
             )
 
-            result = executor.execute(task, force=args.force)
+            result: SampleResult = executor.execute(task, force=args.force)
 
             match result.status:
                 case SampleStatus.SUCCESS:

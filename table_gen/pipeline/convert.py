@@ -5,7 +5,7 @@ from enum import Enum, auto
 from pathlib import Path
 
 from config import INFO_FILENAME, PORT_MAP_FILENAME, ROUTE_FILENAME
-from core.gen_types import RouteRecord
+from core.gen_types import MrtRecord, RouteRecord
 from core.mrt_reader import MRTParseError, ReaderResponse, parse_mrt_binary
 from utils.port_mapping import map_next_hops_to_ports
 from utils.route_saver import save_converted
@@ -99,7 +99,7 @@ def convert_mrt_file(
             error_message=str(exc),
         )
 
-    mrt_records = response.routes
+    mrt_records: list[MrtRecord] = response.routes
     if not mrt_records:
         return ConvertResult(
             entry=entry,
@@ -107,8 +107,8 @@ def convert_mrt_file(
             error_message="No valid IPv4 routes found in file",
         )
 
-    port_map = map_next_hops_to_ports(mrt_records)
-    routes = [
+    port_map: dict[str, int] = map_next_hops_to_ports(mrt_records)
+    routes: list[RouteRecord] = [
         RouteRecord(prefix=m.prefix, mask=m.mask, port_id=port_map[m.next_hop])
         for m in mrt_records
     ]

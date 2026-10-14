@@ -70,7 +70,7 @@ def main() -> None:
         label = entry.rel_parent / entry.path.name
         print(f"[{idx}/{total}] {label}")
 
-        result = convert_mrt_file(entry, output, force=args.force)
+        result: ConvertResult = convert_mrt_file(entry, output, force=args.force)
 
         match result.status:
             case ConvertStatus.SKIPPED:

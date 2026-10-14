@@ -1,16 +1,19 @@
 from collections import defaultdict
 from pathlib import Path
 import random
+from typing import TypeVar
 
-from .gen_types import RouteRecord
+from .gen_types import MrtRecord, RouteRecord
 from .mrt_reader import read_mrt_routes, MRTFileType
+
+T = TypeVar("T", RouteRecord, MrtRecord)
 
 
 def filter_mrt_routes(
-    routes: list[RouteRecord],
+    routes: list[T],
     target_count: int,
     seed: int | None = None,
-) -> list[RouteRecord]:
+) -> list[T]:
     if seed is not None:
         random.seed(seed)
 
@@ -52,12 +55,12 @@ def generate_mrt_routes(
     file_type: MRTFileType = MRTFileType.TEXT,
     seed: int | None = 42,
     output_path: str | Path | None = None,
-) -> list[RouteRecord]:
-    routes = read_mrt_routes(input_path, file_type=file_type)
+) -> list[MrtRecord]:
+    routes: list[MrtRecord] = read_mrt_routes(input_path, file_type=file_type)
     if not routes:
         return []
 
-    sampled_routes = filter_mrt_routes(
+    sampled_routes: list[MrtRecord] = filter_mrt_routes(
         routes, target_count=count, seed=seed
     )
 

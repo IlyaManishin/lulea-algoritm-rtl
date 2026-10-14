@@ -137,6 +137,8 @@ class SampleExecutor:
             return SampleResult(task=task, status=SampleStatus.SKIPPED)
 
         try:
+            routes: list[RouteRecord]
+            port_map: dict[int, str]
             routes, port_map = self._load_data(task.source_path)
         except (FileNotFoundError, RouteReadError) as exc:
             return SampleResult(
@@ -145,7 +147,7 @@ class SampleExecutor:
                 error_message=str(exc),
             )
 
-        sampled = filter_mrt_routes(routes, target_count=task.target_size, seed=task.seed)
+        sampled: list[RouteRecord] = filter_mrt_routes(routes, target_count=task.target_size, seed=task.seed)
         if not sampled:
             return SampleResult(
                 task=task,
@@ -154,7 +156,7 @@ class SampleExecutor:
             )
 
         used_ports = {r.port_id for r in sampled}
-        sample_port_map = {pid: port_map[pid] for pid in used_ports if pid in port_map}
+        sample_port_map: dict[int, str] = {pid: port_map[pid] for pid in used_ports if pid in port_map}
 
         try:
             save_converted(
