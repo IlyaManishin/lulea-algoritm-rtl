@@ -13,13 +13,14 @@ The toolchain employs a two-stage pipeline to convert large binary BGP routing t
         │
         ▼  Stage 1: batch_convert.py (pipeline/convert.py)
 [ build/converted/<source>/<stem>/ ]
-  ├── routes.txt     (Full table: prefix + next_hop)
-  └── routes.ports    (Full port mapping)
+  ├── routes.txt     (Full table: prefix + port_id)
+  ├── routes.ports    (Full port mapping: port_id + next_hop)
+  └── info.txt       (Conversion statistics and IPv6 filter counts)
         │
         ▼  Stage 2: batch_sample.py (pipeline/sample.py)
 [ build/sampled/<size>/<source>/<stem>/seed_<N>/ ]
-  ├── routes.txt     (Sampled table: prefix + next_hop)
-  └── routes.ports    (Sampled port mapping)
+  ├── routes.txt     (Sampled table: prefix + port_id)
+  └── routes.ports    (Sampled port mapping: port_id + next_hop)
 ```
 
 ---
@@ -30,15 +31,18 @@ The toolchain employs a two-stage pipeline to convert large binary BGP routing t
 
 Parses raw binary MRT dumps (RouteViews `.bz2`, RIPE RIS `.gz`, or plain MRT) into an intermediate plain-text format.
 
+- **Streaming Decompression**: Bypasses temporary disk files completely. Archives are decompressed in-memory on the fly by `bgpkit-parser` in Rust with micro-buffers, preventing RAM exhaustion.
+- **Strict IPv4 Filtering**: Filters out IPv6 multi-protocol BGP announcements at the parser level (`filters={'ip_version': 'ipv4'}`) and verifies address format in Python (`.` present, `:` absent, $1 \le \text{mask} \le 32$).
+- **Conversion Report (`info.txt`)**: Logs total records scanned, unique IPv4 routes, unique ports, and count of discarded IPv6/duplicate entries.
 - **Idempotent**: Skips archives whose output directory already contains non-empty results unless `--force` is specified.
-- **Decompression**: Automatically decompresses archives to a temporary file, parses records using `bgpkit-parser`, and cleans up.
 - **Output Hierarchy**:
   ```
   build/converted/
   └── <source>/
       └── <mrt_stem>/
           ├── routes.txt
-          └── routes.ports
+          ├── routes.ports
+          └── info.txt
   ```
 
 ### Stage 2: Batch Sample (`batch_sample.py`)
@@ -49,7 +53,7 @@ Samples converted full-tables into multiple fixed-size sub-tables (`1024`, `2048
 - **Sample Count Formula**:
   $$\text{samples} = \left\lfloor \frac{\text{total\_routes} \times \text{coeff}}{\text{target\_size}} \right\rfloor$$
   The parameter `coeff` (`SAMPLE_FILL_COEFF`) controls table reuse (e.g. `1.0` extracts non-overlapping volume equivalent to the full table, while `2.0` reuses routes ~2x across samples).
-- **Memory Optimization**: `SampleExecutor` maintains a single-entry lazy cache of the active table, avoiding redundant disk I/O while iterating across sizes and seeds.
+- **Memory Optimization**: `SampleExecutor` maintains a single-entry lazy cache of the active table and port map, avoiding redundant disk I/O while iterating across sizes and seeds.
 - **Progress Monitoring**: Powered by `rich` with live ETA, elapsed time, and task counters.
 - **Output Hierarchy**:
   ```
@@ -68,20 +72,32 @@ Samples converted full-tables into multiple fixed-size sub-tables (`1024`, `2048
 
 All text files include a count header on the first line for $O(1)$ size inspection and file integrity validation.
 
-### Intermediate Routes (`routes.txt`)
+### Routes Table (`routes.txt`)
+Stores `<prefix> <port_id>`:
 ```text
 1053412
-1.0.0.0/24 203.0.113.1
-1.0.4.0/22 198.51.100.2
+1.0.0.0/24 1
+1.0.4.0/22 2
 ...
 ```
 
 ### Port Map (`routes.ports`)
+Stores `<port_id> <next_hop>`:
 ```text
 247
-203.0.113.1 1
-198.51.100.2 2
+1 203.0.113.1
+2 198.51.100.2
 ...
+```
+
+### Conversion Report (`info.txt`)
+```text
+source_file: rib.20241001.0000.bz2
+total_elements: 18942689
+unique_routes: 1053412
+unique_ports: 247
+filtered_ipv6: 312450
+skipped_elements: 17576827
 ```
 
 ---
@@ -90,18 +106,18 @@ All text files include a count header on the first line for $O(1)$ size inspecti
 
 - **`config.py`**: Pipeline directories, target sizes, default fill coefficients, and environment paths.
 - **`pipeline/`**:
-  - `convert.py`: Stage 1 logic (discovery, decompression, `ConvertResult` tracking).
+  - `convert.py`: Stage 1 logic (discovery, streaming conversion, `ConvertResult` tracking, `info.txt`).
   - `sample.py`: Stage 2 logic (`SampleTask`, `SamplePlan`, `SampleExecutor` with lazy route caching).
   - `route_table_gen.py`: Single-table generator workflow (random or single MRT).
 - **`core/`**:
   - `gen_types.py`: Core dataclasses (`RouteRecord`).
-  - `mrt_reader.py`: Binary and text MRT parsing via `bgpkit`.
+  - `mrt_reader.py`: Streaming MRT parsing with IPv4/IPv6 filtering and `ReaderResponse`.
   - `mrt_gen.py`: Stratified filtering logic.
   - `random_gen.py`: Synthetic route generation based on empirical IPv4 prefix distributions.
 - **`utils/`**:
   - `port_mapping.py`: Next-hop IP to numeric port ID mapping.
-  - `route_saver.py`: Serialisation for raw routes, compiled route tables, and port maps.
-  - `route_reader.py`: Parsing and validation for files containing count headers.
+  - `route_saver.py`: Serialisation for routes (`prefix port_id`) and port maps (`port_id next_hop`).
+  - `route_reader.py`: Parsing and validation for routes and port maps containing count headers.
 - **CLI Entrypoints**:
   - `batch_convert.py`: CLI driver for Stage 1.
   - `batch_sample.py`: CLI driver for Stage 2.

@@ -1,11 +1,4 @@
-"""
-Readers for the plain-text route format produced by route_saver.save_routes().
-
-File layout:
-    <count>
-    <prefix> <next_hop>
-    ...
-"""
+"""Parsing helpers for route tables and port maps."""
 
 from pathlib import Path
 
@@ -35,12 +28,7 @@ def read_route_count(input_path: str | Path) -> int:
 
 
 def read_routes(input_path: str | Path) -> list[RouteRecord]:
-    """
-    Read all routes from a file produced by save_routes().
-
-    Validates the count header against actual record count for early
-    corruption detection.
-    """
+    """Read all routes from a file containing a leading count header."""
     filepath = Path(input_path)
     if not filepath.is_file():
         raise FileNotFoundError(f"Routes file not found: {filepath}")
@@ -64,11 +52,11 @@ def read_routes(input_path: str | Path) -> list[RouteRecord]:
                 parts = line.split()
                 if len(parts) != 2:
                     raise RouteReadError(
-                        f"{filepath}:{lineno}: expected 'prefix next_hop', "
+                        f"{filepath}:{lineno}: expected 'prefix port_id', "
                         f"got: {line!r}"
                     )
 
-                prefix, next_hop = parts
+                prefix, val = parts
                 try:
                     mask = int(prefix.split("/")[1])
                 except (IndexError, ValueError) as exc:
@@ -77,8 +65,11 @@ def read_routes(input_path: str | Path) -> list[RouteRecord]:
                         f"from prefix {prefix!r}"
                     ) from exc
 
+                port_id = int(val) if val.isdigit() else 0
+                next_hop = val if not val.isdigit() else ""
+
                 routes.append(
-                    RouteRecord(prefix=prefix, mask=mask, next_hop=next_hop)
+                    RouteRecord(prefix=prefix, mask=mask, port_id=port_id, next_hop=next_hop)
                 )
 
     except OSError as exc:
@@ -93,3 +84,53 @@ def read_routes(input_path: str | Path) -> list[RouteRecord]:
         )
 
     return routes
+
+
+def read_port_map(input_path: str | Path) -> dict[int, str]:
+    """Read port map returning {port_id: next_hop}."""
+    filepath = Path(input_path)
+    if not filepath.is_file():
+        raise FileNotFoundError(f"Port map file not found: {filepath}")
+
+    port_map: dict[int, str] = {}
+
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            count_line = f.readline().strip()
+            if not count_line.isdigit():
+                raise RouteReadError(
+                    f"Expected integer count on first line, got: {count_line!r}"
+                )
+            expected_count = int(count_line)
+
+            for lineno, line in enumerate(f, start=2):
+                line = line.strip()
+                if not line:
+                    continue
+
+                parts = line.split()
+                if len(parts) != 2:
+                    raise RouteReadError(
+                        f"{filepath}:{lineno}: expected 'port_id next_hop', "
+                        f"got: {line!r}"
+                    )
+
+                port_str, next_hop = parts
+                if not port_str.isdigit():
+                    raise RouteReadError(
+                        f"{filepath}:{lineno}: port_id must be integer, got: {port_str!r}"
+                    )
+                port_map[int(port_str)] = next_hop
+
+    except OSError as exc:
+        raise RouteReadError(
+            f"Failed to read port map '{filepath}': {exc}"
+        ) from exc
+
+    if len(port_map) != expected_count:
+        raise RouteReadError(
+            f"{filepath}: count header says {expected_count} ports "
+            f"but found {len(port_map)}"
+        )
+
+    return port_map

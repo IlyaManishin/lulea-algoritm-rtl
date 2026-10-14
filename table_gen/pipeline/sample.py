@@ -1,9 +1,4 @@
-"""
-Stage 2 logic: plan and execute sampling of converted full-tables into
-fixed-size sub-tables.
-
-This module contains no CLI or presentation code.
-"""
+"""Stage 2: plan and execute sampling of converted full-tables into fixed-size sub-tables."""
 
 import math
 from dataclasses import dataclass, field
@@ -13,23 +8,17 @@ from pathlib import Path
 from config import PORT_MAP_FILENAME, ROUTE_FILENAME
 from core.gen_types import RouteRecord
 from core.mrt_gen import filter_mrt_routes
-from utils.port_mapping import map_next_hops_to_ports
-from utils.route_reader import RouteReadError, read_route_count, read_routes
+from utils.route_reader import RouteReadError, read_port_map, read_route_count, read_routes
 from utils.route_saver import save_converted
 
 
-# =========================================================================
-# Data types
-# =========================================================================
-
 @dataclass(frozen=True, slots=True)
 class SampleTask:
-    """One unit of work: sample a converted table at a given size and seed."""
     source_path: Path
     output_dir: Path
     target_size: int
     seed: int
-    source_label: str   # short display name, e.g. "rib.20241001.0000"
+    source_label: str
 
 
 class SampleStatus(Enum):
@@ -40,7 +29,6 @@ class SampleStatus(Enum):
 
 @dataclass(frozen=True, slots=True)
 class SampleResult:
-    """Outcome of executing a single SampleTask."""
     task: SampleTask
     status: SampleStatus
     error_message: str = ""
@@ -48,7 +36,6 @@ class SampleResult:
 
 @dataclass(frozen=True)
 class SamplePlan:
-    """Complete work plan for batch sampling."""
     tasks: list[SampleTask] = field(default_factory=list)
     source_count: int = 0
 
@@ -57,29 +44,18 @@ class SamplePlan:
         return len(self.tasks)
 
 
-# =========================================================================
-# Helpers
-# =========================================================================
-
 def compute_sample_count(
     total_routes: int,
     target_size: int,
     coeff: float,
 ) -> int:
-    """
-    Number of samples to generate.
-
-        n = floor(total_routes * coeff / target_size)
-
-    Returns 0 if the table is too small for even one sample.
-    """
+    """Calculate sample count: floor(total_routes * coeff / target_size)."""
     if total_routes < target_size:
         return 0
     return math.floor(total_routes * coeff / target_size)
 
 
 def _discover_converted_tables(converted_root: Path) -> list[Path]:
-    """Return sorted paths of all routes.txt files under converted_root."""
     return sorted(converted_root.rglob(ROUTE_FILENAME))
 
 
@@ -90,7 +66,6 @@ def _sample_output_dir(
     target_size: int,
     seed: int,
 ) -> Path:
-    """Build: output_root / size / <rel_parent> / <mrt_stem> / seed_N."""
     rel_dir = routes_file.parent.relative_to(converted_root)
     return output_root / str(target_size) / rel_dir / f"seed_{seed}"
 
@@ -106,22 +81,13 @@ def _is_already_sampled(out_dir: Path) -> bool:
     )
 
 
-# =========================================================================
-# Plan builder
-# =========================================================================
-
 def build_sample_plan(
     converted_root: Path,
     output_root: Path,
     sizes: list[int],
     coeff: float,
 ) -> SamplePlan:
-    """
-    Scan converted tables and build the full work plan.
-
-    Uses count headers for O(1) capacity checks (no route loading).
-    Tasks are grouped by source file for cache-friendly execution.
-    """
+    """Build complete work plan using O(1) header counts."""
     routes_files = _discover_converted_tables(converted_root)
     if not routes_files:
         return SamplePlan()
@@ -153,21 +119,13 @@ def build_sample_plan(
     return SamplePlan(tasks=tasks, source_count=len(routes_files))
 
 
-# =========================================================================
-# Executor
-# =========================================================================
-
 class SampleExecutor:
-    """
-    Executes SampleTasks with a lazy single-entry route cache.
-
-    Keeps only the last loaded source in memory (~1M records ≈ 100 MB).
-    Expects tasks grouped by source_path for optimal cache utilisation.
-    """
+    """Executes SampleTasks with a lazy single-entry route and port cache."""
 
     def __init__(self) -> None:
         self._cached_path: Path | None = None
         self._cached_routes: list[RouteRecord] = []
+        self._cached_port_map: dict[int, str] = {}
 
     def execute(
         self,
@@ -179,7 +137,7 @@ class SampleExecutor:
             return SampleResult(task=task, status=SampleStatus.SKIPPED)
 
         try:
-            routes = self._load_routes(task.source_path)
+            routes, port_map = self._load_data(task.source_path)
         except (FileNotFoundError, RouteReadError) as exc:
             return SampleResult(
                 task=task,
@@ -195,12 +153,13 @@ class SampleExecutor:
                 error_message="filter_mrt_routes returned empty result",
             )
 
-        port_map = map_next_hops_to_ports(sampled)
+        used_ports = {r.port_id for r in sampled}
+        sample_port_map = {pid: port_map[pid] for pid in used_ports if pid in port_map}
 
         try:
             save_converted(
                 routes=sampled,
-                port_map=port_map,
+                port_map=sample_port_map,
                 routes_path=task.output_dir / ROUTE_FILENAME,
                 port_map_path=task.output_dir / PORT_MAP_FILENAME,
             )
@@ -213,8 +172,10 @@ class SampleExecutor:
 
         return SampleResult(task=task, status=SampleStatus.SUCCESS)
 
-    def _load_routes(self, source_path: Path) -> list[RouteRecord]:
+    def _load_data(self, source_path: Path) -> tuple[list[RouteRecord], dict[int, str]]:
         if self._cached_path != source_path:
             self._cached_routes = read_routes(source_path)
+            port_path = source_path.parent / PORT_MAP_FILENAME
+            self._cached_port_map = read_port_map(port_path) if port_path.is_file() else {}
             self._cached_path = source_path
-        return self._cached_routes
+        return self._cached_routes, self._cached_port_map

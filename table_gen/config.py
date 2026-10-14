@@ -27,6 +27,7 @@ SAMPLE_FILL_COEFF: float = 1.0
 
 ROUTE_FILENAME = "routes.txt"
 PORT_MAP_FILENAME = "routes.ports"
+INFO_FILENAME = "info.txt"
 
 ENV_PATH = PRJ_ROOT_DIR / ".env"
 load_dotenv(dotenv_path=ENV_PATH)

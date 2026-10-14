@@ -1,37 +1,22 @@
-"""
-Stage 1 logic: discover binary MRT archives and convert them to the
-plain-text intermediate format.
+"""Stage 1: discover binary MRT archives and convert to intermediate route tables."""
 
-This module contains no CLI or presentation code.
-"""
-
-import bz2
-import gzip
-import shutil
-import tempfile
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
 
-from config import PORT_MAP_FILENAME, ROUTE_FILENAME
-from core.mrt_reader import MRTParseError, parse_mrt_binary
+from config import INFO_FILENAME, PORT_MAP_FILENAME, ROUTE_FILENAME
+from core.mrt_reader import MRTParseError, ReaderResponse, parse_mrt_binary
 from utils.port_mapping import map_next_hops_to_ports
 from utils.route_saver import save_converted
-
-
-# =========================================================================
-# Data types
-# =========================================================================
 
 _ARCHIVE_SUFFIXES = (".bz2", ".gz")
 
 
 @dataclass(frozen=True, slots=True)
 class MrtFileEntry:
-    """A discovered MRT file on disk."""
     path: Path
-    rel_parent: Path   # relative directory from source root
-    stem: str           # filename without archive suffix
+    rel_parent: Path
+    stem: str
 
 
 class ConvertStatus(Enum):
@@ -42,17 +27,14 @@ class ConvertStatus(Enum):
 
 @dataclass(frozen=True, slots=True)
 class ConvertResult:
-    """Outcome of converting a single MRT file."""
     entry: MrtFileEntry
     status: ConvertStatus
     route_count: int = 0
     port_count: int = 0
+    total_elements: int = 0
+    filtered_ipv6_count: int = 0
     error_message: str = ""
 
-
-# =========================================================================
-# MRT discovery
-# =========================================================================
 
 def _strip_archive_suffix(name: str) -> str:
     for suffix in _ARCHIVE_SUFFIXES:
@@ -73,33 +55,6 @@ def discover_mrt_files(source_root: Path) -> list[MrtFileEntry]:
     return entries
 
 
-# =========================================================================
-# Decompression
-# =========================================================================
-
-def _decompress_to_tmp(src: Path) -> Path:
-    """Decompress .bz2 / .gz into a named temporary file.  Caller must delete."""
-    suffix = src.suffix.lower()
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".mrt")
-    tmp_path = Path(tmp.name)
-    tmp.close()
-
-    if suffix == ".bz2":
-        with bz2.open(src, "rb") as f_in, open(tmp_path, "wb") as f_out:
-            shutil.copyfileobj(f_in, f_out)
-    elif suffix == ".gz":
-        with gzip.open(src, "rb") as f_in, open(tmp_path, "wb") as f_out:
-            shutil.copyfileobj(f_in, f_out)
-    else:
-        raise ValueError(f"Unsupported archive format: {src.suffix}")
-
-    return tmp_path
-
-
-# =========================================================================
-# Output path helpers
-# =========================================================================
-
 def output_dir_for(entry: MrtFileEntry, output_root: Path) -> Path:
     return output_root / entry.rel_parent / entry.stem
 
@@ -107,17 +62,16 @@ def output_dir_for(entry: MrtFileEntry, output_root: Path) -> Path:
 def _is_already_converted(out_dir: Path) -> bool:
     routes_file = out_dir / ROUTE_FILENAME
     ports_file = out_dir / PORT_MAP_FILENAME
+    info_file = out_dir / INFO_FILENAME
     return (
         routes_file.exists()
         and routes_file.stat().st_size > 0
         and ports_file.exists()
         and ports_file.stat().st_size > 0
+        and info_file.exists()
+        and info_file.stat().st_size > 0
     )
 
-
-# =========================================================================
-# Single-file conversion
-# =========================================================================
 
 def convert_mrt_file(
     entry: MrtFileEntry,
@@ -126,46 +80,35 @@ def convert_mrt_file(
     force: bool = False,
 ) -> ConvertResult:
     """
-    Parse a single binary MRT file and write the intermediate text format.
+    Parse a binary MRT archive directly via streaming and write converted files.
 
-    Decompresses .bz2 / .gz into a temp file when necessary.
-    Returns a ConvertResult describing the outcome.
+    Streaming reads .bz2 and .gz directly without temp files on disk/RAM.
     """
     out_dir = output_dir_for(entry, output_root)
 
     if not force and _is_already_converted(out_dir):
         return ConvertResult(entry=entry, status=ConvertStatus.SKIPPED)
 
-    suffix = entry.path.suffix.lower()
-    tmp_path: Path | None = None
-
     try:
-        if suffix in _ARCHIVE_SUFFIXES:
-            tmp_path = _decompress_to_tmp(entry.path)
-            parse_target = tmp_path
-        else:
-            parse_target = entry.path
-
-        routes = parse_mrt_binary(parse_target)
-
+        response: ReaderResponse = parse_mrt_binary(entry.path)
     except (OSError, MRTParseError, ValueError) as exc:
         return ConvertResult(
             entry=entry,
             status=ConvertStatus.ERROR,
             error_message=str(exc),
         )
-    finally:
-        if tmp_path is not None and tmp_path.exists():
-            tmp_path.unlink()
 
+    routes = response.routes
     if not routes:
         return ConvertResult(
             entry=entry,
             status=ConvertStatus.ERROR,
-            error_message="No routes found in file",
+            error_message="No valid IPv4 routes found in file",
         )
 
     port_map = map_next_hops_to_ports(routes)
+    for route in routes:
+        route.port_id = port_map[route.next_hop]
 
     save_converted(
         routes=routes,
@@ -174,9 +117,20 @@ def convert_mrt_file(
         port_map_path=out_dir / PORT_MAP_FILENAME,
     )
 
+    info_path = out_dir / INFO_FILENAME
+    with open(info_path, "w", encoding="utf-8") as f:
+        f.write(f"source_file: {entry.path.name}\n")
+        f.write(f"total_elements: {response.total_elems}\n")
+        f.write(f"unique_routes: {len(routes)}\n")
+        f.write(f"unique_ports: {len(port_map)}\n")
+        f.write(f"filtered_ipv6: {response.filtered_ipv6_count}\n")
+        f.write(f"skipped_elements: {response.skipped_elems}\n")
+
     return ConvertResult(
         entry=entry,
         status=ConvertStatus.SUCCESS,
         route_count=len(routes),
         port_count=len(port_map),
+        total_elements=response.total_elems,
+        filtered_ipv6_count=response.filtered_ipv6_count,
     )

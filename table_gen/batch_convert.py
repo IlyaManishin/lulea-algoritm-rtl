@@ -1,11 +1,4 @@
-"""
-CLI for Stage 1: convert binary MRT archives into the intermediate text format.
-
-Usage:
-    python batch_convert.py
-    python batch_convert.py --source /path/to/mrt_root --output build/converted
-    python batch_convert.py --force
-"""
+"""Stage 1 CLI: convert binary MRT archives into intermediate route tables."""
 
 import argparse
 import sys
@@ -22,7 +15,7 @@ from pipeline.convert import (
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Convert binary MRT archives to the intermediate text format."
+        description="Convert binary MRT archives to intermediate route tables."
     )
     parser.add_argument(
         "--source",
@@ -87,7 +80,8 @@ def main() -> None:
             case ConvertStatus.SUCCESS:
                 print(
                     f"  Saved {result.route_count:,} routes, "
-                    f"{result.port_count:,} ports"
+                    f"{result.port_count:,} ports "
+                    f"(filtered IPv6: {result.filtered_ipv6_count:,})"
                 )
                 success_count += 1
             case ConvertStatus.ERROR:

@@ -1,12 +1,4 @@
-"""
-CLI for Stage 2: sample converted full-tables into fixed-size sub-tables.
-
-Usage:
-    python batch_sample.py
-    python batch_sample.py --input build/converted --output build/sampled
-    python batch_sample.py --sizes 1024 2048 4096 --coeff 2.0
-    python batch_sample.py --force
-"""
+"""Stage 2 CLI: sample converted full-tables into fixed-size sub-tables."""
 
 import argparse
 import sys
