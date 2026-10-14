@@ -1,14 +1,15 @@
 """Stage 1 CLI: convert binary MRT archives into intermediate route tables."""
 
 import argparse
+from collections.abc import Iterator
 import sys
 from pathlib import Path
 
 from config import CONVERTED_DIR, MRT_SOURCE_DIR
 from pipeline.convert import (
-    ConvertStatus,
     ConvertResult,
-    convert_mrt_file,
+    ConvertStatus,
+    convert_all,
     discover_mrt_files,
     output_dir_for,
 )
@@ -65,13 +66,16 @@ def main() -> None:
     skip_count = 0
     error_count = 0
 
-    print(f"Found {total} MRT file(s) under {source}\n")
+    convert_results: Iterator[ConvertResult] = convert_all(
+        entries=entries,
+        output_root=output,
+        force=args.force,
+    )
 
-    for idx, entry in enumerate(entries, start=1):
+    for idx, result in enumerate(convert_results, start=1):
+        entry = result.entry
         label = entry.rel_parent / entry.path.name
         print(f"[{idx}/{total}] {label}")
-
-        result: ConvertResult = convert_mrt_file(entry, output, force=args.force)
 
         match result.status:
             case ConvertStatus.SKIPPED:

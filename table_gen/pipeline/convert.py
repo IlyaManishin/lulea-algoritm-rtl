@@ -1,5 +1,6 @@
 """Stage 1: discover binary MRT archives and convert to intermediate route tables."""
 
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
@@ -152,3 +153,14 @@ def convert_mrt_file(
         total_elements=total_elements,
         filtered_ipv6_count=filtered_ipv6_count,
     )
+
+
+def convert_all(
+    entries: Sequence[MrtFileEntry],
+    output_root: Path,
+    *,
+    force: bool = False,
+) -> Iterator[ConvertResult]:
+    """Iterate over all MRT entries and yield conversion results."""
+    for entry in entries:
+        yield convert_mrt_file(entry, output_root, force=force)
