@@ -22,6 +22,10 @@ SAMPLED_DIR = BUILD_DIR / "sampled"
 # Batch pipeline settings
 TABLE_SIZES: list[int] = [1024, 2048, 4096, 8192, 16384]
 
+# Concurrency settings
+CONVERT_WORKERS: int = 4
+SAMPLE_WORKERS: int = 6
+
 # Fraction of the source table to consume across all samples for a given size.
 SAMPLE_FILL_COEFF: float = 1.0
 

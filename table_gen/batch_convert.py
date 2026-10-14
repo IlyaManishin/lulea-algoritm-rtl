@@ -75,22 +75,22 @@ def main() -> None:
     for idx, result in enumerate(convert_results, start=1):
         entry = result.entry
         label = entry.rel_parent / entry.path.name
-        print(f"[{idx}/{total}] {label}")
 
         match result.status:
             case ConvertStatus.SKIPPED:
                 out_dir = output_dir_for(entry, output)
-                print(f"  Skipped (already converted): {out_dir}")
+                print(f"[{idx}/{total}] [skipped] {label} -> {out_dir}")
                 skip_count += 1
             case ConvertStatus.SUCCESS:
                 print(
-                    f"  Saved {result.route_count:,} routes, "
+                    f"[{idx}/{total}] [done] {label}: "
+                    f"{result.route_count:,} routes, "
                     f"{result.port_count:,} ports "
                     f"(filtered IPv6: {result.filtered_ipv6_count:,})"
                 )
                 success_count += 1
             case ConvertStatus.ERROR:
-                print(f"  ERROR: {result.error_message}", file=sys.stderr)
+                print(f"[{idx}/{total}] [error] {label}: {result.error_message}", file=sys.stderr)
                 error_count += 1
 
     print(f"\nDone. Converted: {success_count}  Skipped: {skip_count}  Errors: {error_count}")

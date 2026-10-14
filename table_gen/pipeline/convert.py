@@ -5,9 +5,10 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
 
-from config import INFO_FILENAME, PORT_MAP_FILENAME, ROUTE_FILENAME
+from config import CONVERT_WORKERS, INFO_FILENAME, PORT_MAP_FILENAME, ROUTE_FILENAME
 from core.gen_types import MrtRecord, PortMapping, RouteRecord
 from core.mrt_reader import MRTParseError, ReaderResponse, parse_mrt_binary
+from utils.concurrency import run_in_thread_pool
 from utils.port_mapping import map_next_hops_to_ports
 from utils.route_saver import save_converted
 
@@ -105,6 +106,9 @@ def convert_mrt_file(
     if not force and _is_already_converted(out_dir):
         return ConvertResult(entry=entry, status=ConvertStatus.SKIPPED)
 
+    label = entry.rel_parent / entry.path.name
+    print(f"  [converting] {label} ...", flush=True)
+
     try:
         reader_resp: ReaderResponse = parse_mrt_binary(entry.path)
     except (OSError, MRTParseError, ValueError) as exc:
@@ -160,7 +164,10 @@ def convert_all(
     output_root: Path,
     *,
     force: bool = False,
+    max_workers: int = CONVERT_WORKERS,
 ) -> Iterator[ConvertResult]:
-    """Iterate over all MRT entries and yield conversion results."""
-    for entry in entries:
-        yield convert_mrt_file(entry, output_root, force=force)
+    """Iterate over all MRT entries in parallel and yield conversion results."""
+    def _worker(entry: MrtFileEntry) -> ConvertResult:
+        return convert_mrt_file(entry, output_root, force=force)
+
+    yield from run_in_thread_pool(_worker, entries, max_workers=max_workers)

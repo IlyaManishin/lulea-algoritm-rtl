@@ -4,9 +4,10 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
 
-from config import PORT_MAP_FILENAME, ROUTE_FILENAME
+from config import PORT_MAP_FILENAME, ROUTE_FILENAME, SAMPLE_WORKERS
 from core.gen_types import PortMapping, RouteRecord
 from core.mrt_filter import filter_mrt_routes
+from utils.concurrency import run_in_fork_process_pool
 from utils.route_reader import RouteReadError, read_port_map, read_route_count, read_routes
 from utils.route_saver import FileFormat, save_converted
 
@@ -154,44 +155,81 @@ class SampleExecutor:
                 f"Failed to load source table '{group.source_path}': {exc}"
             ) from exc
 
-    def execute_task(self, task: SingleSampleTask, *, force: bool = False) -> SampleResult:
-        """Execute a single sample task against loaded group routes."""
-        if not force and _is_already_sampled(task.output_dir):
-            return SampleResult(task=task, status=SampleStatus.SKIPPED)
+_G_ROUTES: list[RouteRecord] = []
+_G_PORT_MAP: PortMapping = {}
 
-        sampled: list[RouteRecord] = filter_mrt_routes(
-            self._routes, target_count=task.target_size, seed=task.seed
+
+def _init_sample_worker(routes: list[RouteRecord], port_map: PortMapping) -> None:
+    global _G_ROUTES, _G_PORT_MAP
+    _G_ROUTES = routes
+    _G_PORT_MAP = port_map
+
+
+def _execute_sample_worker_task(args: tuple[SingleSampleTask, bool]) -> SampleResult:
+    task, force = args
+    if not force and _is_already_sampled(task.output_dir):
+        return SampleResult(task=task, status=SampleStatus.SKIPPED)
+
+    sampled: list[RouteRecord] = filter_mrt_routes(
+        _G_ROUTES, target_count=task.target_size, seed=task.seed
+    )
+    if not sampled:
+        return SampleResult(
+            task=task,
+            status=SampleStatus.ERROR,
+            error_message="filter_mrt_routes returned empty result",
         )
-        if not sampled:
-            return SampleResult(
-                task=task,
-                status=SampleStatus.ERROR,
-                error_message="filter_mrt_routes returned empty result",
-            )
 
-        used_ports = {r.port_id for r in sampled}
-        sample_port_map: PortMapping = {
-            pid: self._port_map[pid] for pid in used_ports if pid in self._port_map
-        }
+    used_ports = {r.port_id for r in sampled}
+    sample_port_map: PortMapping = {
+        pid: _G_PORT_MAP[pid] for pid in used_ports if pid in _G_PORT_MAP
+    }
 
+    try:
+        save_converted(
+            routes=sampled,
+            port_map=sample_port_map,
+            routes_path=task.output_dir / ROUTE_FILENAME,
+            port_map_path=task.output_dir / PORT_MAP_FILENAME,
+            file_format=FileFormat.BINARY,
+        )
+    except OSError as exc:
+        return SampleResult(
+            task=task,
+            status=SampleStatus.ERROR,
+            error_message=str(exc),
+        )
+
+    return SampleResult(task=task, status=SampleStatus.SUCCESS)
+
+
+class SampleExecutor:
+    """Executes sampling for a single FileSampleGroup with fail-fast loading."""
+
+    def __init__(self, group: FileSampleGroup) -> None:
+        self._group: FileSampleGroup = group
         try:
-            save_converted(
-                routes=sampled,
-                port_map=sample_port_map,
-                routes_path=task.output_dir / ROUTE_FILENAME,
-                port_map_path=task.output_dir / PORT_MAP_FILENAME,
-                file_format=FileFormat.BINARY,
-            )
-        except OSError as exc:
-            return SampleResult(
-                task=task,
-                status=SampleStatus.ERROR,
-                error_message=str(exc),
-            )
+            self._routes: list[RouteRecord] = read_routes(group.source_path)
+            port_path = group.source_path.parent / PORT_MAP_FILENAME
+            self._port_map: PortMapping = read_port_map(
+                port_path) if port_path.is_file() else {}
+        except (FileNotFoundError, RouteReadError, OSError) as exc:
+            raise GroupLoadError(
+                f"Failed to load source table '{group.source_path}': {exc}"
+            ) from exc
 
-        return SampleResult(task=task, status=SampleStatus.SUCCESS)
-
-    def execute_all(self, *, force: bool = False) -> Iterator[SampleResult]:
-        """Iterate and execute all sample tasks in the group."""
-        for task in self._group.tasks:
-            yield self.execute_task(task, force=force)
+    def execute_all(
+        self,
+        *,
+        force: bool = False,
+        max_workers: int = SAMPLE_WORKERS,
+    ) -> Iterator[SampleResult]:
+        """Iterate and execute all sample tasks in the group across processes."""
+        task_items = [(task, force) for task in self._group.tasks]
+        yield from run_in_fork_process_pool(
+            _execute_sample_worker_task,
+            task_items,
+            max_workers=max_workers,
+            initializer=_init_sample_worker,
+            initargs=(self._routes, self._port_map),
+        )

@@ -31,6 +31,7 @@ The toolchain employs a two-stage pipeline to convert large binary BGP routing t
 
 Parses raw binary MRT dumps (RouteViews `.bz2`, RIPE RIS `.gz`, or plain MRT) into an intermediate plain-text format.
 
+- **Multithreading**: Files are processed concurrently using a thread pool configured via `CONVERT_WORKERS` in `config.py`. Instant shutdown on `Ctrl+C`.
 - **Streaming Decompression**: Bypasses temporary disk files completely. Archives are decompressed in-memory on the fly by `bgpkit-parser` in Rust with micro-buffers, preventing RAM exhaustion.
 - **Strict IPv4 Filtering**: Filters out IPv6 multi-protocol BGP announcements at the parser level (`filters={'ip_version': 'ipv4'}`) and verifies address format in Python (`.` present, `:` absent, $1 \le \text{mask} \le 32$).
 - **Conversion Report (`info.txt`)**: Logs total records scanned, unique IPv4 routes, unique ports, and count of discarded IPv6/duplicate entries.
@@ -49,11 +50,12 @@ Parses raw binary MRT dumps (RouteViews `.bz2`, RIPE RIS `.gz`, or plain MRT) in
 
 Samples converted full-tables into multiple fixed-size sub-tables (`1024`, `2048`, `4096`, etc.) with varying random seeds.
 
+- **Multiprocessing per Source**: Tasks are grouped by source file (`FileSampleGroup`). The source table and port mapping are loaded into memory exactly once per group, and sample generation (`seed` + `target_size`) is executed concurrently across processes using `SAMPLE_WORKERS` workers. Memory is shared via OS fork Copy-on-Write (CoW) without IPC/pickle overhead, fully bypassing Python's GIL.
 - **Stratified Sampling**: Preserves the original IPv4 prefix length distribution using `filter_mrt_routes()`.
 - **Sample Count Formula**:
   $$\text{samples} = \left\lfloor \frac{\text{total\_routes} \times \text{coeff}}{\text{target\_size}} \right\rfloor$$
   The parameter `coeff` (`SAMPLE_FILL_COEFF`) controls table reuse (e.g. `1.0` extracts non-overlapping volume equivalent to the full table, while `2.0` reuses routes ~2x across samples).
-- **Memory Optimization**: `SampleExecutor` maintains a single-entry lazy cache of the active table and port map, avoiding redundant disk I/O while iterating across sizes and seeds.
+- **Fail-Fast Execution**: `SampleExecutor` validates and loads the source table upfront, raising `GroupLoadError` immediately on corrupted files without failing unrelated groups.
 - **Progress Monitoring**: Powered by `rich` with live ETA, elapsed time, and task counters.
 - **Output Hierarchy**:
   ```
@@ -122,18 +124,20 @@ skipped_elements: 17576827
 
 ## Module Layout
 
-- **`config.py`**: Pipeline directories, target sizes, default fill coefficients, and environment paths.
+- **`config.py`**: Pipeline directories, target sizes, default fill coefficients, worker counts (`CONVERT_WORKERS`, `SAMPLE_WORKERS`), and environment paths.
 - **`pipeline/`**:
-  - `convert.py`: Stage 1 logic (discovery, streaming conversion, `ConvertResult` tracking, `info.txt`).
-  - `sample.py`: Stage 2 logic (`SampleTask`, `SamplePlan`, `SampleExecutor` with lazy route caching).
+  - `convert.py`: Stage 1 logic (discovery, streaming conversion, `ConvertResult` tracking, `convert_all`, `info.txt`).
+  - `sample.py`: Stage 2 logic (`SingleSampleTask`, `FileSampleGroup`, `SamplePlan`, `SampleExecutor`).
   - `route_table_gen.py`: Single-table generator workflow (random or single MRT).
 - **`core/`**:
-  - `gen_types.py`: Core dataclasses (`RouteRecord`).
+  - `gen_types.py`: Core dataclasses (`RouteRecord`, `MrtRecord`, `PortMapping`).
   - `mrt_reader.py`: Streaming MRT parsing with IPv4/IPv6 filtering and `ReaderResponse`.
-  - `mrt_gen.py`: Stratified filtering logic.
+  - `mrt_filter.py`: Stratified filtering logic preserving prefix length distribution (`filter_mrt_routes`).
+  - `mrt_gen.py`: MRT route generation utilities.
   - `random_gen.py`: Synthetic route generation based on empirical IPv4 prefix distributions.
 - **`utils/`**:
-  - `port_mapping.py`: Next-hop IP to numeric port ID mapping.
+  - `concurrency.py`: Process-pool and thread-pool execution helpers with graceful Ctrl+C handling (`run_in_process_pool`, `run_in_thread_pool`).
+  - `port_mapping.py`: Next-hop IP to numeric port ID mapping (`map_next_hops_to_ports`).
   - `route_saver.py`: Serialisation for routes (`prefix port_id`) and port maps (`port_id next_hop`).
   - `route_reader.py`: Parsing and validation for routes and port maps containing count headers.
 - **CLI Entrypoints**:
