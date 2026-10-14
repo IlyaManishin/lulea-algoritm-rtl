@@ -22,21 +22,25 @@ def generate_route_table(
         if input_path is None:
             raise ValueError(
                 "input_path is required when generator_type is GeneratorType.MRT")
-        routes: list[RouteRecord] = generate_mrt_routes(
+        raw_routes = generate_mrt_routes(
             input_path=input_path,
             count=count,
             file_type=mrt_file_type,
             seed=seed,
         )
     elif generator_type == GeneratorType.RANDOM:
-        routes: list[RouteRecord] = generate_random_routes(
+        raw_routes = generate_random_routes(
             count=count,
             seed=seed,
         )
     else:
         raise ValueError(f"Unsupported generator type: {generator_type}")
 
-    port_map = map_next_hops_to_ports(routes)
+    port_map = map_next_hops_to_ports(raw_routes)
+    routes = [
+        RouteRecord(prefix=r.prefix, mask=r.mask, port_id=port_map[r.next_hop])
+        for r in raw_routes
+    ]
     port_map_path = Path(f"{output_path}{PORT_MAP_EXTENSION}")
 
     save_routes_and_ports(

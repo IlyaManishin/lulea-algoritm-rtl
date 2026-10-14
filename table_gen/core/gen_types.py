@@ -2,8 +2,14 @@ from dataclasses import dataclass
 
 
 @dataclass(slots=True)
+class MrtRecord:
+    prefix: str
+    mask: int
+    next_hop: str
+
+
+@dataclass(slots=True)
 class RouteRecord:
     prefix: str
     mask: int
-    next_hop: str = ""
-    port_id: int = 0
+    port_id: int

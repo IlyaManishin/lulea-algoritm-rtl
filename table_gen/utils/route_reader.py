@@ -65,11 +65,13 @@ def read_routes(input_path: str | Path) -> list[RouteRecord]:
                         f"from prefix {prefix!r}"
                     ) from exc
 
-                port_id = int(val) if val.isdigit() else 0
-                next_hop = val if not val.isdigit() else ""
+                if not val.isdigit():
+                    raise RouteReadError(
+                        f"{filepath}:{lineno}: port_id must be integer, got: {val!r}"
+                    )
 
                 routes.append(
-                    RouteRecord(prefix=prefix, mask=mask, port_id=port_id, next_hop=next_hop)
+                    RouteRecord(prefix=prefix, mask=mask, port_id=int(val))
                 )
 
     except OSError as exc:

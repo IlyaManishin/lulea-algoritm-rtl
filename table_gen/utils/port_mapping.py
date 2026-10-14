@@ -1,4 +1,4 @@
-from core.gen_types import RouteRecord
+from core.gen_types import MrtRecord
 from config import PORT_SIZE_BITS
 
 PORTS_COUNT_MAX = (1 << PORT_SIZE_BITS) - 1
@@ -10,7 +10,7 @@ class PortAllocationError(Exception):
 
 
 def map_next_hops_to_ports(
-    routes: list[RouteRecord],
+    routes: list[MrtRecord],
     max_ports: int = PORTS_COUNT_MAX,
     start_port: int = 1,
 ) -> dict[str, int]:

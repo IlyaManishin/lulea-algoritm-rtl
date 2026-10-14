@@ -3,12 +3,12 @@ from enum import Enum, auto
 from pathlib import Path
 from bgpkit import Parser
 
-from .gen_types import RouteRecord
+from .gen_types import MrtRecord
 
 
 @dataclass(slots=True, frozen=True)
 class ReaderResponse:
-    routes: list[RouteRecord]
+    routes: list[MrtRecord]
     total_elems: int
     unique_routes_count: int
     skipped_elems: int
@@ -27,7 +27,7 @@ class MRTParseError(Exception):
 
 def _process_text_record(
     record: dict[str, str],
-    unique_routes: dict[str, RouteRecord]
+    unique_routes: dict[str, MrtRecord]
 ) -> None:
     prefix = record.get('PREFIX')
     next_hop = record.get('NEXT_HOP')
@@ -36,7 +36,7 @@ def _process_text_record(
         if '/' in prefix:
             try:
                 mask = int(prefix.split('/')[1])
-                unique_routes[prefix] = RouteRecord(
+                unique_routes[prefix] = MrtRecord(
                     prefix=prefix,
                     mask=mask,
                     next_hop=next_hop
@@ -45,12 +45,12 @@ def _process_text_record(
                 return
 
 
-def parse_mrt_text(file_path: str | Path) -> list[RouteRecord]:
+def parse_mrt_text(file_path: str | Path) -> list[MrtRecord]:
     path = Path(file_path)
     if not path.is_file():
         raise FileNotFoundError(f"MRT text file not found: {path}")
 
-    unique_routes: dict[str, RouteRecord] = {}
+    unique_routes: dict[str, MrtRecord] = {}
     current_record: dict[str, str] = {}
 
     try:
@@ -81,7 +81,7 @@ def parse_mrt_binary(file_path: str | Path) -> ReaderResponse:
     if not path.is_file():
         raise FileNotFoundError(f"MRT binary file not found: {path}")
 
-    unique_routes: dict[str, RouteRecord] = {}
+    unique_routes: dict[str, MrtRecord] = {}
     total_elems = 0
     filtered_ipv6_count = 0
     skipped_elems = 0
@@ -116,7 +116,7 @@ def parse_mrt_binary(file_path: str | Path) -> ReaderResponse:
                 continue
 
             if prefix not in unique_routes:
-                unique_routes[prefix] = RouteRecord(
+                unique_routes[prefix] = MrtRecord(
                     prefix=prefix,
                     mask=mask,
                     next_hop=next_hop,
@@ -139,7 +139,7 @@ def parse_mrt_binary(file_path: str | Path) -> ReaderResponse:
 def read_mrt_routes(
     file_path: str | Path,
     file_type: MRTFileType = MRTFileType.TEXT
-) -> list[RouteRecord]:
+) -> list[MrtRecord]:
     if file_type == MRTFileType.TEXT:
         return parse_mrt_text(file_path)
     elif file_type == MRTFileType.BINARY:

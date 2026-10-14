@@ -5,6 +5,7 @@ from enum import Enum, auto
 from pathlib import Path
 
 from config import INFO_FILENAME, PORT_MAP_FILENAME, ROUTE_FILENAME
+from core.gen_types import RouteRecord
 from core.mrt_reader import MRTParseError, ReaderResponse, parse_mrt_binary
 from utils.port_mapping import map_next_hops_to_ports
 from utils.route_saver import save_converted
@@ -98,17 +99,25 @@ def convert_mrt_file(
             error_message=str(exc),
         )
 
-    routes = response.routes
-    if not routes:
+    mrt_records = response.routes
+    if not mrt_records:
         return ConvertResult(
             entry=entry,
             status=ConvertStatus.ERROR,
             error_message="No valid IPv4 routes found in file",
         )
 
-    port_map = map_next_hops_to_ports(routes)
-    for route in routes:
-        route.port_id = port_map[route.next_hop]
+    port_map = map_next_hops_to_ports(mrt_records)
+    routes = [
+        RouteRecord(prefix=m.prefix, mask=m.mask, port_id=port_map[m.next_hop])
+        for m in mrt_records
+    ]
+
+    total_elements = response.total_elems
+    filtered_ipv6_count = response.filtered_ipv6_count
+    skipped_elements = response.skipped_elems
+    del response
+    del mrt_records
 
     save_converted(
         routes=routes,
@@ -120,17 +129,17 @@ def convert_mrt_file(
     info_path = out_dir / INFO_FILENAME
     with open(info_path, "w", encoding="utf-8") as f:
         f.write(f"source_file: {entry.path.name}\n")
-        f.write(f"total_elements: {response.total_elems}\n")
+        f.write(f"total_elements: {total_elements}\n")
         f.write(f"unique_routes: {len(routes)}\n")
         f.write(f"unique_ports: {len(port_map)}\n")
-        f.write(f"filtered_ipv6: {response.filtered_ipv6_count}\n")
-        f.write(f"skipped_elements: {response.skipped_elems}\n")
+        f.write(f"filtered_ipv6: {filtered_ipv6_count}\n")
+        f.write(f"skipped_elements: {skipped_elements}\n")
 
     return ConvertResult(
         entry=entry,
         status=ConvertStatus.SUCCESS,
         route_count=len(routes),
         port_count=len(port_map),
-        total_elements=response.total_elems,
-        filtered_ipv6_count=response.filtered_ipv6_count,
+        total_elements=total_elements,
+        filtered_ipv6_count=filtered_ipv6_count,
     )

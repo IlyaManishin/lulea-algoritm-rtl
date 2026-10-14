@@ -3,7 +3,7 @@ import ipaddress
 from pathlib import Path
 import random
 
-from .gen_types import RouteRecord
+from .gen_types import MrtRecord
 
 DEFAULT_MASK_WEIGHTS = {
     **{mask: 0.25 / 15 for mask in range(1, 16)},
@@ -27,7 +27,7 @@ def generate_random_routes(
     mask_weights: dict[int, float] | None = None,
     seed: int | None = None,
     output_path: str | Path | None = None,
-) -> list[RouteRecord]:
+) -> list[MrtRecord]:
     if seed is not None:
         random.seed(seed)
 
@@ -37,7 +37,7 @@ def generate_random_routes(
 
     assigned_masks = random.choices(masks, weights=probs, k=count)
 
-    routes: list[RouteRecord] = []
+    routes: list[MrtRecord] = []
     seen = set()
 
     for mask in assigned_masks:
@@ -49,7 +49,7 @@ def generate_random_routes(
                 # Next hop format matches real BGP IP addresses
                 next_hop = f"10.0.{random.randint(*IP_WORD_RANGE)}.{random.randint(*IP_WORD_RANGE)}"
                 routes.append(
-                    RouteRecord(
+                    MrtRecord(
                         prefix=str(net),
                         mask=mask,
                         next_hop=next_hop,
