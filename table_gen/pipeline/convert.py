@@ -52,7 +52,8 @@ def discover_mrt_files(source_root: Path) -> list[MrtFileEntry]:
             continue
         rel_parent = candidate.parent.relative_to(source_root)
         stem = _strip_archive_suffix(candidate.name)
-        entries.append(MrtFileEntry(path=candidate, rel_parent=rel_parent, stem=stem))
+        entries.append(MrtFileEntry(
+            path=candidate, rel_parent=rel_parent, stem=stem))
     return entries
 
 
@@ -74,6 +75,19 @@ def _is_already_converted(out_dir: Path) -> bool:
     )
 
 
+def _save_convert_info(info_path: Path, source_file: str,
+                       reader_resp: ReaderResponse,
+                       port_map: dict[int, str],
+                       routes: list[RouteRecord]):
+    with open(info_path, "w", encoding="utf-8") as f:
+        f.write(f"source_file: {source_file}\n")
+        f.write(f"total_elements: {reader_resp.total_elems}\n")
+        f.write(f"unique_routes: {len(routes)}\n")
+        f.write(f"unique_ports: {len(port_map)}\n")
+        f.write(f"filtered_ipv6: {reader_resp.filtered_ipv6_count}\n")
+        f.write(f"skipped_elements: {reader_resp.skipped_elems}\n")
+
+
 def convert_mrt_file(
     entry: MrtFileEntry,
     output_root: Path,
@@ -91,7 +105,7 @@ def convert_mrt_file(
         return ConvertResult(entry=entry, status=ConvertStatus.SKIPPED)
 
     try:
-        response: ReaderResponse = parse_mrt_binary(entry.path)
+        reader_resp: ReaderResponse = parse_mrt_binary(entry.path)
     except (OSError, MRTParseError, ValueError) as exc:
         return ConvertResult(
             entry=entry,
@@ -99,7 +113,7 @@ def convert_mrt_file(
             error_message=str(exc),
         )
 
-    mrt_records: list[MrtRecord] = response.routes
+    mrt_records: list[MrtRecord] = reader_resp.routes
     if not mrt_records:
         return ConvertResult(
             entry=entry,
@@ -113,10 +127,13 @@ def convert_mrt_file(
         for m in mrt_records
     ]
 
-    total_elements = response.total_elems
-    filtered_ipv6_count = response.filtered_ipv6_count
-    skipped_elements = response.skipped_elems
-    del response
+    total_elements = reader_resp.total_elems
+    filtered_ipv6_count = reader_resp.filtered_ipv6_count
+
+    info_path = out_dir / INFO_FILENAME
+    _save_convert_info(info_path, entry.path.name, reader_resp, port_map, routes)
+
+    del reader_resp
     del mrt_records
 
     save_converted(
@@ -125,15 +142,6 @@ def convert_mrt_file(
         routes_path=out_dir / ROUTE_FILENAME,
         port_map_path=out_dir / PORT_MAP_FILENAME,
     )
-
-    info_path = out_dir / INFO_FILENAME
-    with open(info_path, "w", encoding="utf-8") as f:
-        f.write(f"source_file: {entry.path.name}\n")
-        f.write(f"total_elements: {total_elements}\n")
-        f.write(f"unique_routes: {len(routes)}\n")
-        f.write(f"unique_ports: {len(port_map)}\n")
-        f.write(f"filtered_ipv6: {filtered_ipv6_count}\n")
-        f.write(f"skipped_elements: {skipped_elements}\n")
 
     return ConvertResult(
         entry=entry,
