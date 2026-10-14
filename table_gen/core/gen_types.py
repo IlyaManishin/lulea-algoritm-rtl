@@ -2,6 +2,8 @@ import socket
 import struct
 from dataclasses import dataclass
 
+type PortMapping = dict[int, str]
+
 
 @dataclass(slots=True)
 class MrtRecord:

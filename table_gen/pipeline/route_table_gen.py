@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from core.mrt_gen import generate_mrt_routes
-from core.gen_types import MrtRecord, RouteRecord
+from core.gen_types import MrtRecord, PortMapping, RouteRecord
 from core.mrt_reader import MRTFileType
 from core.random_gen import generate_random_routes
 
@@ -37,9 +37,10 @@ def generate_route_table(
     else:
         raise ValueError(f"Unsupported generator type: {generator_type}")
 
-    port_map: dict[str, int] = map_next_hops_to_ports(raw_routes)
+    port_map: PortMapping = map_next_hops_to_ports(raw_routes)
+    hop_to_port: dict[str, int] = {hop: pid for pid, hop in port_map.items()}
     routes: list[RouteRecord] = [
-        RouteRecord(prefix=r.prefix, mask=r.mask, port_id=port_map[r.next_hop])
+        RouteRecord(prefix=r.prefix, mask=r.mask, port_id=hop_to_port[r.next_hop])
         for r in raw_routes
     ]
     port_map_path = Path(f"{output_path}{PORT_MAP_EXTENSION}")

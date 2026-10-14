@@ -6,7 +6,7 @@ from enum import Enum, auto
 from pathlib import Path
 
 from config import PORT_MAP_FILENAME, ROUTE_FILENAME
-from core.gen_types import RouteRecord
+from core.gen_types import PortMapping, RouteRecord
 from core.mrt_filter import filter_mrt_routes
 from utils.route_reader import RouteReadError, read_port_map, read_route_count, read_routes
 from utils.route_saver import FileFormat, save_converted
@@ -125,7 +125,7 @@ class SampleExecutor:
     def __init__(self) -> None:
         self._cached_path: Path | None = None
         self._cached_routes: list[RouteRecord] = []
-        self._cached_port_map: dict[int, str] = {}
+        self._cached_port_map: PortMapping = {}
 
     def execute(
         self,
@@ -138,7 +138,7 @@ class SampleExecutor:
 
         try:
             routes: list[RouteRecord]
-            port_map: dict[int, str]
+            port_map: PortMapping
             routes, port_map = self._load_data(task.source_path)
         except (FileNotFoundError, RouteReadError) as exc:
             return SampleResult(
@@ -156,7 +156,7 @@ class SampleExecutor:
             )
 
         used_ports = {r.port_id for r in sampled}
-        sample_port_map: dict[int, str] = {pid: port_map[pid] for pid in used_ports if pid in port_map}
+        sample_port_map: PortMapping = {pid: port_map[pid] for pid in used_ports if pid in port_map}
 
         try:
             save_converted(
@@ -175,7 +175,7 @@ class SampleExecutor:
 
         return SampleResult(task=task, status=SampleStatus.SUCCESS)
 
-    def _load_data(self, source_path: Path) -> tuple[list[RouteRecord], dict[int, str]]:
+    def _load_data(self, source_path: Path) -> tuple[list[RouteRecord], PortMapping]:
         if self._cached_path != source_path:
             self._cached_routes = read_routes(source_path)
             port_path = source_path.parent / PORT_MAP_FILENAME

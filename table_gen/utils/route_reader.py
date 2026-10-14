@@ -4,7 +4,7 @@ import socket
 import struct
 from pathlib import Path
 
-from core.gen_types import RouteRecord
+from core.gen_types import PortMapping, RouteRecord
 from utils.route_saver import MAGIC_PORT_BINARY, MAGIC_ROUTE_BINARY
 
 _ROUTE_UNPACKER = struct.Struct(">IBHx")
@@ -50,7 +50,8 @@ def _read_routes_binary(f, expected_count: int, filepath: Path) -> list[RouteRec
     routes: list[RouteRecord] = []
     for ip_int, mask, port_id in _ROUTE_UNPACKER.iter_unpack(body):
         ip_str = socket.inet_ntoa(struct.pack(">I", ip_int))
-        routes.append(RouteRecord(prefix=f"{ip_str}/{mask}", mask=mask, port_id=port_id))
+        routes.append(RouteRecord(
+            prefix=f"{ip_str}/{mask}", mask=mask, port_id=port_id))
     return routes
 
 
@@ -87,7 +88,8 @@ def _read_routes_text(f, filepath: Path) -> list[RouteRecord]:
                 f"{filepath}:{lineno}: port_id must be integer, got: {port_str!r}"
             )
 
-        routes.append(RouteRecord(prefix=prefix, mask=mask, port_id=int(port_str)))
+        routes.append(RouteRecord(
+            prefix=prefix, mask=mask, port_id=int(port_str)))
 
     if len(routes) != expected_count:
         raise RouteReadError(
@@ -116,20 +118,20 @@ def read_routes(input_path: str | Path) -> list[RouteRecord]:
             return _read_routes_text(f, filepath)
 
 
-def _read_port_map_binary(f, expected_count: int, filepath: Path) -> dict[int, str]:
+def _read_port_map_binary(f, expected_count: int, filepath: Path) -> PortMapping:
     body = f.read()
     if len(body) != expected_count * 6:
         raise RouteReadError(
             f"{filepath}: binary port payload size mismatch (expected {expected_count * 6} bytes, got {len(body)})"
         )
 
-    port_map: dict[int, str] = {}
+    port_map: PortMapping = {}
     for port_id, ip_int in _PORT_UNPACKER.iter_unpack(body):
         port_map[port_id] = socket.inet_ntoa(struct.pack(">I", ip_int))
     return port_map
 
 
-def _read_port_map_text(f, filepath: Path) -> dict[int, str]:
+def _read_port_map_text(f, filepath: Path) -> PortMapping:
     first_line = f.readline().decode("utf-8", errors="replace").strip()
     if not first_line.isdigit():
         raise RouteReadError(
@@ -137,7 +139,7 @@ def _read_port_map_text(f, filepath: Path) -> dict[int, str]:
         )
     expected_count = int(first_line)
 
-    port_map: dict[int, str] = {}
+    port_map: PortMapping = {}
     for lineno, raw_line in enumerate(f, start=2):
         line = raw_line.decode("utf-8", errors="replace").strip()
         if not line:
@@ -164,7 +166,7 @@ def _read_port_map_text(f, filepath: Path) -> dict[int, str]:
     return port_map
 
 
-def read_port_map(input_path: str | Path) -> dict[int, str]:
+def read_port_map(input_path: str | Path) -> PortMapping:
     """Read port map with automatic format detection returning {port_id: next_hop}."""
     filepath = Path(input_path)
     if not filepath.is_file():
