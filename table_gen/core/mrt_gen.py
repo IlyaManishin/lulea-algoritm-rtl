@@ -9,7 +9,7 @@ from .mrt_reader import read_mrt_routes, MRTFileType
 T = TypeVar("T", RouteRecord, MrtRecord)
 
 
-def filter_mrt_routes(
+def distribution_filter_mrt_routes(
     routes: list[T],
     target_count: int,
     seed: int | None = None,
@@ -60,7 +60,7 @@ def generate_mrt_routes(
     if not routes:
         return []
 
-    sampled_routes: list[MrtRecord] = filter_mrt_routes(
+    sampled_routes: list[MrtRecord] = distribution_filter_mrt_routes(
         routes, target_count=count, seed=seed
     )
 
