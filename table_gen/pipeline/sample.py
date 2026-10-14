@@ -1,5 +1,4 @@
-"""Stage 2: plan and execute sampling of converted full-tables into fixed-size sub-tables."""
-
+from collections.abc import Iterator
 import math
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -13,12 +12,31 @@ from utils.route_saver import FileFormat, save_converted
 
 
 @dataclass(frozen=True, slots=True)
-class SampleTask:
-    source_path: Path
+class SingleSampleTask:
     output_dir: Path
     target_size: int
     seed: int
+
+
+@dataclass(frozen=True, slots=True)
+class FileSampleGroup:
+    source_path: Path
     source_label: str
+    total_routes: int
+    tasks: list[SingleSampleTask]
+
+
+@dataclass(frozen=True)
+class SamplePlan:
+    groups: list[FileSampleGroup] = field(default_factory=list)
+
+    @property
+    def total_tasks(self) -> int:
+        return sum(len(group.tasks) for group in self.groups)
+
+    @property
+    def source_count(self) -> int:
+        return len(self.groups)
 
 
 class SampleStatus(Enum):
@@ -27,21 +45,16 @@ class SampleStatus(Enum):
     ERROR = auto()
 
 
+class GroupLoadError(Exception):
+    """Raised when group source data fails to load upfront."""
+    pass
+
+
 @dataclass(frozen=True, slots=True)
 class SampleResult:
-    task: SampleTask
+    task: SingleSampleTask
     status: SampleStatus
     error_message: str = ""
-
-
-@dataclass(frozen=True)
-class SamplePlan:
-    tasks: list[SampleTask] = field(default_factory=list)
-    source_count: int = 0
-
-    @property
-    def total_tasks(self) -> int:
-        return len(self.tasks)
 
 
 def compute_sample_count(
@@ -87,12 +100,12 @@ def build_sample_plan(
     sizes: list[int],
     coeff: float,
 ) -> SamplePlan:
-    """Build complete work plan using O(1) header counts."""
+    """Build work plan grouped by converted table file using O(1) header counts."""
     routes_files = _discover_converted_tables(converted_root)
     if not routes_files:
         return SamplePlan()
 
-    tasks: list[SampleTask] = []
+    groups: list[FileSampleGroup] = []
 
     for routes_file in routes_files:
         try:
@@ -101,6 +114,7 @@ def build_sample_plan(
             continue
 
         source_label = routes_file.parent.name
+        tasks: list[SingleSampleTask] = []
 
         for size in sizes:
             n = compute_sample_count(total, size, coeff)
@@ -108,46 +122,46 @@ def build_sample_plan(
                 out_dir = _sample_output_dir(
                     output_root, converted_root, routes_file, size, seed,
                 )
-                tasks.append(SampleTask(
-                    source_path=routes_file,
+                tasks.append(SingleSampleTask(
                     output_dir=out_dir,
                     target_size=size,
                     seed=seed,
-                    source_label=source_label,
                 ))
 
-    return SamplePlan(tasks=tasks, source_count=len(routes_files))
+        if tasks:
+            groups.append(FileSampleGroup(
+                source_path=routes_file,
+                source_label=source_label,
+                total_routes=total,
+                tasks=tasks,
+            ))
+
+    return SamplePlan(groups=groups)
 
 
 class SampleExecutor:
-    """Executes SampleTasks with a lazy single-entry route and port cache."""
+    """Executes sampling for a single FileSampleGroup with fail-fast loading."""
 
-    def __init__(self) -> None:
-        self._cached_path: Path | None = None
-        self._cached_routes: list[RouteRecord] = []
-        self._cached_port_map: PortMapping = {}
+    def __init__(self, group: FileSampleGroup) -> None:
+        self._group: FileSampleGroup = group
+        try:
+            self._routes: list[RouteRecord] = read_routes(group.source_path)
+            port_path = group.source_path.parent / PORT_MAP_FILENAME
+            self._port_map: PortMapping = read_port_map(
+                port_path) if port_path.is_file() else {}
+        except (FileNotFoundError, RouteReadError, OSError) as exc:
+            raise GroupLoadError(
+                f"Failed to load source table '{group.source_path}': {exc}"
+            ) from exc
 
-    def execute(
-        self,
-        task: SampleTask,
-        *,
-        force: bool = False,
-    ) -> SampleResult:
+    def execute_task(self, task: SingleSampleTask, *, force: bool = False) -> SampleResult:
+        """Execute a single sample task against loaded group routes."""
         if not force and _is_already_sampled(task.output_dir):
             return SampleResult(task=task, status=SampleStatus.SKIPPED)
 
-        try:
-            routes: list[RouteRecord]
-            port_map: PortMapping
-            routes, port_map = self._load_data(task.source_path)
-        except (FileNotFoundError, RouteReadError) as exc:
-            return SampleResult(
-                task=task,
-                status=SampleStatus.ERROR,
-                error_message=str(exc),
-            )
-
-        sampled: list[RouteRecord] = filter_mrt_routes(routes, target_count=task.target_size, seed=task.seed)
+        sampled: list[RouteRecord] = filter_mrt_routes(
+            self._routes, target_count=task.target_size, seed=task.seed
+        )
         if not sampled:
             return SampleResult(
                 task=task,
@@ -156,7 +170,9 @@ class SampleExecutor:
             )
 
         used_ports = {r.port_id for r in sampled}
-        sample_port_map: PortMapping = {pid: port_map[pid] for pid in used_ports if pid in port_map}
+        sample_port_map: PortMapping = {
+            pid: self._port_map[pid] for pid in used_ports if pid in self._port_map
+        }
 
         try:
             save_converted(
@@ -175,10 +191,7 @@ class SampleExecutor:
 
         return SampleResult(task=task, status=SampleStatus.SUCCESS)
 
-    def _load_data(self, source_path: Path) -> tuple[list[RouteRecord], PortMapping]:
-        if self._cached_path != source_path:
-            self._cached_routes = read_routes(source_path)
-            port_path = source_path.parent / PORT_MAP_FILENAME
-            self._cached_port_map = read_port_map(port_path) if port_path.is_file() else {}
-            self._cached_path = source_path
-        return self._cached_routes, self._cached_port_map
+    def execute_all(self, *, force: bool = False) -> Iterator[SampleResult]:
+        """Iterate and execute all sample tasks in the group."""
+        for task in self._group.tasks:
+            yield self.execute_task(task, force=force)

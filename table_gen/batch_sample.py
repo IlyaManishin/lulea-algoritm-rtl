@@ -16,9 +16,9 @@ from rich.progress import (
 
 from config import CONVERTED_DIR, SAMPLE_FILL_COEFF, SAMPLED_DIR, TABLE_SIZES
 from pipeline.sample import (
+    GroupLoadError,
     SampleExecutor,
     SamplePlan,
-    SampleResult,
     SampleStatus,
     build_sample_plan,
 )
@@ -95,8 +95,6 @@ def main() -> None:
     print(f"Fill coeff   : {args.coeff}")
     print(f"Total tasks  : {plan.total_tasks}\n")
 
-    executor = SampleExecutor()
-
     success_count = 0
     skip_count = 0
     error_count = 0
@@ -112,31 +110,44 @@ def main() -> None:
     ) as progress:
         progress_task = progress.add_task("Sampling ...", total=plan.total_tasks)
 
-        for task in plan.tasks:
+        for group in plan.groups:
             progress.update(
                 progress_task,
-                description=(
-                    f"[cyan]{task.source_label}[/cyan] "
-                    f"size={task.target_size} seed={task.seed}"
-                ),
+                description=f"[cyan]{group.source_label}[/cyan]",
             )
 
-            result: SampleResult = executor.execute(task, force=args.force)
+            try:
+                executor = SampleExecutor(group)
+            except GroupLoadError as exc:
+                progress.print(f"[red]ERROR loading {group.source_label}: {exc}[/red]")
+                error_count += len(group.tasks)
+                progress.advance(progress_task, advance=len(group.tasks))
+                continue
 
-            match result.status:
-                case SampleStatus.SUCCESS:
-                    success_count += 1
-                case SampleStatus.SKIPPED:
-                    skip_count += 1
-                case SampleStatus.ERROR:
-                    progress.print(
-                        f"[red]ERROR {task.source_label} "
-                        f"(size={task.target_size}, seed={task.seed}): "
-                        f"{result.error_message}[/red]"
-                    )
-                    error_count += 1
+            for result in executor.execute_all(force=args.force):
+                task = result.task
+                progress.update(
+                    progress_task,
+                    description=(
+                        f"[cyan]{group.source_label}[/cyan] "
+                        f"size={task.target_size} seed={task.seed}"
+                    ),
+                )
 
-            progress.advance(progress_task)
+                match result.status:
+                    case SampleStatus.SUCCESS:
+                        success_count += 1
+                    case SampleStatus.SKIPPED:
+                        skip_count += 1
+                    case SampleStatus.ERROR:
+                        progress.print(
+                            f"[red]ERROR {group.source_label} "
+                            f"(size={task.target_size}, seed={task.seed}): "
+                            f"{result.error_message}[/red]"
+                        )
+                        error_count += 1
+
+                progress.advance(progress_task)
 
     print(
         f"\nDone. Generated: {success_count}  "
