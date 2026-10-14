@@ -9,7 +9,7 @@ from config import PORT_MAP_FILENAME, ROUTE_FILENAME
 from core.gen_types import RouteRecord
 from core.mrt_gen import filter_mrt_routes
 from utils.route_reader import RouteReadError, read_port_map, read_route_count, read_routes
-from utils.route_saver import save_converted
+from utils.route_saver import FileFormat, save_converted
 
 
 @dataclass(frozen=True, slots=True)
@@ -162,6 +162,7 @@ class SampleExecutor:
                 port_map=sample_port_map,
                 routes_path=task.output_dir / ROUTE_FILENAME,
                 port_map_path=task.output_dir / PORT_MAP_FILENAME,
+                file_format=FileFormat.BINARY,
             )
         except OSError as exc:
             return SampleResult(

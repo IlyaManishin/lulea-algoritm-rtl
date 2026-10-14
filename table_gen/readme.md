@@ -68,11 +68,11 @@ Samples converted full-tables into multiple fixed-size sub-tables (`1024`, `2048
 
 ---
 
-## File Formats
+### Text Formats (Stage 1 converted tables)
 
-All text files include a count header on the first line for $O(1)$ size inspection and file integrity validation.
+All text files include a count header on the first line for $O(1)$ size inspection.
 
-### Routes Table (`routes.txt`)
+#### Routes Table (`routes.txt`)
 Stores `<prefix> <port_id>`:
 ```text
 1053412
@@ -81,7 +81,7 @@ Stores `<prefix> <port_id>`:
 ...
 ```
 
-### Port Map (`routes.ports`)
+#### Port Map (`routes.ports`)
 Stores `<port_id> <next_hop>`:
 ```text
 247
@@ -89,6 +89,24 @@ Stores `<port_id> <next_hop>`:
 2 198.51.100.2
 ...
 ```
+
+### Binary Formats (Stage 2 sampled tables)
+
+Sampled tables use compact binary formats with magic headers. `read_routes()`, `read_port_map()`, and `read_route_count()` automatically detect the format by inspecting the first 4 bytes.
+
+#### Binary Routes (`LRB1`)
+- Header (8 bytes): `b"LRB1"` + `count: uint32` (Big-Endian)
+- Records (8 bytes per entry, aligned):
+  - `ip_int: uint32` (BE)
+  - `mask: uint8` (1..32)
+  - `port_id: uint16` (BE)
+  - `pad: uint8` (0x00)
+
+#### Binary Port Map (`LPB1`)
+- Header (8 bytes): `b"LPB1"` + `count: uint32` (BE)
+- Records (6 bytes per entry):
+  - `port_id: uint16` (BE)
+  - `ip_int: uint32` (BE) — IPv4 next-hop address as integer
 
 ### Conversion Report (`info.txt`)
 ```text
