@@ -76,8 +76,8 @@ def parse_mrt_binary(file_path: str | Path) -> list[RouteRecord]:
     try:
         parser = Parser(str(path))
         for elem in parser:
-            prefix = elem.prefix
-            next_hop = elem.next_hop
+            prefix: str = elem.prefix
+            next_hop: str = elem.next_hop
 
             if prefix and next_hop and prefix not in unique_routes:
                 if '/' in prefix:
