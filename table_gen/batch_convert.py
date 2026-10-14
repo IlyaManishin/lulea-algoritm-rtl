@@ -7,6 +7,7 @@ from pathlib import Path
 from config import CONVERTED_DIR, MRT_SOURCE_DIR
 from pipeline.convert import (
     ConvertStatus,
+    ConvertResult,
     convert_mrt_file,
     discover_mrt_files,
     output_dir_for,
