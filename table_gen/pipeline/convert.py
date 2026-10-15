@@ -77,10 +77,13 @@ def _is_already_converted(out_dir: Path) -> bool:
     )
 
 
-def _save_convert_info(info_path: Path, source_file: str,
-                       reader_resp: ReaderResponse,
-                       port_map: PortMapping,
-                       routes: list[RouteRecord]):
+def _save_convert_info(
+    info_path: Path,
+    source_file: str,
+    reader_resp: ReaderResponse,
+    port_map: PortMapping,
+    routes: list[RouteRecord],
+) -> None:
     with open(info_path, "w", encoding="utf-8") as f:
         f.write(f"source_file: {source_file}\n")
         f.write(f"total_elements: {reader_resp.total_elems}\n")
@@ -136,18 +139,26 @@ def convert_mrt_file(
     total_elements = reader_resp.total_elems
     filtered_ipv6_count = reader_resp.filtered_ipv6_count
 
-    info_path = out_dir / INFO_FILENAME
-    _save_convert_info(info_path, entry.path.name, reader_resp, port_map, routes)
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        info_path = out_dir / INFO_FILENAME
+        _save_convert_info(info_path, entry.path.name, reader_resp, port_map, routes)
 
-    del reader_resp
-    del mrt_records
+        del reader_resp
+        del mrt_records
 
-    save_converted(
-        routes=routes,
-        port_map=port_map,
-        routes_path=out_dir / ROUTE_FILENAME,
-        port_map_path=out_dir / PORT_MAP_FILENAME,
-    )
+        save_converted(
+            routes=routes,
+            port_map=port_map,
+            routes_path=out_dir / ROUTE_FILENAME,
+            port_map_path=out_dir / PORT_MAP_FILENAME,
+        )
+    except Exception as exc:
+        return ConvertResult(
+            entry=entry,
+            status=ConvertStatus.ERROR,
+            error_message=f"Failed to save converted files: {exc}",
+        )
 
     return ConvertResult(
         entry=entry,
