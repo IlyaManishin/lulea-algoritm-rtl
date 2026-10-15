@@ -172,7 +172,7 @@ Modules within `engine/` use standard relative imports (`from ..config import ..
 Other tools in the repository (e.g. golden models, hardware testbenches, stats scripts) can import library modules directly:
 
 ```python
-from table_gen.engine.utils.route_reader import read_routes, read_ports
+from table_gen.engine.utils.route_reader import read_routes, read_port_map
 from table_gen.engine.utils.route_saver import save_routes, save_port_map, FileFormat
 from table_gen.engine.core.gen_types import RouteRecord, PortMapping
 from table_gen.engine.config import PORTS_COUNT_MAX

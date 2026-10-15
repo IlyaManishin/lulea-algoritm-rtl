@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import BinaryIO
 
 from ..config import (
-    BIN_HEADER_SIZE,
     MAGIC_PORT_BIN,
     MAGIC_ROUTE_BIN,
     PORT_RECORD_SIZE,

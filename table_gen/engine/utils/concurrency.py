@@ -3,8 +3,6 @@
 from collections.abc import Callable, Iterable, Iterator
 from concurrent.futures import Future, ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 import multiprocessing as mp
-import os
-import signal
 from typing import Any
 
 

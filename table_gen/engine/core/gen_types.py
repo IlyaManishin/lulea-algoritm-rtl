@@ -38,7 +38,3 @@ class RouteRecord:
     def ip_int(self) -> int:
         return struct.unpack(">I", socket.inet_aton(self.ip_str))[0]
 
-    @classmethod
-    def from_raw(cls, ip_int: int, mask: int, port_id: int) -> "RouteRecord":
-        ip_str = socket.inet_ntoa(struct.pack(">I", ip_int))
-        return cls(prefix=f"{ip_str}/{mask}", mask=mask, port_id=port_id)
