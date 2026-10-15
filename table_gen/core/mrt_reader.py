@@ -25,6 +25,11 @@ class MRTParseError(Exception):
     pass
 
 
+def _is_ipv6_route(prefix: str, next_hop: str) -> bool:
+    """Check whether prefix or next-hop is an IPv6 address (including RFC 5549)."""
+    return ":" in prefix or "." not in prefix or ":" in next_hop or "." not in next_hop
+
+
 def _process_text_record(
     record: dict[str, str],
     unique_routes: dict[str, MrtRecord]
@@ -32,7 +37,7 @@ def _process_text_record(
     prefix = record.get('PREFIX')
     next_hop = record.get('NEXT_HOP')
 
-    if prefix and next_hop and prefix not in unique_routes:
+    if prefix and next_hop and not _is_ipv6_route(prefix, next_hop) and prefix not in unique_routes:
         if '/' in prefix:
             try:
                 mask = int(prefix.split('/')[1])
@@ -97,7 +102,7 @@ def parse_mrt_binary(file_path: str | Path) -> ReaderResponse:
                 skipped_elems += 1
                 continue
 
-            if ":" in prefix or "." not in prefix:
+            if _is_ipv6_route(prefix, next_hop):
                 filtered_ipv6_count += 1
                 skipped_elems += 1
                 continue

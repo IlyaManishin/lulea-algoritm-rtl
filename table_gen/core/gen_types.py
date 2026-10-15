@@ -5,18 +5,30 @@ from dataclasses import dataclass
 type PortMapping = dict[int, str]
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class MrtRecord:
     prefix: str
     mask: int
     next_hop: str
 
+    def __post_init__(self) -> None:
+        if not (0 <= self.mask <= 32):
+            raise ValueError(f"Invalid mask: {self.mask} (must be 0..32)")
+        if not self.prefix or "/" not in self.prefix:
+            raise ValueError(f"Invalid prefix: {self.prefix}")
 
-@dataclass(slots=True)
+
+@dataclass(frozen=True, slots=True)
 class RouteRecord:
     prefix: str
     mask: int
     port_id: int
+
+    def __post_init__(self) -> None:
+        if not (0 <= self.mask <= 32):
+            raise ValueError(f"Invalid mask: {self.mask} (must be 0..32)")
+        if self.port_id < 0 or self.port_id > 255:
+            raise ValueError(f"Invalid port_id: {self.port_id} (must be 0..255)")
 
     @property
     def ip_str(self) -> str:
