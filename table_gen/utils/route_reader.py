@@ -3,12 +3,21 @@
 import socket
 import struct
 from pathlib import Path
+from typing import BinaryIO
 
+from config import (
+    BIN_HEADER_SIZE,
+    MAGIC_PORT_BIN,
+    MAGIC_ROUTE_BIN,
+    PORT_RECORD_SIZE,
+    PORT_STRUCT_FORMAT,
+    ROUTE_RECORD_SIZE,
+    ROUTE_STRUCT_FORMAT,
+)
 from core.gen_types import PortMapping, RouteRecord
-from utils.route_saver import MAGIC_PORT_BINARY, MAGIC_ROUTE_BINARY
 
-_ROUTE_UNPACKER = struct.Struct(">IBHx")
-_PORT_UNPACKER = struct.Struct(">HI")
+_ROUTE_UNPACKER = struct.Struct(ROUTE_STRUCT_FORMAT)
+_PORT_UNPACKER = struct.Struct(PORT_STRUCT_FORMAT)
 
 
 class RouteReadError(Exception):
@@ -24,7 +33,7 @@ def read_route_count(input_path: str | Path) -> int:
 
     with open(filepath, "rb") as f:
         magic = f.read(4)
-        if magic in (MAGIC_ROUTE_BINARY, MAGIC_PORT_BINARY):
+        if magic in (MAGIC_ROUTE_BIN, MAGIC_PORT_BIN):
             count_bytes = f.read(4)
             if len(count_bytes) < 4:
                 raise RouteReadError(f"Truncated binary header in {filepath}")
@@ -40,11 +49,11 @@ def read_route_count(input_path: str | Path) -> int:
     return int(first_line)
 
 
-def _read_routes_binary(f, expected_count: int, filepath: Path) -> list[RouteRecord]:
+def _read_routes_binary(f: BinaryIO, expected_count: int, filepath: Path) -> list[RouteRecord]:
     body = f.read()
-    if len(body) != expected_count * 8:
+    if len(body) != expected_count * ROUTE_RECORD_SIZE:
         raise RouteReadError(
-            f"{filepath}: binary payload size mismatch (expected {expected_count * 8} bytes, got {len(body)})"
+            f"{filepath}: binary payload size mismatch (expected {expected_count * ROUTE_RECORD_SIZE} bytes, got {len(body)})"
         )
 
     routes: list[RouteRecord] = []
@@ -55,7 +64,7 @@ def _read_routes_binary(f, expected_count: int, filepath: Path) -> list[RouteRec
     return routes
 
 
-def _read_routes_text(f, filepath: Path) -> list[RouteRecord]:
+def _read_routes_text(f: BinaryIO, filepath: Path) -> list[RouteRecord]:
     first_line = f.readline().decode("utf-8", errors="replace").strip()
     if not first_line.isdigit():
         raise RouteReadError(
@@ -107,7 +116,7 @@ def read_routes(input_path: str | Path) -> list[RouteRecord]:
 
     with open(filepath, "rb") as f:
         magic = f.read(4)
-        if magic == MAGIC_ROUTE_BINARY:
+        if magic == MAGIC_ROUTE_BIN:
             count_bytes = f.read(4)
             if len(count_bytes) < 4:
                 raise RouteReadError(f"Truncated binary header in {filepath}")
@@ -118,11 +127,11 @@ def read_routes(input_path: str | Path) -> list[RouteRecord]:
             return _read_routes_text(f, filepath)
 
 
-def _read_port_map_binary(f, expected_count: int, filepath: Path) -> PortMapping:
+def _read_port_map_binary(f: BinaryIO, expected_count: int, filepath: Path) -> PortMapping:
     body = f.read()
-    if len(body) != expected_count * 6:
+    if len(body) != expected_count * PORT_RECORD_SIZE:
         raise RouteReadError(
-            f"{filepath}: binary port payload size mismatch (expected {expected_count * 6} bytes, got {len(body)})"
+            f"{filepath}: binary port payload size mismatch (expected {expected_count * PORT_RECORD_SIZE} bytes, got {len(body)})"
         )
 
     port_map: PortMapping = {}
@@ -131,7 +140,7 @@ def _read_port_map_binary(f, expected_count: int, filepath: Path) -> PortMapping
     return port_map
 
 
-def _read_port_map_text(f, filepath: Path) -> PortMapping:
+def _read_port_map_text(f: BinaryIO, filepath: Path) -> PortMapping:
     first_line = f.readline().decode("utf-8", errors="replace").strip()
     if not first_line.isdigit():
         raise RouteReadError(
@@ -174,7 +183,7 @@ def read_port_map(input_path: str | Path) -> PortMapping:
 
     with open(filepath, "rb") as f:
         magic = f.read(4)
-        if magic == MAGIC_PORT_BINARY:
+        if magic == MAGIC_PORT_BIN:
             count_bytes = f.read(4)
             if len(count_bytes) < 4:
                 raise RouteReadError(f"Truncated binary header in {filepath}")

@@ -1,17 +1,24 @@
 """Serialisation helpers for route tables and port maps (text and binary)."""
 
+import os
 import socket
 import struct
 from enum import Enum, auto
 from pathlib import Path
 
+from config import (
+    BIN_HEADER_SIZE,
+    MAGIC_PORT_BIN,
+    MAGIC_ROUTE_BIN,
+    PORT_RECORD_SIZE,
+    PORT_STRUCT_FORMAT,
+    ROUTE_RECORD_SIZE,
+    ROUTE_STRUCT_FORMAT,
+)
 from core.gen_types import PortMapping, RouteRecord
 
-MAGIC_ROUTE_BINARY = b"LRB1"
-MAGIC_PORT_BINARY = b"LPB1"
-
-_ROUTE_PACKER = struct.Struct(">IBH")
-_PORT_PACKER = struct.Struct(">HI")
+_ROUTE_PACKER = struct.Struct(ROUTE_STRUCT_FORMAT)
+_PORT_PACKER = struct.Struct(PORT_STRUCT_FORMAT)
 
 
 class FileFormat(Enum):
@@ -21,6 +28,32 @@ class FileFormat(Enum):
 
 def _ensure_parent(filepath: Path) -> None:
     filepath.parent.mkdir(parents=True, exist_ok=True)
+
+
+# Atomic writes: write to temporary file first, then atomically replace.
+# Guarantees files are never left half-written or corrupted if interrupted.
+def _atomic_write_bytes(filepath: Path, data: bytes | bytearray) -> None:
+    temp_path = filepath.with_name(f".{filepath.name}.tmp.{os.getpid()}")
+    try:
+        with open(temp_path, "wb") as f:
+            f.write(data)
+        os.replace(temp_path, filepath)
+    except Exception:
+        if temp_path.exists():
+            temp_path.unlink()
+        raise
+
+
+def _atomic_write_text(filepath: Path, content: str) -> None:
+    temp_path = filepath.with_name(f".{filepath.name}.tmp.{os.getpid()}")
+    try:
+        with open(temp_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        os.replace(temp_path, filepath)
+    except Exception:
+        if temp_path.exists():
+            temp_path.unlink()
+        raise
 
 
 def save_port_map(
@@ -33,20 +66,19 @@ def save_port_map(
     _ensure_parent(filepath)
 
     if file_format == FileFormat.BINARY:
-        buf = bytearray(8 + len(port_map) * 6)
-        buf[:8] = MAGIC_PORT_BINARY + struct.pack(">I", len(port_map))
-        offset = 8
+        buf = bytearray(BIN_HEADER_SIZE + len(port_map) * PORT_RECORD_SIZE)
+        buf[:BIN_HEADER_SIZE] = MAGIC_PORT_BIN + struct.pack(">I", len(port_map))
+        offset = BIN_HEADER_SIZE
         for port_id, next_hop in port_map.items():
             ip_int = struct.unpack(">I", socket.inet_aton(next_hop))[0]
             _PORT_PACKER.pack_into(buf, offset, port_id, ip_int)
-            offset += 6
-        with open(filepath, "wb") as f:
-            f.write(buf)
+            offset += PORT_RECORD_SIZE
+        _atomic_write_bytes(filepath, buf)
     else:
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(f"{len(port_map)}\n")
-            for port_id, next_hop in port_map.items():
-                f.write(f"{port_id} {next_hop}\n")
+        lines = [f"{len(port_map)}\n"]
+        for port_id, next_hop in port_map.items():
+            lines.append(f"{port_id} {next_hop}\n")
+        _atomic_write_text(filepath, "".join(lines))
 
 
 def save_routes(
@@ -59,20 +91,19 @@ def save_routes(
     _ensure_parent(filepath)
 
     if file_format == FileFormat.BINARY:
-        buf = bytearray(8 + len(routes) * 8)
-        buf[:8] = MAGIC_ROUTE_BINARY + struct.pack(">I", len(routes))
-        offset = 8
+        buf = bytearray(BIN_HEADER_SIZE + len(routes) * ROUTE_RECORD_SIZE)
+        buf[:BIN_HEADER_SIZE] = MAGIC_ROUTE_BIN + struct.pack(">I", len(routes))
+        offset = BIN_HEADER_SIZE
         for route in routes:
             _ROUTE_PACKER.pack_into(
                 buf, offset, route.ip_int, route.mask, route.port_id)
-            offset += 8
-        with open(filepath, "wb") as f:
-            f.write(buf)
+            offset += ROUTE_RECORD_SIZE
+        _atomic_write_bytes(filepath, buf)
     else:
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(f"{len(routes)}\n")
-            for route in routes:
-                f.write(f"{route.prefix} {route.port_id}\n")
+        lines = [f"{len(routes)}\n"]
+        for route in routes:
+            lines.append(f"{route.prefix} {route.port_id}\n")
+        _atomic_write_text(filepath, "".join(lines))
 
 
 def save_routes_and_ports(

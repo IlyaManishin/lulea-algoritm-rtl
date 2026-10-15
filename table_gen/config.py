@@ -36,13 +36,13 @@ PORT_MAP_FILENAME = "routes.ports"
 INFO_FILENAME = "info.txt"
 
 # Binary file format constants (single source of truth)
-MAGIC_ROUTE_BINARY: bytes = b"LRB1"
-MAGIC_PORT_BINARY: bytes = b"LPB1"
+MAGIC_ROUTE_BIN: bytes = b"LRB1"
+MAGIC_PORT_BIN: bytes = b"LPB1"
 ROUTE_STRUCT_FORMAT: str = ">IBHx"
 PORT_STRUCT_FORMAT: str = ">HI"
 ROUTE_RECORD_SIZE: int = 8
 PORT_RECORD_SIZE: int = 6
-BINARY_HEADER_SIZE: int = 8
+BIN_HEADER_SIZE: int = 8
 
 ENV_PATH = PRJ_ROOT_DIR / ".env"
 load_dotenv(dotenv_path=ENV_PATH)
