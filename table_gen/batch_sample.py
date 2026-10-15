@@ -68,7 +68,8 @@ def main() -> None:
 
     converted = args.input.resolve()
     if not converted.is_dir():
-        print(f"ERROR: converted input directory not found: {converted}", file=sys.stderr)
+        print(
+            f"ERROR: converted input directory not found: {converted}", file=sys.stderr)
         sys.exit(1)
 
     if args.coeff <= 0:
@@ -86,7 +87,8 @@ def main() -> None:
     )
 
     if plan.total_tasks == 0:
-        print(f"No converted tables found under {converted} or all tables too small.")
+        print(
+            f"No converted tables found under {converted} or all tables too small.")
         print("Run batch_convert.py first.")
         return
 
@@ -108,7 +110,8 @@ def main() -> None:
         TimeRemainingColumn(),
         refresh_per_second=8,
     ) as progress:
-        progress_task = progress.add_task("Sampling ...", total=plan.total_tasks)
+        progress_task = progress.add_task(
+            "Sampling ...", total=plan.total_tasks)
 
         for group in plan.groups:
             progress.update(
@@ -119,7 +122,8 @@ def main() -> None:
             try:
                 executor = SampleExecutor(group)
             except GroupLoadError as exc:
-                progress.print(f"[red]ERROR loading {group.source_label}: {exc}[/red]")
+                progress.print(
+                    f"[red]ERROR loading {group.source_label}: {exc}[/red]")
                 error_count += len(group.tasks)
                 progress.advance(progress_task, advance=len(group.tasks))
                 continue

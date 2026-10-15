@@ -90,10 +90,12 @@ def main() -> None:
                 )
                 success_count += 1
             case ConvertStatus.ERROR:
-                print(f"[{idx}/{total}] [error] {label}: {result.error_message}", file=sys.stderr)
+                print(
+                    f"[{idx}/{total}] [error] {label}: {result.error_message}", file=sys.stderr)
                 error_count += 1
 
-    print(f"\nDone. Converted: {success_count}  Skipped: {skip_count}  Errors: {error_count}")
+    print(
+        f"\nDone. Converted: {success_count}  Skipped: {skip_count}  Errors: {error_count}")
 
 
 if __name__ == "__main__":

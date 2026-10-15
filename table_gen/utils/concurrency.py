@@ -43,11 +43,6 @@ def run_in_fork_process_pool[T, R](
         for f in futures:
             f.cancel()
         executor.shutdown(wait=False, cancel_futures=True)
-        for pid in list(executor._processes.keys()):
-            try:
-                os.kill(pid, signal.SIGKILL)
-            except OSError:
-                pass
         raise
     finally:
         executor.shutdown(wait=False, cancel_futures=True)

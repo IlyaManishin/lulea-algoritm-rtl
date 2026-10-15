@@ -1,11 +1,9 @@
 from core.gen_types import MrtRecord, PortMapping
-from config import PORT_SIZE_BITS
-
-PORTS_COUNT_MAX = (1 << PORT_SIZE_BITS) - 1
+from config import PORTS_COUNT_MAX
 
 
 class PortAllocationError(Exception):
-    """Raised when available 16-bit ports are exhausted."""
+    """Raised when available ports are exhausted."""
     pass
 
 
@@ -23,7 +21,7 @@ def map_next_hops_to_ports(
         if route.next_hop not in hop_to_port:
             if current_port > max_ports:
                 raise PortAllocationError(
-                    f"Exhausted 16-bit port space ({max_ports} ports max). "
+                    f"Exhausted port space ({max_ports} ports max). "
                     f"Cannot map next_hop: {route.next_hop}"
                 )
             hop_to_port[route.next_hop] = current_port
