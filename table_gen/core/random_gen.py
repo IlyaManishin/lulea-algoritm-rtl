@@ -3,6 +3,7 @@ import ipaddress
 from pathlib import Path
 import random
 
+from config import PORTS_COUNT_MAX
 from .gen_types import MrtRecord
 
 DEFAULT_MASK_WEIGHTS = {
@@ -18,8 +19,6 @@ DEFAULT_MASK_WEIGHTS = {
     24: 64.0,
     **{mask: 0.25 / 8 for mask in range(25, 33)},
 }
-
-IP_WORD_RANGE = (1, 255)
 
 
 def generate_random_routes(
@@ -37,6 +36,12 @@ def generate_random_routes(
 
     assigned_masks = random.choices(masks, weights=probs, k=count)
 
+    # Allocate a bounded next-hop pool respecting hardware port limit
+    max_ports = min(PORTS_COUNT_MAX, max(1, count))
+    min_ports = min(16, max_ports)
+    num_ports = random.randint(min_ports, max_ports)
+    next_hops = [f"10.0.0.{i}" for i in range(1, num_ports + 1)]
+
     routes: list[MrtRecord] = []
     seen = set()
 
@@ -46,8 +51,7 @@ def generate_random_routes(
             net = ipaddress.IPv4Network((ip_int, mask), strict=False)
             if net not in seen:
                 seen.add(net)
-                # Next hop format matches real BGP IP addresses
-                next_hop = f"10.0.{random.randint(*IP_WORD_RANGE)}.{random.randint(*IP_WORD_RANGE)}"
+                next_hop = random.choice(next_hops)
                 routes.append(
                     MrtRecord(
                         prefix=str(net),
