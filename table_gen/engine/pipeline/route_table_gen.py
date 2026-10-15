@@ -43,7 +43,7 @@ def generate_route_table(
         RouteRecord(prefix=r.prefix, mask=r.mask, port_id=hop_to_port[r.next_hop])
         for r in raw_routes
     ]
-    port_map_path = Path(f"{output_path}{PORT_MAP_EXTENSION}")
+    port_map_path = Path(output_path).with_suffix(PORT_MAP_EXTENSION)
 
     save_routes_and_ports(
         routes=routes,

@@ -47,7 +47,8 @@ def generate_random_routes(
 
     for mask in assigned_masks:
         while True:
-            ip_int = random.randint(0x01000000, 0xE0000000)
+            # Confine to unicast IPv4 space (exclude Class D multicast >= 224.0.0.0)
+            ip_int = random.randint(0x01000000, 0xDFFFFFFF)
             net = ipaddress.IPv4Network((ip_int, mask), strict=False)
             if net not in seen:
                 seen.add(net)

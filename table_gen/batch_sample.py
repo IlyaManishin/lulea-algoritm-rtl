@@ -76,6 +76,10 @@ def main() -> None:
         print("ERROR: --coeff must be a positive number", file=sys.stderr)
         sys.exit(1)
 
+    if any(size <= 0 for size in args.sizes):
+        print("ERROR: All --sizes must be positive integers", file=sys.stderr)
+        sys.exit(1)
+
     output = args.output.resolve()
     target_sizes = sorted(set(args.sizes))
 
@@ -158,6 +162,9 @@ def main() -> None:
         f"Skipped: {skip_count}  "
         f"Errors: {error_count}"
     )
+
+    if error_count > 0:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

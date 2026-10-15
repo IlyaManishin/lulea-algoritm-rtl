@@ -97,6 +97,9 @@ def main() -> None:
     print(
         f"\nDone. Converted: {success_count}  Skipped: {skip_count}  Errors: {error_count}")
 
+    if error_count > 0:
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
