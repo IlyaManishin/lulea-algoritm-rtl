@@ -7,7 +7,7 @@ from config import PORTS_COUNT_MAX
 from .gen_types import MrtRecord
 
 DEFAULT_MASK_WEIGHTS = {
-    **{mask: 0.25 / 15 for mask in range(1, 16)},
+    **{mask: 0.25 / 15 for mask in range(7, 16)},
     16: 1.2,
     17: 0.8,
     18: 1.2,
