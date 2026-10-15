@@ -4,7 +4,8 @@ import os
 from dotenv import load_dotenv
 
 
-TABLE_GEN_DIR = Path(__file__).resolve().parent
+ENGINE_DIR = Path(__file__).resolve().parent
+TABLE_GEN_DIR = ENGINE_DIR.parent
 PRJ_ROOT_DIR = TABLE_GEN_DIR.parent
 
 BUILD_DIR = PRJ_ROOT_DIR / "build"

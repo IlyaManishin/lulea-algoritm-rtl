@@ -4,12 +4,12 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
 
-from config import PORT_MAP_FILENAME, ROUTE_FILENAME, SAMPLE_WORKERS
-from core.gen_types import PortMapping, RouteRecord
-from core.mrt_filter import filter_mrt_routes
-from utils.concurrency import run_in_fork_process_pool
-from utils.route_reader import RouteReadError, read_port_map, read_route_count, read_routes
-from utils.route_saver import FileFormat, save_converted
+from ..config import PORT_MAP_FILENAME, ROUTE_FILENAME, SAMPLE_WORKERS
+from ..core.gen_types import PortMapping, RouteRecord
+from ..core.mrt_filter import filter_mrt_routes
+from ..utils.concurrency import run_in_fork_process_pool
+from ..utils.route_reader import RouteReadError, read_port_map, read_route_count, read_routes
+from ..utils.route_saver import FileFormat, save_converted
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,21 +139,6 @@ def build_sample_plan(
 
     return SamplePlan(groups=groups)
 
-
-class SampleExecutor:
-    """Executes sampling for a single FileSampleGroup with fail-fast loading."""
-
-    def __init__(self, group: FileSampleGroup) -> None:
-        self._group: FileSampleGroup = group
-        try:
-            self._routes: list[RouteRecord] = read_routes(group.source_path)
-            port_path = group.source_path.parent / PORT_MAP_FILENAME
-            self._port_map: PortMapping = read_port_map(
-                port_path) if port_path.is_file() else {}
-        except (FileNotFoundError, RouteReadError, OSError) as exc:
-            raise GroupLoadError(
-                f"Failed to load source table '{group.source_path}': {exc}"
-            ) from exc
 
 _G_ROUTES: list[RouteRecord] = []
 _G_PORT_MAP: PortMapping = {}

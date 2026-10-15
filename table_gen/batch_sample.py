@@ -14,8 +14,8 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-from config import CONVERTED_DIR, SAMPLE_FILL_COEFF, SAMPLED_DIR, TABLE_SIZES
-from pipeline.sample import (
+from engine.config import CONVERTED_DIR, SAMPLE_FILL_COEFF, SAMPLED_DIR, TABLE_SIZES
+from engine.pipeline.sample import (
     GroupLoadError,
     SampleExecutor,
     SamplePlan,

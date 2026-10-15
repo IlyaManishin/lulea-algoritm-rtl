@@ -1,13 +1,13 @@
 from pathlib import Path
 
-from core.mrt_gen import generate_mrt_routes
-from core.gen_types import MrtRecord, PortMapping, RouteRecord
-from core.mrt_reader import MRTFileType
-from core.random_gen import generate_random_routes
+from ..core.mrt_gen import generate_mrt_routes
+from ..core.gen_types import MrtRecord, PortMapping, RouteRecord
+from ..core.mrt_reader import MRTFileType
+from ..core.random_gen import generate_random_routes
 
-from config import GeneratorType, ROUTE_COUNT, PORT_MAP_EXTENSION
-from utils.port_mapping import map_next_hops_to_ports
-from utils.route_saver import save_routes_and_ports
+from ..config import GeneratorType, ROUTE_COUNT, PORT_MAP_EXTENSION
+from ..utils.port_mapping import map_next_hops_to_ports
+from ..utils.route_saver import save_routes_and_ports
 
 
 def generate_route_table(

@@ -1,5 +1,5 @@
-from core.gen_types import MrtRecord, PortMapping
-from config import PORTS_COUNT_MAX
+from ..core.gen_types import MrtRecord, PortMapping
+from ..config import PORTS_COUNT_MAX
 
 
 class PortAllocationError(Exception):

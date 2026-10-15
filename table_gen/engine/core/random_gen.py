@@ -3,7 +3,7 @@ import ipaddress
 from pathlib import Path
 import random
 
-from config import PORTS_COUNT_MAX
+from ..config import PORTS_COUNT_MAX
 from .gen_types import MrtRecord
 
 DEFAULT_MASK_WEIGHTS = {

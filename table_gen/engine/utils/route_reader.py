@@ -5,7 +5,7 @@ import struct
 from pathlib import Path
 from typing import BinaryIO
 
-from config import (
+from ..config import (
     BIN_HEADER_SIZE,
     MAGIC_PORT_BIN,
     MAGIC_ROUTE_BIN,
@@ -14,7 +14,7 @@ from config import (
     ROUTE_RECORD_SIZE,
     ROUTE_STRUCT_FORMAT,
 )
-from core.gen_types import PortMapping, RouteRecord
+from ..core.gen_types import PortMapping, RouteRecord
 
 _ROUTE_UNPACKER = struct.Struct(ROUTE_STRUCT_FORMAT)
 _PORT_UNPACKER = struct.Struct(PORT_STRUCT_FORMAT)

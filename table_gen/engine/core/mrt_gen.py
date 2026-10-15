@@ -4,9 +4,6 @@ from .gen_types import MrtRecord
 from .mrt_filter import filter_mrt_routes
 from .mrt_reader import read_mrt_routes, MRTFileType
 
-# Backwards compatibility alias
-distribution_filter_mrt_routes = filter_mrt_routes
-
 
 def generate_mrt_routes(
     input_path: str | Path,

@@ -6,7 +6,7 @@ import struct
 from enum import Enum, auto
 from pathlib import Path
 
-from config import (
+from ..config import (
     BIN_HEADER_SIZE,
     MAGIC_PORT_BIN,
     MAGIC_ROUTE_BIN,
@@ -15,7 +15,7 @@ from config import (
     ROUTE_RECORD_SIZE,
     ROUTE_STRUCT_FORMAT,
 )
-from core.gen_types import PortMapping, RouteRecord
+from ..core.gen_types import PortMapping, RouteRecord
 
 _ROUTE_PACKER = struct.Struct(ROUTE_STRUCT_FORMAT)
 _PORT_PACKER = struct.Struct(PORT_STRUCT_FORMAT)

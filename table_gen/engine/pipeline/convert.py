@@ -5,12 +5,12 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
 
-from config import CONVERT_WORKERS, INFO_FILENAME, PORT_MAP_FILENAME, ROUTE_FILENAME
-from core.gen_types import MrtRecord, PortMapping, RouteRecord
-from core.mrt_reader import MRTParseError, ReaderResponse, parse_mrt_binary
-from utils.concurrency import run_in_thread_pool
-from utils.port_mapping import map_next_hops_to_ports
-from utils.route_saver import save_converted
+from ..config import CONVERT_WORKERS, INFO_FILENAME, PORT_MAP_FILENAME, ROUTE_FILENAME
+from ..core.gen_types import MrtRecord, PortMapping, RouteRecord
+from ..core.mrt_reader import MRTParseError, ReaderResponse, parse_mrt_binary
+from ..utils.concurrency import run_in_thread_pool
+from ..utils.port_mapping import map_next_hops_to_ports
+from ..utils.route_saver import save_converted
 
 _ARCHIVE_SUFFIXES = (".bz2", ".gz")
 
