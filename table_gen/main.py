@@ -1,9 +1,9 @@
 import argparse
 from pathlib import Path
 
-from config import BUILD_DIR, ROUTE_COUNT, GeneratorType
-from route_gen import generate_route_table
-from core.mrt_reader import MRTFileType
+from engine.config import BUILD_DIR, ROUTE_COUNT, GeneratorType
+from engine.core.mrt_reader import MRTFileType
+from engine.pipeline.route_table_gen import generate_route_table
 
 
 def parse_args() -> argparse.Namespace:

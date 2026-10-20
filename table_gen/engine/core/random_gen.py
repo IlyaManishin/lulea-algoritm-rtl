@@ -3,10 +3,11 @@ import ipaddress
 from pathlib import Path
 import random
 
-from .gen_types import RouteRecord
+from ..config import PORTS_COUNT_MAX
+from .gen_types import MrtRecord
 
 DEFAULT_MASK_WEIGHTS = {
-    **{mask: 0.25 / 15 for mask in range(1, 16)},
+    **{mask: 0.25 / 15 for mask in range(7, 16)},
     16: 1.2,
     17: 0.8,
     18: 1.2,
@@ -19,15 +20,13 @@ DEFAULT_MASK_WEIGHTS = {
     **{mask: 0.25 / 8 for mask in range(25, 33)},
 }
 
-IP_WORD_RANGE = (1, 255)
-
 
 def generate_random_routes(
     count: int,
     mask_weights: dict[int, float] | None = None,
     seed: int | None = None,
     output_path: str | Path | None = None,
-) -> list[RouteRecord]:
+) -> list[MrtRecord]:
     if seed is not None:
         random.seed(seed)
 
@@ -37,19 +36,25 @@ def generate_random_routes(
 
     assigned_masks = random.choices(masks, weights=probs, k=count)
 
-    routes: list[RouteRecord] = []
+    # Allocate a bounded next-hop pool respecting hardware port limit
+    max_ports = min(PORTS_COUNT_MAX, max(1, count))
+    min_ports = min(16, max_ports)
+    num_ports = random.randint(min_ports, max_ports)
+    next_hops = [f"10.0.0.{i}" for i in range(1, num_ports + 1)]
+
+    routes: list[MrtRecord] = []
     seen = set()
 
     for mask in assigned_masks:
         while True:
-            ip_int = random.randint(0x01000000, 0xE0000000)
+            # Confine to unicast IPv4 space (exclude Class D multicast >= 224.0.0.0)
+            ip_int = random.randint(0x01000000, 0xDFFFFFFF)
             net = ipaddress.IPv4Network((ip_int, mask), strict=False)
             if net not in seen:
                 seen.add(net)
-                # Next hop format matches real BGP IP addresses
-                next_hop = f"10.0.{random.randint(*IP_WORD_RANGE)}.{random.randint(*IP_WORD_RANGE)}"
+                next_hop = random.choice(next_hops)
                 routes.append(
-                    RouteRecord(
+                    MrtRecord(
                         prefix=str(net),
                         mask=mask,
                         next_hop=next_hop,
