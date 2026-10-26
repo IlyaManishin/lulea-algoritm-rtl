@@ -3,7 +3,7 @@
 #include <fstream>
 #include <string>
 
-#include "gen/config.hpp"
+#include "gen/gen.hpp"
 
 class ConfigParser {
 public:

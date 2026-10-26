@@ -3,27 +3,26 @@
 #include <filesystem>
 #include <fstream>
 
-#include "gen/config.hpp"
 #include "gen/gen.hpp"
 #include "parser.hpp"
 
 namespace fs = std::filesystem;
 
 void test_gen_interface() {
-    std::cout << "[TEST] gen interface & CacheStats struct... ";
+    std::cout << "[TEST] gen interface & structs... ";
 
-    gen::Config cfg(gen::Mode::Stats, "table_001.lrb1");
-    assert(cfg.get_mode() == gen::Mode::Stats);
-    assert(cfg.get_input_path() == "table_001.lrb1");
-    assert(cfg.get_dest_dir().empty());
+    gen::Config cfg{gen::Mode::Stats, "table_001.lrb1", ""};
+    assert(cfg.mode == gen::Mode::Stats);
+    assert(cfg.input_path == "table_001.lrb1");
+    assert(cfg.dest_dir.empty());
 
-    cfg.set_dest_dir("out_firmware");
-    assert(cfg.get_dest_dir() == "out_firmware");
+    cfg.dest_dir = "out_firmware";
+    assert(cfg.dest_dir == "out_firmware");
 
     gen::BuildResult res = gen::build_lulea_cache(cfg);
-    assert(res.is_success());
-    assert(res.get_stats().l1_pop == 0);
-    assert(res.get_stats().l2_seq == 0);
+    assert(res.success);
+    assert(res.stats.l1_pop == 0);
+    assert(res.stats.l2_seq == 0);
 
     std::cout << "PASSED\n";
 }
@@ -44,15 +43,15 @@ void test_config_parser() {
 
     gen::Config cfg1;
     assert(parser.next(cfg1));
-    assert(cfg1.get_mode() == gen::Mode::Stats);
-    assert(cfg1.get_input_path() == "data/t1.lrb1");
-    assert(cfg1.get_dest_dir().empty());
+    assert(cfg1.mode == gen::Mode::Stats);
+    assert(cfg1.input_path == "data/t1.lrb1");
+    assert(cfg1.dest_dir.empty());
 
     gen::Config cfg2;
     assert(parser.next(cfg2));
-    assert(cfg2.get_mode() == gen::Mode::Dump);
-    assert(cfg2.get_input_path() == "data/t2.lrb1");
-    assert(cfg2.get_dest_dir() == "firmware/dir/");
+    assert(cfg2.mode == gen::Mode::Dump);
+    assert(cfg2.input_path == "data/t2.lrb1");
+    assert(cfg2.dest_dir == "firmware/dir/");
 
     gen::Config cfg3;
     assert(!parser.next(cfg3)); // EOF

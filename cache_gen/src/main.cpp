@@ -3,7 +3,6 @@
 #include <optional>
 #include <string>
 
-#include "gen/config.hpp"
 #include "gen/gen.hpp"
 #include "parser.hpp"
 
@@ -61,18 +60,18 @@ void write_stats_csv(std::ostream& out, const std::string& input_path, const gen
 void process_config_entry(const gen::Config& config, std::ofstream& csv_file) {
     gen::BuildResult result = gen::build_lulea_cache(config);
 
-    if (!result.is_success()) {
-        std::cerr << "Build error for " << config.get_input_path()
-                  << ": " << result.get_error_message() << "\n";
+    if (!result.success) {
+        std::cerr << "Build error for " << config.input_path
+                  << ": " << result.error_message << "\n";
         return;
     }
 
-    const auto& stats = result.get_stats();
+    const auto& stats = result.stats;
 
     if (csv_file.is_open()) {
-        write_stats_csv(csv_file, config.get_input_path(), stats);
+        write_stats_csv(csv_file, config.input_path, stats);
     } else {
-        print_stats_stdout(config.get_input_path(), stats);
+        print_stats_stdout(config.input_path, stats);
     }
 }
 

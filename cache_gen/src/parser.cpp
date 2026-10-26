@@ -48,7 +48,7 @@ bool ConfigParser::next(gen::Config& config_out) {
             dest_dir.clear();
         }
 
-        config_out = gen::Config(mode, std::move(in_path), std::move(dest_dir));
+        config_out = gen::Config{mode, std::move(in_path), std::move(dest_dir)};
         return true;
     }
 
