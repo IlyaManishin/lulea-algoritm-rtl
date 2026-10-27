@@ -13,6 +13,7 @@ inc_dirs = include_directories('include', 'src')
 
 core_sources = files(
   'src/gen/gen.cpp',
+  'src/gen/reader.cpp',
   'src/parser.cpp',
 )
 
