@@ -10,7 +10,7 @@ from ..core.gen_types import MrtRecord, PortMapping, RouteRecord
 from ..core.mrt_reader import MRTParseError, ReaderResponse, parse_mrt_binary
 from ..utils.concurrency import run_in_thread_pool
 from ..utils.port_mapping import map_next_hops_to_ports
-from ..utils.route_saver import save_converted
+from ..utils.route_writer import save_routes_and_ports
 
 _ARCHIVE_SUFFIXES = (".bz2", ".gz")
 
@@ -147,7 +147,7 @@ def convert_mrt_file(
         del reader_resp
         del mrt_records
 
-        save_converted(
+        save_routes_and_ports(
             routes=routes,
             port_map=port_map,
             routes_path=out_dir / ROUTE_FILENAME,

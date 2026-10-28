@@ -60,7 +60,7 @@ Samples converted full-tables into multiple fixed-size sub-tables (`1024`, `2048
 - **Sample Count Formula**:
   $$\text{samples} = \left\lfloor \frac{\text{total\_routes} \times \text{coeff}}{\text{target\_size}} \right\rfloor$$
   The parameter `coeff` (`SAMPLE_FILL_COEFF`, default `1.0`) controls table reuse. Across independent seeds, $c=1.0$ statistically samples ~63.2% unique routes from the full table.
-- **Atomic File Writes**: Serializers in `engine/utils/route_saver.py` write to `.tmp.<pid>` files first before calling `os.replace`, guaranteeing that files are never left half-written or corrupted if interrupted.
+- **Atomic File Writes**: Serializers in `engine/utils/route_writer.py` write to `.tmp.<pid>` files first before calling `os.replace`, guaranteeing that files are never left half-written or corrupted if interrupted.
 - **Progress Monitoring**: Powered by `rich` with live ETA, elapsed time, and task counters. Exits with status code `1` if any errors occur.
 - **Output Hierarchy**:
   ```
@@ -155,7 +155,7 @@ table_gen/
         ├── concurrency.py      # ThreadPool & fork ProcessPool runners with Ctrl+C abort
         ├── port_mapping.py     # Next-hop to port mapping (hardware limit: 255 ports)
         ├── route_reader.py     # Binary & text parser with auto-format detection
-        └── route_saver.py      # Binary & text atomic serializers
+        └── route_writer.py     # Binary & text atomic serializers
 ```
 
 ### Pure Relative Imports Inside `engine/`
@@ -173,7 +173,7 @@ Other tools in the repository (e.g. golden models, hardware testbenches, stats s
 
 ```python
 from table_gen.engine.utils.route_reader import read_routes, read_port_map
-from table_gen.engine.utils.route_saver import save_routes, save_port_map, FileFormat
+from table_gen.engine.utils.route_writer import save_routes, save_port_map, FileFormat
 from table_gen.engine.core.gen_types import RouteRecord, PortMapping
 from table_gen.engine.config import PORTS_COUNT_MAX
 

@@ -109,22 +109,10 @@ def save_routes(
 def save_routes_and_ports(
     routes: list[RouteRecord],
     port_map: PortMapping,
-    routes_output_path: str | Path,
-    port_map_output_path: str | Path,
-    file_format: FileFormat = FileFormat.TEXT,
-) -> None:
-    """Save route table + port map side by side in specified format."""
-    save_port_map(port_map, port_map_output_path, file_format=file_format)
-    save_routes(routes, routes_output_path, file_format=file_format)
-
-
-def save_converted(
-    routes: list[RouteRecord],
-    port_map: PortMapping,
     routes_path: str | Path,
     port_map_path: str | Path,
     file_format: FileFormat = FileFormat.TEXT,
 ) -> None:
-    """Save converted route table and port map in specified format."""
+    """Save route table and port map in specified format."""
     save_routes(routes, routes_path, file_format=file_format)
     save_port_map(port_map, port_map_path, file_format=file_format)
