@@ -37,7 +37,7 @@ def read_route_count(input_path: str | Path) -> int:
             count_bytes = f.read(4)
             if len(count_bytes) < 4:
                 raise RouteReadError(f"Truncated binary header in {filepath}")
-            return struct.unpack("<I", count_bytes)[0]
+            return struct.unpack(ROUTE_COUNT_FORMAT, count_bytes)[0]
 
         f.seek(0)
         first_line = f.readline().decode("utf-8", errors="replace").strip()
