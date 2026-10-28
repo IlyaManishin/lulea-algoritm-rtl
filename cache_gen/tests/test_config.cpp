@@ -9,18 +9,22 @@
 
 namespace fs = std::filesystem;
 
-class ConfigParserTest : public ::testing::Test {
+class ConfigParserTest : public ::testing::Test
+{
 protected:
-    void SetUp() override {
+    void SetUp() override
+    {
         test_dir = fs::temp_directory_path() / "lulea_parser_tests";
         fs::create_directories(test_dir);
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         fs::remove_all(test_dir);
     }
 
-    fs::path create_manifest_file(const std::string& filename, const std::string& content) {
+    fs::path create_manifest_file(const std::string &filename, const std::string &content)
+    {
         fs::path file_path = test_dir / filename;
         std::ofstream ofs(file_path);
         ofs << content;
@@ -30,7 +34,8 @@ protected:
     fs::path test_dir;
 };
 
-TEST_F(ConfigParserTest, ReadsValidTsvStream) {
+TEST_F(ConfigParserTest, ReadsValidTsvStream)
+{
     const std::string tsv_content =
         "# Header comment line\n"
         "\n"
@@ -56,7 +61,8 @@ TEST_F(ConfigParserTest, ReadsValidTsvStream) {
     EXPECT_FALSE(parser.next(cfg3));
 }
 
-TEST_F(ConfigParserTest, ThrowsOnMalformedEntry) {
+TEST_F(ConfigParserTest, ThrowsOnMalformedEntry)
+{
     const std::string bad_content = "invalid_line_without_tabs\n";
     fs::path manifest = create_manifest_file("bad_jobs.tsv", bad_content);
     ConfigParser parser(manifest.string());
@@ -64,4 +70,3 @@ TEST_F(ConfigParserTest, ThrowsOnMalformedEntry) {
     gen::Config cfg;
     EXPECT_THROW(parser.next(cfg), std::runtime_error);
 }
-
