@@ -41,14 +41,16 @@ protected:
         bin_entry_count_t count = static_cast<bin_entry_count_t>(entries.size());
         ofs.write(reinterpret_cast<const char*>(&count), sizeof(count));
 
-        // Entries: each record is ENTRY_SIZE (8) bytes
+        // Entries: each record is ENTRY_SIZE (8) bytes:
+        // ipv4_t (4B) + mask_t (1B) + reader_port_t (2B) + pad (1B)
         for (const auto& entry : entries) {
             ofs.write(reinterpret_cast<const char*>(&entry.ip), sizeof(entry.ip));
             ofs.write(reinterpret_cast<const char*>(&entry.mask), sizeof(entry.mask));
-            ofs.write(reinterpret_cast<const char*>(&entry.port), sizeof(entry.port));
 
-            // Padding up to ENTRY_SIZE (8 - 4 - 1 - 1 = 2 bytes)
-            constexpr size_t payload_size = sizeof(entry.ip) + sizeof(entry.mask) + sizeof(entry.port);
+            reader_port_t raw_port = std::to_integer<reader_port_t>(entry.port);
+            ofs.write(reinterpret_cast<const char*>(&raw_port), sizeof(raw_port));
+
+            constexpr size_t payload_size = sizeof(entry.ip) + sizeof(entry.mask) + sizeof(raw_port);
             constexpr size_t pad_size = ENTRY_SIZE - payload_size;
             const char pad[pad_size] = {0};
             ofs.write(pad, pad_size);
@@ -57,8 +59,33 @@ protected:
         return file_path;
     }
 
+    fs::path create_raw_entry_file(const std::string& filename,
+                                   ipv4_t ip, mask_t mask, reader_port_t raw_port) {
+        fs::path file_path = test_dir / filename;
+        std::ofstream ofs(file_path, std::ios::binary);
+
+        ofs.write(BIN_MAGIC.data(), BIN_MAGIC.size());
+        bin_entry_count_t count = 1;
+        ofs.write(reinterpret_cast<const char*>(&count), sizeof(count));
+
+        ofs.write(reinterpret_cast<const char*>(&ip), sizeof(ip));
+        ofs.write(reinterpret_cast<const char*>(&mask), sizeof(mask));
+        ofs.write(reinterpret_cast<const char*>(&raw_port), sizeof(raw_port));
+
+        constexpr size_t payload_size = sizeof(ip) + sizeof(mask) + sizeof(raw_port);
+        constexpr size_t pad_size = ENTRY_SIZE - payload_size;
+        const char pad[pad_size] = {0};
+        ofs.write(pad, pad_size);
+
+        return file_path;
+    }
+
     fs::path test_dir;
 };
+
+// =========================================================================
+//  Reader Tests
+// =========================================================================
 
 TEST_F(ReaderTest, ThrowsOnNonExistentFile) {
     EXPECT_THROW(
@@ -110,5 +137,19 @@ TEST_F(ReaderTest, ThrowsOnInvalidMagicSignature) {
     EXPECT_THROW(
         gen::read_mask_mapping(bad_magic_file.string()),
         std::runtime_error
+    );
+}
+
+TEST_F(ReaderTest, ThrowsOnPortOverflowInFile) {
+    fs::path overflow_file = create_raw_entry_file(
+        "overflow.bin",
+        0x7F000001,
+        static_cast<mask_t>(32),
+        300 // Exceeds 8-bit port_t
+    );
+
+    EXPECT_THROW(
+        gen::read_mask_mapping(overflow_file.string()),
+        gen::PortOverflowError
     );
 }
