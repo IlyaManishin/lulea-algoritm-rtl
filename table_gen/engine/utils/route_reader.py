@@ -12,6 +12,7 @@ from ..config import (
     PORT_STRUCT_FORMAT,
     ROUTE_RECORD_SIZE,
     ROUTE_STRUCT_FORMAT,
+    ROUTE_COUNT_FORMAT
 )
 from ..core.gen_types import PortMapping, RouteRecord
 
@@ -36,7 +37,7 @@ def read_route_count(input_path: str | Path) -> int:
             count_bytes = f.read(4)
             if len(count_bytes) < 4:
                 raise RouteReadError(f"Truncated binary header in {filepath}")
-            return struct.unpack(">I", count_bytes)[0]
+            return struct.unpack("<I", count_bytes)[0]
 
         f.seek(0)
         first_line = f.readline().decode("utf-8", errors="replace").strip()
@@ -119,7 +120,7 @@ def read_routes(input_path: str | Path) -> list[RouteRecord]:
             count_bytes = f.read(4)
             if len(count_bytes) < 4:
                 raise RouteReadError(f"Truncated binary header in {filepath}")
-            expected_count = struct.unpack(">I", count_bytes)[0]
+            expected_count = struct.unpack(ROUTE_COUNT_FORMAT, count_bytes)[0]
             return _read_routes_binary(f, expected_count, filepath)
         else:
             f.seek(0)
@@ -186,7 +187,7 @@ def read_port_map(input_path: str | Path) -> PortMapping:
             count_bytes = f.read(4)
             if len(count_bytes) < 4:
                 raise RouteReadError(f"Truncated binary header in {filepath}")
-            expected_count = struct.unpack(">I", count_bytes)[0]
+            expected_count = struct.unpack(ROUTE_COUNT_FORMAT, count_bytes)[0]
             return _read_port_map_binary(f, expected_count, filepath)
         else:
             f.seek(0)

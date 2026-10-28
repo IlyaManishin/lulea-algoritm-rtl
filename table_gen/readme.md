@@ -104,18 +104,18 @@ Stores `<port_id> <next_hop>`:
 Sampled tables use compact binary formats with magic headers. `read_routes()`, `read_port_map()`, and `read_route_count()` automatically detect the format by inspecting the first 4 bytes.
 
 #### Binary Routes (`LRB1`)
-- **Header** (8 bytes): `b"LRB1"` + `count: uint32` (Big-Endian)
-- **Records** (8 bytes per entry, struct `>IBHx`):
-  - `ip_int: uint32` (BE) — IPv4 prefix base as integer
+- **Header** (8 bytes): `b"LRB1"` + `count: uint32` (Little-Endian)
+- **Records** (8 bytes per entry, struct `<IBHx`):
+  - `ip_int: uint32` (LE) — IPv4 prefix base as integer
   - `mask: uint8` (1..32) — Prefix mask length
-  - `port_id: uint16` (BE) — Hardware egress port identifier
+  - `port_id: uint16` (LE) — Hardware egress port identifier
   - `pad: uint8` (0x00) — Alignment padding
 
 #### Binary Port Map (`LPB1`)
-- **Header** (8 bytes): `b"LPB1"` + `count: uint32` (BE)
-- **Records** (6 bytes per entry, struct `>HI`):
-  - `port_id: uint16` (BE)
-  - `ip_int: uint32` (BE) — IPv4 next-hop address as integer
+- **Header** (8 bytes): `b"LPB1"` + `count: uint32` (LE)
+- **Records** (6 bytes per entry, struct `<HI`):
+  - `port_id: uint16` (LE)
+  - `ip_int: uint32` (LE) — IPv4 next-hop address as integer
 
 ### Conversion Report (`info.txt`)
 ```text

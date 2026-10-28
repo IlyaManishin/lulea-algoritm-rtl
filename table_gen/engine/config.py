@@ -38,8 +38,9 @@ INFO_FILENAME = "info.txt"
 # Binary file format constants (single source of truth)
 MAGIC_ROUTE_BIN: bytes = b"LRB1"
 MAGIC_PORT_BIN: bytes = b"LPB1"
-ROUTE_STRUCT_FORMAT: str = ">IBHx"
-PORT_STRUCT_FORMAT: str = ">HI"
+ROUTE_STRUCT_FORMAT: str = "<IBHx"
+PORT_STRUCT_FORMAT: str = "<HI"
+ROUTE_COUNT_FORMAT: str = "<I"
 ROUTE_RECORD_SIZE: int = 8
 PORT_RECORD_SIZE: int = 6
 BIN_HEADER_SIZE: int = 8

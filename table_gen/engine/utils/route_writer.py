@@ -14,6 +14,7 @@ from ..config import (
     PORT_STRUCT_FORMAT,
     ROUTE_RECORD_SIZE,
     ROUTE_STRUCT_FORMAT,
+    ROUTE_COUNT_FORMAT
 )
 from ..core.gen_types import PortMapping, RouteRecord
 
@@ -29,6 +30,8 @@ class FileFormat(Enum):
 def _ensure_parent(filepath: Path) -> None:
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
+def _next_hop_to_int(next_hop: str):
+    return struct.unpack(">I", socket.inet_aton(next_hop))[0]
 
 # Atomic writes: write to temporary file first, then atomically replace.
 # Guarantees files are never left half-written or corrupted if interrupted.
@@ -67,12 +70,14 @@ def save_port_map(
 
     if file_format == FileFormat.BINARY:
         buf = bytearray(BIN_HEADER_SIZE + len(port_map) * PORT_RECORD_SIZE)
-        buf[:BIN_HEADER_SIZE] = MAGIC_PORT_BIN + struct.pack(">I", len(port_map))
+        buf[:BIN_HEADER_SIZE] = MAGIC_PORT_BIN + struct.pack(ROUTE_COUNT_FORMAT, len(port_map))
         offset = BIN_HEADER_SIZE
+        
         for port_id, next_hop in port_map.items():
-            ip_int = struct.unpack(">I", socket.inet_aton(next_hop))[0]
+            ip_int = _next_hop_to_int(next_hop)
             _PORT_PACKER.pack_into(buf, offset, port_id, ip_int)
             offset += PORT_RECORD_SIZE
+            
         _atomic_write_bytes(filepath, buf)
     else:
         lines = [f"{len(port_map)}\n"]
@@ -92,7 +97,7 @@ def save_routes(
 
     if file_format == FileFormat.BINARY:
         buf = bytearray(BIN_HEADER_SIZE + len(routes) * ROUTE_RECORD_SIZE)
-        buf[:BIN_HEADER_SIZE] = MAGIC_ROUTE_BIN + struct.pack(">I", len(routes))
+        buf[:BIN_HEADER_SIZE] = MAGIC_ROUTE_BIN + struct.pack(ROUTE_COUNT_FORMAT, len(routes))
         offset = BIN_HEADER_SIZE
         for route in routes:
             _ROUTE_PACKER.pack_into(
