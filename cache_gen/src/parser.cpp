@@ -5,8 +5,8 @@
 #include <vector>
 
 ConfigParser::ConfigParser(const std::string& filepath)
-    : filepath(filepath), file(filepath) {
-    if (!this->file.is_open()) {
+    : filepath_(filepath), file_(filepath) {
+    if (!this->file_.is_open()) {
         throw std::runtime_error("Cannot open config file: " + filepath);
     }
 }
@@ -14,8 +14,8 @@ ConfigParser::ConfigParser(const std::string& filepath)
 bool ConfigParser::next(gen::Config& config_out) {
     std::string line;
 
-    while (std::getline(this->file, line)) {
-        this->current_line++;
+    while (std::getline(this->file_, line)) {
+        this->current_line_++;
 
         // Ignore empty lines and comment lines
         if (line.empty() || line[0] == '#') {
@@ -26,7 +26,7 @@ bool ConfigParser::next(gen::Config& config_out) {
         std::string mode_str, in_path, dest_dir;
 
         if (!std::getline(ss, mode_str, '\t') || !std::getline(ss, in_path, '\t')) {
-            throw std::runtime_error(this->filepath + ":" + std::to_string(this->current_line) + 
+            throw std::runtime_error(this->filepath_ + ":" + std::to_string(this->current_line_) + 
                                      ": malformed config entry (expected tab-separated fields)");
         }
 
@@ -39,7 +39,7 @@ bool ConfigParser::next(gen::Config& config_out) {
         } else if (mode_str == "dump") {
             mode = gen::Mode::Dump;
         } else {
-            throw std::runtime_error(this->filepath + ":" + std::to_string(this->current_line) + 
+            throw std::runtime_error(this->filepath_ + ":" + std::to_string(this->current_line_) + 
                                      ": unknown mode '" + mode_str + "' (expected 'stats' or 'dump')");
         }
 

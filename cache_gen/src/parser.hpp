@@ -17,11 +17,11 @@ public:
     // Returns true if a record was successfully read, false on EOF.
     bool next(gen::Config& config_out);
 
-    size_t get_line_number() const { return this->current_line; }
-    const std::string& get_filepath() const { return this->filepath; }
+    size_t get_line_number() const { return this->current_line_; }
+    const std::string& get_filepath() const { return this->filepath_; }
 
 private:
-    std::string filepath;
-    std::ifstream file;
-    size_t current_line = 0;
+    std::string filepath_;
+    std::ifstream file_;
+    size_t current_line_ = 0;
 };
