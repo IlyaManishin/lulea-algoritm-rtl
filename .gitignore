@@ -14,6 +14,8 @@ agents.md
 .env
 .env.*
 !.env.example
+.stignore
+/.stfolder
 
 # ==============================================================================
 # FPGA / Vivado
