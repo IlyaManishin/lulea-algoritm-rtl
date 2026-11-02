@@ -49,6 +49,7 @@ class LevelMemory:
     pop_arr_kb: float
     chunk_sums_kb: float
     seq_kb: float
+    seq_len: int
 
     @property
     def total_kb(self) -> float:
@@ -70,6 +71,18 @@ class SimulationResult:
     l1: LevelMemory
     l2: LevelMemory
     l3: LevelMemory
+
+    @property
+    def seq1_len(self) -> int:
+        return self.l1.seq_len
+
+    @property
+    def seq2_len(self) -> int:
+        return self.l2.seq_len
+
+    @property
+    def seq3_len(self) -> int:
+        return self.l3.seq_len
 
 
 @dataclass
@@ -253,16 +266,19 @@ def calculate_memory_for_limit(
         pop_arr_kb=round(pop_arr1_bits / 8192, 1),
         chunk_sums_kb=round(chunk_sums1_bits / 8192, 1),
         seq_kb=round(seq1_bits / 8192, 1),
+        seq_len=seq1_len,
     )
     l2_memory = LevelMemory(
         pop_arr_kb=round(pop_arr2_bits / 8192, 1),
         chunk_sums_kb=round(chunk_sums2_bits / 8192, 1),
         seq_kb=round(seq2_bits / 8192, 1),
+        seq_len=seq2_len,
     )
     l3_memory = LevelMemory(
         pop_arr_kb=round(pop_arr3_bits / 8192, 1),
         chunk_sums_kb=round(chunk_sums3_bits / 8192, 1),
         seq_kb=round(seq3_bits / 8192, 1),
+        seq_len=seq3_len,
     )
 
     # -------------------------------------------------------------------------
