@@ -1,5 +1,4 @@
 #-------------------------------------------------------------------------------
-#    project:       RISC-V (Sber Novosibirsk State University)
 #    cfg:           BASYS-3
 #
 #    description:   
