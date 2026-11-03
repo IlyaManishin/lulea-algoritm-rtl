@@ -23,7 +23,7 @@ from mem_stats_saver import (
 # =========================================================================
 
 MAX_NODE_FILL_FACTOR = 0.5  # part of endpoint in certain cache limit
-BRAM_BASE_CELL_SIZE = 18
+BRAM_BASE_CELL_SIZE = 9
 
 # Flag to enable/disable rounding node counts to power of 2
 ROUND_NODES_TO_POWER_OF_2 = True
@@ -51,6 +51,8 @@ def estimate_node_counts(
     limit: int, cfg: LuleaConfig, fill_factor: float = MAX_NODE_FILL_FACTOR
 ) -> tuple[int, int, int]:
     """Estimate real entries count in view of limits."""
+    l1_nodes = 1
+
     masks_l2 = limit * cfg.dist[1]
     masks_l3 = limit * cfg.dist[2]
 
@@ -74,8 +76,6 @@ def estimate_node_counts(
 
     max_l3_nodes = int(l2_nodes * cfg.l2.cells_count * fill_factor)
     l3_nodes = min(max_l3_nodes, int(expected_l3_nodes))
-
-    l1_nodes = 1
 
     if ROUND_NODES_TO_POWER_OF_2:
         l2_nodes = round_up_pow2(l2_nodes)
@@ -155,9 +155,7 @@ def calculate_memory_for_limit(
     ref1_bits, ref2_bits, ref3_bits = estimate_ref_bits(
         cfg, l2_nodes, l3_nodes
     )
-    chunk_cell1_bits, chunk_cell2_bits, chunk_cell3_bits = estimate_chunk_cell_bits(
-        cfg
-    )
+    chunk_cell1_bits, chunk_cell2_bits, chunk_cell3_bits = estimate_chunk_cell_bits(cfg)
 
     # -------------------------------------------------------------------------
     # 2. Reference Sequence Lengths & Pointer Sizes

@@ -15,7 +15,10 @@ class LevelConfig:
 
     @property
     def chunks_count(self) -> int:
-        return self.cells_count // self.chunk_size
+        raw = self.cells_count // self.chunk_size
+        if self.cells_count % self.chunk_size != 0:
+            raw += 1
+        return raw
 
     def __post_init__(self):
         if self.chunk_size <= 0 or (self.chunk_size & (self.chunk_size - 1)) != 0:
