@@ -103,13 +103,13 @@ def estimate_ref_bits(
     return cell1_bits, cell2_bits, cell3_bits
 
 
-def estimate_chunk_cell_bits(cfg: LuleaConfig) -> tuple[int, int, int]:
-    """Count chunk cell size."""
-    chunk_cell1_bits = align_by_bram_cell_size(cfg.l1.chunk_size)
-    chunk_cell2_bits = align_by_bram_cell_size(cfg.l2.chunk_size)
-    chunk_cell3_bits = align_by_bram_cell_size(cfg.l3.chunk_size)
+def estimate_chunk_size_aligned(cfg: LuleaConfig) -> tuple[int, int, int]:
+    """Count aligned chunk size."""
+    chunk_size1_aligned = align_by_bram_cell_size(cfg.l1.chunk_size)
+    chunk_size2_aligned = align_by_bram_cell_size(cfg.l2.chunk_size)
+    chunk_size3_aligned = align_by_bram_cell_size(cfg.l3.chunk_size)
 
-    return chunk_cell1_bits, chunk_cell2_bits, chunk_cell3_bits
+    return chunk_size1_aligned, chunk_size2_aligned, chunk_size3_aligned
 
 
 def estimate_seq_lens(
@@ -129,19 +129,19 @@ def estimate_seq_lens(
     return seq1_len, seq2_len, seq3_len
 
 
-def estimate_seq_ptr_cell_bits(
+def estimate_seq_ptr_size(
     seq1_len: int, seq2_len: int, seq3_len: int
 ) -> tuple[int, int, int]:
-    """Count seq pointer cell size."""
+    """Count seq pointer size."""
     ptr1_raw = math.ceil(math.log2(max(1, seq1_len)))
     ptr2_raw = math.ceil(math.log2(max(1, seq2_len)))
     ptr3_raw = math.ceil(math.log2(max(1, seq3_len)))
 
-    seq_ptr1_bits = align_by_bram_cell_size(max(1, ptr1_raw))
-    seq_ptr2_bits = align_by_bram_cell_size(max(1, ptr2_raw))
-    seq_ptr3_bits = align_by_bram_cell_size(max(1, ptr3_raw))
+    seq_ptr1_size = align_by_bram_cell_size(max(1, ptr1_raw))
+    seq_ptr2_size = align_by_bram_cell_size(max(1, ptr2_raw))
+    seq_ptr3_size = align_by_bram_cell_size(max(1, ptr3_raw))
 
-    return seq_ptr1_bits, seq_ptr2_bits, seq_ptr3_bits
+    return seq_ptr1_size, seq_ptr2_size, seq_ptr3_size
 
 
 def calculate_memory_for_limit(
@@ -155,7 +155,9 @@ def calculate_memory_for_limit(
     ref1_bits, ref2_bits, ref3_bits = estimate_ref_bits(
         cfg, l2_nodes, l3_nodes
     )
-    chunk_cell1_bits, chunk_cell2_bits, chunk_cell3_bits = estimate_chunk_cell_bits(cfg)
+    chunk_size1_aligned, chunk_size2_aligned, chunk_size3_aligned = (
+        estimate_chunk_size_aligned(cfg)
+    )
 
     # -------------------------------------------------------------------------
     # 2. Reference Sequence Lengths & Pointer Sizes
@@ -164,25 +166,25 @@ def calculate_memory_for_limit(
         cfg, l1_nodes, l2_nodes, l3_nodes
     )
 
-    seq_ptr1_bits, seq_ptr2_bits, seq_ptr3_bits = estimate_seq_ptr_cell_bits(
+    seq_ptr1_size, seq_ptr2_size, seq_ptr3_size = estimate_seq_ptr_size(
         seq1_len, seq2_len, seq3_len
     )
 
     # -------------------------------------------------------------------------
     # 3. Popcount Arrays Size
     # -------------------------------------------------------------------------
-    pop_arr1_bits = l1_nodes * cfg.l1.chunks_count * chunk_cell1_bits
-    pop_arr2_bits = l2_nodes * cfg.l2.chunks_count * chunk_cell2_bits
-    pop_arr3_bits = l3_nodes * cfg.l3.chunks_count * chunk_cell3_bits
+    pop_arr1_bits = l1_nodes * cfg.l1.chunks_count * chunk_size1_aligned
+    pop_arr2_bits = l2_nodes * cfg.l2.chunks_count * chunk_size2_aligned
+    pop_arr3_bits = l3_nodes * cfg.l3.chunks_count * chunk_size3_aligned
 
     pop_arr_bits = pop_arr1_bits + pop_arr2_bits + pop_arr3_bits
 
     # -------------------------------------------------------------------------
     # 4. Chunk Sums Size
     # -------------------------------------------------------------------------
-    chunk_sums1_bits = l1_nodes * cfg.l1.chunks_count * seq_ptr1_bits
-    chunk_sums2_bits = l2_nodes * cfg.l2.chunks_count * seq_ptr2_bits
-    chunk_sums3_bits = l3_nodes * cfg.l3.chunks_count * seq_ptr3_bits
+    chunk_sums1_bits = l1_nodes * cfg.l1.chunks_count * seq_ptr1_size
+    chunk_sums2_bits = l2_nodes * cfg.l2.chunks_count * seq_ptr2_size
+    chunk_sums3_bits = l3_nodes * cfg.l3.chunks_count * seq_ptr3_size
 
     chunk_sums_bits = chunk_sums1_bits + chunk_sums2_bits + chunk_sums3_bits
 
