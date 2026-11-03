@@ -3,6 +3,9 @@
 // `define USE_BRAM_36
 `define USE_BRAM_72
 
+// Enable pipeline register between BRAM output and popcount logic:
+// `define IS_PIPELINED
+
 module top (
     input  logic ref_clk,
     input  logic rst
@@ -52,9 +55,23 @@ module top (
     );
 `endif
 
-    // Result fits max 72 ones (requires 7 bits: 0..72)
     (* dont_touch = "true" *) logic [6:0] test;
 
+`ifdef IS_PIPELINED
+    // Pipeline register to isolate BRAM read routing from popcount tree
+    (* dont_touch = "true" *) logic [$bits(douta)-1:0] douta_pipe;
+
+    always_ff @(posedge bram_clk or posedge rst) begin
+        if (rst) begin
+            douta_pipe <= '0;
+            test       <= '0;
+        end else if (pll_locked) begin
+            douta_pipe <= douta;
+            test       <= $countones(douta_pipe);
+        end
+    end
+`else
+    // Combinational popcount directly on BRAM read output
     always_ff @(posedge bram_clk or posedge rst) begin
         if (rst) begin
             test <= '0;
@@ -62,5 +79,6 @@ module top (
             test <= $countones(douta);
         end
     end
+`endif
 
 endmodule : top
