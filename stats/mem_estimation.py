@@ -24,9 +24,13 @@ from mem_stats_saver import (
 
 MAX_NODE_FILL_FACTOR = 0.5  # part of endpoint in certain cache limit
 BRAM_BASE_CELL_SIZE = 9
+BRAM_BLOCK_SIZE_BITS = 18 * 1024  # 18 Kbit block (Basys 3 / Artix-7)
 
 # Flag to enable/disable rounding node counts to power of 2
 ROUND_NODES_TO_POWER_OF_2 = True
+
+# Flag to enable/disable memory alignment to BRAM blocks (18 Kbit)
+IS_BRAM_BLOCK_ALIGNED = True
 
 
 # =========================================================================
@@ -38,6 +42,13 @@ def align_by_bram_cell_size(raw_size: int) -> int:
     while res < raw_size:
         res *= 2
     return res
+
+
+def bram_block_align(bits: int, block_size: int = BRAM_BLOCK_SIZE_BITS) -> int:
+    """Align size in bits up to the nearest BRAM block size."""
+    if not IS_BRAM_BLOCK_ALIGNED or bits <= 0:
+        return bits
+    return ((bits + block_size - 1) // block_size) * block_size
 
 
 def round_up_pow2(n: int) -> int:
@@ -173,27 +184,39 @@ def calculate_memory_for_limit(
     # -------------------------------------------------------------------------
     # 3. Popcount Arrays Size
     # -------------------------------------------------------------------------
-    pop_arr1_bits = l1_nodes * cfg.l1.chunks_count * chunk_size1_aligned
-    pop_arr2_bits = l2_nodes * cfg.l2.chunks_count * chunk_size2_aligned
-    pop_arr3_bits = l3_nodes * cfg.l3.chunks_count * chunk_size3_aligned
+    pop_arr1_bits = bram_block_align(
+        l1_nodes * cfg.l1.chunks_count * chunk_size1_aligned
+    )
+    pop_arr2_bits = bram_block_align(
+        l2_nodes * cfg.l2.chunks_count * chunk_size2_aligned
+    )
+    pop_arr3_bits = bram_block_align(
+        l3_nodes * cfg.l3.chunks_count * chunk_size3_aligned
+    )
 
     pop_arr_bits = pop_arr1_bits + pop_arr2_bits + pop_arr3_bits
 
     # -------------------------------------------------------------------------
     # 4. Chunk Sums Size
     # -------------------------------------------------------------------------
-    chunk_sums1_bits = l1_nodes * cfg.l1.chunks_count * seq_ptr1_size
-    chunk_sums2_bits = l2_nodes * cfg.l2.chunks_count * seq_ptr2_size
-    chunk_sums3_bits = l3_nodes * cfg.l3.chunks_count * seq_ptr3_size
+    chunk_sums1_bits = bram_block_align(
+        l1_nodes * cfg.l1.chunks_count * seq_ptr1_size
+    )
+    chunk_sums2_bits = bram_block_align(
+        l2_nodes * cfg.l2.chunks_count * seq_ptr2_size
+    )
+    chunk_sums3_bits = bram_block_align(
+        l3_nodes * cfg.l3.chunks_count * seq_ptr3_size
+    )
 
     chunk_sums_bits = chunk_sums1_bits + chunk_sums2_bits + chunk_sums3_bits
 
     # -------------------------------------------------------------------------
     # 5. Reference Sequences Size
     # -------------------------------------------------------------------------
-    seq1_bits = seq1_len * ref1_bits
-    seq2_bits = seq2_len * ref2_bits
-    seq3_bits = seq3_len * ref3_bits
+    seq1_bits = bram_block_align(seq1_len * ref1_bits)
+    seq2_bits = bram_block_align(seq2_len * ref2_bits)
+    seq3_bits = bram_block_align(seq3_len * ref3_bits)
 
     seq_bits = seq1_bits + seq2_bits + seq3_bits
 
