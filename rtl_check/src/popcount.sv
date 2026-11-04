@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 module popcount #(
     parameter int W = 32
 ) (

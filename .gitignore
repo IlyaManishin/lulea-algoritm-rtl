@@ -41,6 +41,9 @@ cfg/*
 *.fst
 sim_build/
 results.xml
+obj_dir/
+xsim.dir/
+xsim_dir/
 ip/
 .$*.bkp
 .$*.dtmp
