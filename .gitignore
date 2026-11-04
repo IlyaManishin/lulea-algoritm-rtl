@@ -31,6 +31,7 @@ cfg/*
 **/prj/
 **/prj1/
 **/rtl_check/results/
+**/rtl_check/popcount_timing_test/results/
 
 
 # ==============================================================================
