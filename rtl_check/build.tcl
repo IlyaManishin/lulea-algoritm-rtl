@@ -1,6 +1,7 @@
 # build.tcl - Recreate Vivado project and run implementation
 
 set PROJ_NAME  "prj1"
+set SOURCE_FILES "top.sv"
 
 set script_dir [file normalize [file dirname [info script]]]
 set proj_dir   [file join $script_dir $PROJ_NAME]
@@ -93,7 +94,7 @@ foreach run [get_runs *_synth_1] {
 # -----------------------------------------------------------------------------
 # Add RTL sources and constraints
 # -----------------------------------------------------------------------------
-add_files -norecurse [file join $script_dir "src" "top.sv"]
+add_files -norecurse [file join $script_dir "src" $SOURCE_FILES]
 add_files -fileset constrs_1 -norecurse [file join $script_dir "constraints" "rv_nsu_basys_3.xdc"]
 
 update_compile_order -fileset sources_1
