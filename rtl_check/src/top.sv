@@ -58,12 +58,25 @@ module top (
         .douta (douta)
     );
 `endif
+    localparam int WIDTH = $bits(douta);
+
+    logic [WIDTH-1:0] popcount_in;
+    logic [6:0] popcount_out;
+
+    popcount #(
+        .W      (WIDTH)
+    ) u_popcount (
+        .x      (popcount_in),
+        .cnt    (popcount_out)
+    );
+
 
     (* dont_touch = "true" *) logic [6:0] test;
 
 `ifdef IS_PIPELINED
     // Pipeline register to isolate BRAM read routing from popcount tree
-    (* dont_touch = "true" *) logic [$bits(douta)-1:0] douta_pipe;
+    (* dont_touch = "true" *) logic [WIDTH-1:0] douta_pipe;
+    assign popcount_in = douta_pipe;
 
     always_ff @(posedge bram_clk or posedge rst) begin
         if (rst) begin
@@ -71,16 +84,18 @@ module top (
             test       <= '0;
         end else if (pll_locked) begin
             douta_pipe <= douta;
-            test       <= $countones(douta_pipe);
+            test       <= popcount_out;
         end
     end
 `else
+    assign popcount_in = douta;
+
     // Combinational popcount directly on BRAM read output
     always_ff @(posedge bram_clk or posedge rst) begin
         if (rst) begin
             test <= '0;
         end else if (pll_locked) begin
-            test <= $countones(douta);
+            test <= popcount_out;
         end
     end
 `endif
