@@ -1,8 +1,9 @@
 # build.tcl - Recreate Vivado project and run implementation
 
+set PROJ_NAME  "prj1"
+
 set script_dir [file normalize [file dirname [info script]]]
-set proj_name  "prj"
-set proj_dir   [file join $script_dir "prj"]
+set proj_dir   [file join $script_dir $PROJ_NAME]
 set part       "xc7a35ticpg236-1L"
 set top_module "top"
 
@@ -14,7 +15,7 @@ if {[info exists ::env(JOBS)]} {
 }
 
 # Create project
-create_project -force $proj_name $proj_dir -part $part
+create_project -force $PROJ_NAME $proj_dir -part $part
 set_property simulator_language Verilog [current_project]
 set_property target_language Verilog [current_project]
 
