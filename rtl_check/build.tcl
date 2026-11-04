@@ -21,33 +21,33 @@ set_property simulator_language Verilog [current_project]
 set_property target_language Verilog [current_project]
 
 # -----------------------------------------------------------------------------
-# IP Core: blk_mem_gen_0 (Single Port ROM, 32768 x 18-bit)
+# IP Core: blk_mem_gen_0 (Single Port ROM, 32768 x 16-bit)
 # -----------------------------------------------------------------------------
 create_ip -name blk_mem_gen -vendor xilinx.com -library ip -version 8.4 -module_name blk_mem_gen_0
 set_property -dict [list \
     CONFIG.Memory_Type {Single_Port_ROM} \
     CONFIG.Write_Depth_A {32768} \
-    CONFIG.Write_Width_A {18} \
+    CONFIG.Write_Width_A {16} \
 ] [get_ips blk_mem_gen_0]
 
 # -----------------------------------------------------------------------------
-# IP Core: blk_mem_gen_1 (Single Port ROM, 16384 x 36-bit)
+# IP Core: blk_mem_gen_1 (Single Port ROM, 16384 x 32-bit)
 # -----------------------------------------------------------------------------
 create_ip -name blk_mem_gen -vendor xilinx.com -library ip -version 8.4 -module_name blk_mem_gen_1
 set_property -dict [list \
     CONFIG.Memory_Type {Single_Port_ROM} \
     CONFIG.Write_Depth_A {16384} \
-    CONFIG.Write_Width_A {36} \
+    CONFIG.Write_Width_A {32} \
 ] [get_ips blk_mem_gen_1]
 
 # -----------------------------------------------------------------------------
-# IP Core: blk_mem_gen_2 (Single Port ROM, 8192 x 72-bit)
+# IP Core: blk_mem_gen_2 (Single Port ROM, 8192 x 64-bit)
 # -----------------------------------------------------------------------------
 create_ip -name blk_mem_gen -vendor xilinx.com -library ip -version 8.4 -module_name blk_mem_gen_2
 set_property -dict [list \
     CONFIG.Memory_Type {Single_Port_ROM} \
     CONFIG.Write_Depth_A {8192} \
-    CONFIG.Write_Width_A {72} \
+    CONFIG.Write_Width_A {64} \
 ] [get_ips blk_mem_gen_2]
 
 # -----------------------------------------------------------------------------

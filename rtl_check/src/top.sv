@@ -1,7 +1,7 @@
-// Select configuration by uncommenting one line or defining via synth options:
-// `define USE_BRAM_18
-// `define USE_BRAM_36
-`define USE_BRAM_72
+// Configurations:
+// `define USE_BRAM_16
+// `define USE_BRAM_32
+// Default is USE_BRAM_64
 
 // Enable pipeline register between BRAM output and popcount logic:
 // `define IS_PIPELINED
@@ -24,30 +24,34 @@ module top (
     );
 
     logic bram_clk;
+`ifdef USE_CLK_200
+    assign bram_clk = clk_200;
+`else
     assign bram_clk = clk_100;
+`endif
 
-`ifdef USE_BRAM_18
-    logic [17:0] douta;
+`ifdef USE_BRAM_16
+    logic [15:0] douta;
 
-    blk_mem_gen_0 bram_18_inst (
+    blk_mem_gen_0 bram_16_inst (
         .clka  (bram_clk),
         .ena   (1'b1),
         .addra ('0),
         .douta (douta)
     );
-`elsif USE_BRAM_36
-    logic [35:0] douta;
+`elsif USE_BRAM_32
+    logic [31:0] douta;
 
-    blk_mem_gen_1 bram_36_inst (
+    blk_mem_gen_1 bram_32_inst (
         .clka  (bram_clk),
         .ena   (1'b1),
         .addra ('0),
         .douta (douta)
     );
-`else // Default: USE_BRAM_72
-    logic [71:0] douta;
+`else // Default: USE_BRAM_64
+    logic [63:0] douta;
 
-    blk_mem_gen_2 bram_72_inst (
+    blk_mem_gen_2 bram_64_inst (
         .clka  (bram_clk),
         .ena   (1'b1),
         .addra ('0),
