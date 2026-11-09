@@ -24,7 +24,7 @@ protected:
         fs::remove_all(test_dir);
     }
 
-    fs::path create_manifest_file(const std::string &filename, const std::string &content)
+    fs::path create_manifest_file(const std::string &filename, const std::string &content) const
     {
         fs::path file_path = test_dir / filename;
         std::ofstream ofs(file_path);

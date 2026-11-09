@@ -125,7 +125,7 @@ namespace gen
     {
         std::size_t remaining_bits = std::min(num_bits, bytes.size() * 8);
 
-        for (std::byte b : bytes)
+        for (const std::byte b : bytes)
         {
             if (remaining_bits == 0)
             {

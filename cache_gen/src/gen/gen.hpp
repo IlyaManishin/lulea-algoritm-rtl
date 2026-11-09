@@ -8,7 +8,7 @@
 namespace gen
 {
 
-    enum class Mode
+    enum class Mode : std::uint8_t
     {
         Stats,
         Dump
