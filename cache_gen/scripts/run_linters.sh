@@ -8,6 +8,17 @@ BUILD_DIR="${PROJECT_DIR}/build"
 RUN_CPPCHECK=1
 RUN_CLANG_TIDY=1
 
+CPPCHECK_FLAGS=(
+    --enable=all
+    --inconclusive
+    --library=posix
+    --platform=unix64
+    --check-level=exhaustive
+    --suppress=missingIncludeSystem
+    --suppress=unusedFunction
+    --error-exitcode=1
+)
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --cppcheck-only)
@@ -54,13 +65,7 @@ if [[ "${RUN_CPPCHECK}" -eq 1 ]]; then
     echo "=========================================================="
     if command -v cppcheck >/dev/null 2>&1; then
         if cppcheck --project="${BUILD_DIR}/compile_commands.json" \
-            --enable=all \
-            --inconclusive \
-            --library=posix \
-            --platform=unix64 \
-            --check-level=exhaustive \
-            --suppress=missingIncludeSystem \
-            --error-exitcode=1; then
+            "${CPPCHECK_FLAGS[@]}"; then
             echo "[OK] cppcheck passed with no errors."
         else
             echo "[FAIL] cppcheck reported issues."

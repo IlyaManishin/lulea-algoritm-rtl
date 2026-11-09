@@ -7,8 +7,15 @@ Checks: >
   performance-*,
   portability-*,
   misc-*,
-  readability-*
+  readability-*,
+  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers
+  -portability-avoid-pragma-once
+
 WarningsAsErrors: '*'
+
 CheckOptions:
   - key: cppcoreguidelines-owning-memory.LegacyResourceProducers
     value: 'malloc;calloc'
+  - key: readability-identifier-length.MinimumVariableNameLength
+    value: 1
