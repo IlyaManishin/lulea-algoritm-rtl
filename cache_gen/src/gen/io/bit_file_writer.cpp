@@ -11,8 +11,16 @@
 #include <utility>
 #include <vector>
 
+namespace
+{
+    constexpr std::size_t kDefaultBufferSize = 64ULL * 1024ULL;
+} // namespace
+
 namespace gen
 {
+
+    BitFileWriter::BitFileWriter(const std::filesystem::path &file_path)
+        : BitFileWriter(file_path, kDefaultBufferSize) {}
 
     BitFileWriter::BitFileWriter(const std::filesystem::path &file_path, std::size_t buffer_size)
         : buffer_capacity_(buffer_size)

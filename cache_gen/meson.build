@@ -38,6 +38,7 @@ inc_dirs = include_directories('include', 'src')
 core_sources = files(
   'src/gen/gen.cpp',
   'src/gen/io/reader.cpp',
+  'src/gen/io/bit_file_writer.cpp',
   'src/cli/parser.cpp',
 )
 

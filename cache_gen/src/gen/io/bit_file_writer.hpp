@@ -13,9 +13,8 @@ namespace gen
     class BitFileWriter
     {
     public:
-        static constexpr std::size_t DEFAULT_BUFFER_SIZE = 64ULL * 1024ULL;
-
-        explicit BitFileWriter(const std::filesystem::path &file_path, std::size_t buffer_size = DEFAULT_BUFFER_SIZE);
+        explicit BitFileWriter(const std::filesystem::path &file_path);
+        explicit BitFileWriter(const std::filesystem::path &file_path, std::size_t buffer_size);
         ~BitFileWriter();
 
         BitFileWriter(const BitFileWriter &) = delete;
