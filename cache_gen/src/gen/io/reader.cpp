@@ -1,5 +1,5 @@
 #include "reader.hpp"
-#include "config.hpp"
+#include "gen/config.hpp"
 
 #include <cstring>
 #include <fstream>

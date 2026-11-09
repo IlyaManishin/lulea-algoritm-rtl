@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "gen/config.hpp"
-#include "gen/internal/reader.hpp"
+#include "gen/io/reader.hpp"
 #include "gen/types.hpp"
 
 namespace fs = std::filesystem;

@@ -9,12 +9,12 @@ project(
   ],
 )
 
-inc_dirs = include_directories('include', 'src', 'src/gen', 'src/gen/internal')
+inc_dirs = include_directories('include', 'src')
 
 core_sources = files(
   'src/gen/gen.cpp',
-  'src/gen/internal/reader.cpp',
-  'src/parser.cpp',
+  'src/gen/io/reader.cpp',
+  'src/cli/parser.cpp',
 )
 
 executable(

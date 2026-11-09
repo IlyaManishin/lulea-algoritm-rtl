@@ -3,8 +3,8 @@
 #include <optional>
 #include <string>
 
+#include "cli/parser.hpp"
 #include "gen/gen.hpp"
-#include "parser.hpp"
 
 namespace
 {

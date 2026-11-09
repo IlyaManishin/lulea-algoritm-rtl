@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.hpp"
+#include "gen/types.hpp"
 
 #include <stdexcept>
 #include <string>
