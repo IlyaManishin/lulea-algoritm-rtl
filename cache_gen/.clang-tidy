@@ -1,0 +1,14 @@
+Checks: >
+  -*,
+  clang-analyzer-*,
+  bugprone-*,
+  cert-*,
+  cppcoreguidelines-*,
+  performance-*,
+  portability-*,
+  misc-*,
+  readability-*
+WarningsAsErrors: '*'
+CheckOptions:
+  - key: cppcoreguidelines-owning-memory.LegacyResourceProducers
+    value: 'malloc;calloc'

@@ -2,12 +2,36 @@ project(
   'cache_gen',
   'cpp',
   version: '0.1.0',
+  meson_version: '>=1.1.0',
   default_options: [
     'cpp_std=c++20',
     'warning_level=3',
     'optimization=3',
   ],
 )
+
+cpp = meson.get_compiler('cpp')
+
+gcc_strict_flags = [
+  '-fanalyzer',
+  '-Wall',
+  '-Wextra',
+  '-Wpedantic',
+  '-Werror',
+  '-Wshadow',
+  '-Wconversion',
+  '-Wsign-conversion',
+  '-Wnull-dereference',
+  '-Wdouble-promotion',
+  '-Wformat=2',
+  '-Wimplicit-fallthrough',
+  '-Wcast-align',
+  '-Wstrict-overflow=5',
+]
+
+if get_option('strict_flags') and cpp.get_id() == 'gcc'
+  add_project_arguments(gcc_strict_flags, language: 'cpp')
+endif
 
 inc_dirs = include_directories('include', 'src')
 
@@ -30,6 +54,7 @@ test_sources = files(
   'tests/test_config.cpp',
   'tests/gen/test_reader.cpp',
 ) + core_sources
+
 test_exe = executable(
   'test_gen',
   test_sources,
@@ -38,3 +63,20 @@ test_exe = executable(
 )
 
 test('cache_gen_tests', test_exe)
+
+lint_script = files('scripts/run_linters.sh')
+
+run_target(
+  'lint',
+  command: [lint_script],
+)
+
+run_target(
+  'lint-cppcheck',
+  command: [lint_script, '--cppcheck-only'],
+)
+
+run_target(
+  'lint-clang-tidy',
+  command: [lint_script, '--clang-tidy-only'],
+)
