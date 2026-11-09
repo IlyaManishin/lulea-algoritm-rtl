@@ -1,6 +1,15 @@
 #include "bit_file_writer.hpp"
+
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <ios>
+#include <span>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace gen
 {

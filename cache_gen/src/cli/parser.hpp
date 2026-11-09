@@ -1,9 +1,10 @@
 #pragma once
 
+#include "gen/gen.hpp"
+
+#include <cstddef>
 #include <fstream>
 #include <string>
-
-#include "gen/gen.hpp"
 
 class ConfigParser
 {

@@ -1,6 +1,8 @@
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <ostream>
 #include <string>
 
 #include "cli/parser.hpp"

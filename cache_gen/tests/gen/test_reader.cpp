@@ -1,10 +1,14 @@
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <ios>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "gen/config.hpp"

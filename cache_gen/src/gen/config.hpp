@@ -1,7 +1,8 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
-#include <string>
+#include <string_view>
 
 using ipv4_t = uint32_t;
 using mask_t = std::byte;

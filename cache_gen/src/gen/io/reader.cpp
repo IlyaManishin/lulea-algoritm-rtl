@@ -1,11 +1,18 @@
 #include "reader.hpp"
-#include "gen/config.hpp"
 
+#include "gen/config.hpp"
+#include "gen/types.hpp"
+
+#include <algorithm>
+#include <cstddef>
 #include <cstring>
 #include <fstream>
+#include <ios>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <vector>
+
 
 const size_t BUFFER_ENTRIES_COUNT = 4096;
 const size_t BUFFER_SIZE = ENTRY_SIZE * BUFFER_ENTRIES_COUNT;
