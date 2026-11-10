@@ -13,62 +13,65 @@
 #include <string>
 #include <vector>
 
-
 const size_t BUFFER_ENTRIES_COUNT = 4096;
 const size_t BUFFER_SIZE = ENTRY_SIZE * BUFFER_ENTRIES_COUNT;
 
 namespace gen
 {
-    static inline port_t truncate_port(reader_port_t raw_port)
+    namespace
     {
-        if constexpr (sizeof(port_t) < sizeof(reader_port_t))
+        port_t truncate_port(reader_port_t raw_port)
         {
-            if ((raw_port >> (sizeof(port_t) * 8)) != 0)
+            if constexpr (sizeof(port_t) < sizeof(reader_port_t))
             {
-                throw PortOverflowError("Port ID " + std::to_string(raw_port) +
-                                        " exceeds port_t capacity");
+                if ((raw_port >> (sizeof(port_t) * 8)) != 0)
+                {
+                    throw PortOverflowError("Port ID " + std::to_string(raw_port) +
+                                            " exceeds port_t capacity");
+                }
             }
-        }
-        return static_cast<port_t>(raw_port);
-    }
-
-    static MaskEntries *read_mask_entries(std::ifstream &file, bin_entry_count_t count)
-    {
-        std::unique_ptr<MaskEntries> entries = std::make_unique<MaskEntries>(count);
-        std::vector<char> buf(BUFFER_SIZE);
-
-        size_t processed = 0;
-        while (processed < count)
-        {
-            const size_t batch = std::min(static_cast<size_t>(count - processed), BUFFER_ENTRIES_COUNT);
-
-            if (!file.read(buf.data(), batch * ENTRY_SIZE))
-            {
-                throw std::runtime_error("Unexpected EOF while reading mask entries");
-            }
-
-            for (size_t i = 0; i < batch; ++i)
-            {
-                TMaskEntry &entry = (*entries)[processed + i];
-                const char *entry_buf = buf.data() + i * ENTRY_SIZE;
-                size_t off = 0;
-
-                std::memcpy(&entry.ip, entry_buf + off, sizeof(ipv4_t));
-                off += sizeof(ipv4_t);
-
-                std::memcpy(&entry.mask, entry_buf + off, sizeof(mask_t));
-                off += sizeof(mask_t);
-
-                reader_port_t raw_port = 0;
-                std::memcpy(&raw_port, entry_buf + off, sizeof(reader_port_t));
-                entry.port = truncate_port(raw_port);
-            }
-
-            processed += batch;
+            return static_cast<port_t>(raw_port);
         }
 
-        return entries.release();
-    }
+        MaskEntries *read_mask_entries(std::ifstream &file, bin_entry_count_t count)
+        {
+            std::unique_ptr<MaskEntries> entries = std::make_unique<MaskEntries>(count);
+            std::vector<char> buf(BUFFER_SIZE);
+
+            size_t processed = 0;
+            while (processed < count)
+            {
+                const size_t batch = std::min(static_cast<size_t>(count - processed), BUFFER_ENTRIES_COUNT);
+                const size_t read_bytes = batch * ENTRY_SIZE;
+
+                if (!file.read(buf.data(), static_cast<std::streamsize>(read_bytes)))
+                {
+                    throw std::runtime_error("Unexpected EOF while reading mask entries");
+                }
+
+                for (size_t i = 0; i < batch; ++i)
+                {
+                    TMaskEntry &entry = (*entries)[processed + i];
+                    const char *entry_buf = buf.data() + i * ENTRY_SIZE;
+                    size_t off = 0;
+
+                    std::memcpy(&entry.ip, entry_buf + off, sizeof(ipv4_t));
+                    off += sizeof(ipv4_t);
+
+                    std::memcpy(&entry.mask, entry_buf + off, sizeof(mask_t));
+                    off += sizeof(mask_t);
+
+                    reader_port_t raw_port = 0;
+                    std::memcpy(&raw_port, entry_buf + off, sizeof(reader_port_t));
+                    entry.port = truncate_port(raw_port);
+                }
+
+                processed += batch;
+            }
+
+            return entries.release();
+        }
+    } // namespace
 
     MaskEntries *read_mask_mapping(const std::string &map_path)
     {

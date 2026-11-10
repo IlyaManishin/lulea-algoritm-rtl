@@ -6,15 +6,13 @@
 #include <filesystem>
 #include <fstream>
 #include <ios>
+#include <iostream>
 #include <span>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
-namespace
-{
-    constexpr std::size_t kDefaultBufferSize = 64ULL * 1024ULL;
-} // namespace
+constexpr size_t kDefaultBufferSize = 64ULL * 1024ULL;
 
 namespace gen
 {
@@ -41,6 +39,7 @@ namespace gen
         }
         catch (...)
         {
+            std::cerr << "BitFileWriter error during destruction\n";
         }
     }
 
@@ -68,6 +67,7 @@ namespace gen
             }
             catch (...)
             {
+                std::cerr << "BitFileWriter error during move assignment\n";
             }
 
             file_ = std::move(other.file_);

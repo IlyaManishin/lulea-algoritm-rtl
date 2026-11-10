@@ -11,6 +11,6 @@ using reader_port_t = uint16_t;
 
 using bin_entry_count_t = uint32_t;
 
-const int HEADER_SIZE = 8;
-const int ENTRY_SIZE = 8;
+const size_t HEADER_SIZE = 8;
+const size_t ENTRY_SIZE = 8;
 const std::string_view BIN_MAGIC = "LRB1";
