@@ -41,7 +41,7 @@ bool ConfigParser::next(gen::Config &config_out)
         // Optional 3rd field: dest_dir
         std::getline(ss, dest_dir, '\t');
 
-        gen::Mode mode;
+        gen::Mode mode = gen::Mode::Stats;
         if (mode_str == "stats")
         {
             mode = gen::Mode::Stats;

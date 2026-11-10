@@ -1,12 +1,15 @@
+#include "cli/parser.hpp"
+#include "gen/gen.hpp"
+
+#include <cstddef>
 #include <exception>
 #include <fstream>
 #include <iostream>
 #include <optional>
 #include <ostream>
+#include <span>
 #include <string>
-
-#include "cli/parser.hpp"
-#include "gen/gen.hpp"
+#include <string_view>
 
 namespace
 {
@@ -23,27 +26,27 @@ namespace
                   << "       " << prog_name << " --batch <config_file.tsv> [--out-csv <results.csv>]\n";
     }
 
-    std::optional<CliOptions> parse_cli_args(int argc, char *argv[])
+    std::optional<CliOptions> parse_cli_args(std::span<char *const> args)
     {
-        if (argc < 2)
+        if (args.size() < 2)
         {
             return std::nullopt;
         }
 
         CliOptions options;
 
-        for (int i = 1; i < argc; ++i)
+        for (std::size_t i = 1; i < args.size(); ++i)
         {
-            std::string arg = argv[i];
-            if (arg == "--batch" && i + 1 < argc)
+            const std::string_view arg = args[i];
+            if (arg == "--batch" && i + 1 < args.size())
             {
-                options.config_file = argv[++i];
+                options.config_file = args[++i];
             }
-            else if (arg == "--out-csv" && i + 1 < argc)
+            else if (arg == "--out-csv" && i + 1 < args.size())
             {
-                options.out_csv = argv[++i];
+                options.out_csv = args[++i];
             }
-            else if (options.config_file.empty() && arg[0] != '-')
+            else if (options.config_file.empty() && !arg.starts_with('-'))
             {
                 options.config_file = arg;
             }
@@ -75,7 +78,7 @@ namespace
 
     void process_config_entry(const gen::Config &config, std::ofstream &csv_file)
     {
-        gen::BuildResult result = gen::build_lulea_cache(config);
+        const gen::BuildResult result = gen::build_lulea_cache(config);
 
         if (!result.success)
         {
@@ -125,10 +128,11 @@ namespace
 
 int main(int argc, char *argv[])
 {
-    auto options = parse_cli_args(argc, argv);
+    const std::span<char *const> args(argv, static_cast<std::size_t>(argc));
+    const auto options = parse_cli_args(args);
     if (!options.has_value())
     {
-        print_usage(argv[0]);
+        print_usage(args.empty() ? "lulea_builder" : args.front());
         return 1;
     }
 

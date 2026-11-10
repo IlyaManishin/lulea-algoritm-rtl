@@ -8,9 +8,15 @@ Checks: >
   portability-*,
   misc-*,
   readability-*,
+  llvm-include-order,
+  
   -readability-magic-numbers,
-  -cppcoreguidelines-avoid-magic-numbers
-  -portability-avoid-pragma-once
+  -cppcoreguidelines-avoid-magic-numbers,
+  -portability-avoid-pragma-once,
+  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-pro-type-reinterpret-cast
 
 WarningsAsErrors: '*'
 

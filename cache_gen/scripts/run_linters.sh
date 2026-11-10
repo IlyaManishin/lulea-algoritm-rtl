@@ -16,6 +16,7 @@ CPPCHECK_FLAGS=(
     --check-level=exhaustive
     --suppress=missingIncludeSystem
     --suppress=unusedFunction
+    --suppress=checkersReport
     --error-exitcode=1
 )
 

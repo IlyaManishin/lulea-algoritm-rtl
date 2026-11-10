@@ -40,7 +40,7 @@ namespace gen
         size_t processed = 0;
         while (processed < count)
         {
-            size_t batch = std::min(static_cast<size_t>(count - processed), BUFFER_ENTRIES_COUNT);
+            const size_t batch = std::min(static_cast<size_t>(count - processed), BUFFER_ENTRIES_COUNT);
 
             if (!file.read(buf.data(), batch * ENTRY_SIZE))
             {
@@ -91,7 +91,7 @@ namespace gen
             throw std::runtime_error("Invalid magic signature in: " + map_path);
         }
 
-        bin_entry_count_t mask_count;
+        bin_entry_count_t mask_count = 0;
         std::memcpy(&mask_count, header.data() + BIN_MAGIC.size(), sizeof(bin_entry_count_t));
 
         return read_mask_entries(map_file, mask_count);
