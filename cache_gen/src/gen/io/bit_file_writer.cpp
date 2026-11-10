@@ -20,7 +20,7 @@ namespace gen
     BitFileWriter::BitFileWriter(const std::filesystem::path &file_path)
         : BitFileWriter(file_path, kDefaultBufferSize) {}
 
-    BitFileWriter::BitFileWriter(const std::filesystem::path &file_path, std::size_t buffer_size)
+    BitFileWriter::BitFileWriter(const std::filesystem::path &file_path, size_t buffer_size)
         : buffer_capacity_(buffer_size)
     {
         file_.open(file_path, std::ios::binary);
@@ -85,7 +85,7 @@ namespace gen
         return *this;
     }
 
-    void BitFileWriter::write_bits(uint64_t value, std::size_t num_bits)
+    void BitFileWriter::write_bits(uint64_t value, size_t num_bits)
     {
         if (num_bits == 0)
         {
@@ -96,8 +96,8 @@ namespace gen
 
         while (num_bits > 0)
         {
-            const std::size_t space_in_accumulator = 64 - accumulated_bits_;
-            const std::size_t bits_to_take = std::min(num_bits, space_in_accumulator);
+            const size_t space_in_accumulator = 64 - accumulated_bits_;
+            const size_t bits_to_take = std::min(num_bits, space_in_accumulator);
 
             const uint64_t mask = (bits_to_take == 64) ? ~0ULL : ((1ULL << bits_to_take) - 1);
             const uint64_t chunk = value & mask;
@@ -129,9 +129,9 @@ namespace gen
         }
     }
 
-    void BitFileWriter::write_bytes(std::span<const std::byte> bytes, std::size_t num_bits)
+    void BitFileWriter::write_bytes(std::span<const std::byte> bytes, size_t num_bits)
     {
-        std::size_t remaining_bits = std::min(num_bits, bytes.size() * 8);
+        size_t remaining_bits = std::min(num_bits, bytes.size() * 8);
 
         for (const std::byte b : bytes)
         {
@@ -139,7 +139,7 @@ namespace gen
             {
                 break;
             }
-            const std::size_t bits_to_write = std::min<std::size_t>(remaining_bits, 8);
+            const size_t bits_to_write = std::min<size_t>(remaining_bits, 8);
             write_bits(static_cast<uint64_t>(std::to_integer<uint8_t>(b)), bits_to_write);
             remaining_bits -= bits_to_write;
         }
@@ -190,7 +190,7 @@ namespace gen
         file_.close();
     }
 
-    std::size_t BitFileWriter::total_bits_written() const noexcept
+    size_t BitFileWriter::total_bits_written() const noexcept
     {
         return total_bits_;
     }

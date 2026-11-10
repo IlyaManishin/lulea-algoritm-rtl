@@ -35,7 +35,7 @@ namespace
 
         CliOptions options;
 
-        for (std::size_t i = 1; i < args.size(); ++i)
+        for (size_t i = 1; i < args.size(); ++i)
         {
             const std::string_view arg = args[i];
             if (arg == "--batch" && i + 1 < args.size())
@@ -128,7 +128,7 @@ namespace
 
 int main(int argc, char *argv[])
 {
-    const std::span<char *const> args(argv, static_cast<std::size_t>(argc));
+    const std::span<char *const> args(argv, static_cast<size_t>(argc));
     const auto options = parse_cli_args(args);
     if (!options.has_value())
     {
