@@ -5,8 +5,8 @@
 #include <stdexcept>
 #include <string>
 
-#include "cli/parser.hpp"
 #include "gen/gen.hpp"
+#include "io/config_parser.hpp"
 
 namespace fs = std::filesystem;
 

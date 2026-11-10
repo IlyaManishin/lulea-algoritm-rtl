@@ -1,4 +1,4 @@
-#include "parser.hpp"
+#include "config_parser.hpp"
 #include "gen/gen.hpp"
 
 #include <sstream>

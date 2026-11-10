@@ -39,7 +39,9 @@ core_sources = files(
   'src/gen/gen.cpp',
   'src/gen/io/reader.cpp',
   'src/gen/io/bit_file_writer.cpp',
-  'src/cli/parser.cpp',
+  'src/io/config_parser.cpp',
+  'src/io/cli.cpp',
+  'src/io/stats_writer.cpp',
 )
 
 executable(
@@ -53,6 +55,7 @@ gtest_dep = dependency('gtest_main')
 
 test_sources = files(
   'tests/test_config.cpp',
+  'tests/test_stats_writer.cpp',
   'tests/gen/test_reader.cpp',
 ) + core_sources
 
