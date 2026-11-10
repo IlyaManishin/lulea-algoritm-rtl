@@ -7,7 +7,7 @@
 
 namespace gen
 {
-
+    
     enum class Mode : std::uint8_t
     {
         Stats,
@@ -21,7 +21,7 @@ namespace gen
         std::string dest_dir;
     };
 
-    struct CacheStats
+    struct CacheByteSizes
     {
         uint32_t l1_pop = 0;
         uint32_t l1_chunk = 0;
@@ -34,6 +34,11 @@ namespace gen
         uint32_t l3_pop = 0;
         uint32_t l3_chunk = 0;
         uint32_t l3_seq = 0;
+    };
+
+    struct CacheStats
+    {
+        CacheByteSizes cache_sizes;
     };
 
     struct BuildResult

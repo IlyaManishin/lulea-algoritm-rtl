@@ -37,9 +37,11 @@ TEST_F(StatsWriterTest, WritesToCsvFile)
         EXPECT_TRUE(writer.is_csv());
 
         gen::CacheStats stats{
-            .l1_pop = 11, .l1_chunk = 12, .l1_seq = 13,
-            .l2_pop = 21, .l2_chunk = 22, .l2_seq = 23,
-            .l3_pop = 31, .l3_chunk = 32, .l3_seq = 33
+            .cache_sizes = {
+                .l1_pop = 11, .l1_chunk = 12, .l1_seq = 13,
+                .l2_pop = 21, .l2_chunk = 22, .l2_seq = 23,
+                .l3_pop = 31, .l3_chunk = 32, .l3_seq = 33
+            }
         };
 
         writer.write("input.lrb1", stats);
@@ -64,9 +66,11 @@ TEST_F(StatsWriterTest, WritesToStdoutWhenNoCsv)
     auto *old_cout = std::cout.rdbuf(oss.rdbuf());
 
     gen::CacheStats stats{
-        .l1_pop = 10, .l1_chunk = 20, .l1_seq = 30,
-        .l2_pop = 40, .l2_chunk = 50, .l2_seq = 60,
-        .l3_pop = 70, .l3_chunk = 80, .l3_seq = 90
+        .cache_sizes = {
+            .l1_pop = 10, .l1_chunk = 20, .l1_seq = 30,
+            .l2_pop = 40, .l2_chunk = 50, .l2_seq = 60,
+            .l3_pop = 70, .l3_chunk = 80, .l3_seq = 90
+        }
     };
 
     writer.write("test_file.lrb1", stats);

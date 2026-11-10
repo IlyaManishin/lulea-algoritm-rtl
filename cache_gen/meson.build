@@ -57,6 +57,7 @@ test_sources = files(
   'tests/test_config.cpp',
   'tests/test_stats_writer.cpp',
   'tests/gen/test_reader.cpp',
+  'tests/gen/test_bit_file_writer.cpp',
 ) + core_sources
 
 test_exe = executable(
