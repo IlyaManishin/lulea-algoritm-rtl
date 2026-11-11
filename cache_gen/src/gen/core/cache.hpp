@@ -32,7 +32,7 @@ namespace gen
         size_t raw() const noexcept { return this->data_; }
 
         size_t bit_width() const noexcept { return this->cell_size_bits_; }
-        size_t max_raw() const noexcept;
+        size_t max_raw() const noexcept { return mask_for_bits(this->cell_size_bits_); }
 
         friend bool operator==(const BaseCell &lhs, const BaseCell &rhs) noexcept = default;
 
@@ -55,19 +55,19 @@ namespace gen
         void set_port(port_t port_val);
         void set_ptr(size_t ptr_val);
 
-        bool is_ptr() const noexcept;
-        bool is_port() const noexcept;
-        bool is_null() const noexcept;
+        bool is_ptr() const noexcept { return (this->raw() & this->flag_bit_mask()) != 0; }
+        bool is_port() const noexcept { return (this->raw() & this->flag_bit_mask()) == 0; }
+        bool is_null() const noexcept { return this->is_port() && (this->value() == std::to_integer<size_t>(NULL_PORT)); }
 
-        size_t value() const noexcept;
+        size_t value() const noexcept { return this->raw() & this->payload_mask(); }
         port_t port() const;
         size_t ptr() const;
 
-        size_t max_value() const noexcept;
+        size_t max_value() const noexcept { return this->payload_mask(); }
 
     private:
-        size_t flag_bit_mask() const noexcept;
-        size_t payload_mask() const noexcept;
+        size_t flag_bit_mask() const noexcept { return size_t{1} << (this->bit_width() - 1); }
+        size_t payload_mask() const noexcept { return mask_for_bits(this->bit_width() - 1); }
     };
 
     class LuleaRoute

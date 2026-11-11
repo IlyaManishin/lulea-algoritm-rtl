@@ -44,10 +44,6 @@ namespace gen
         return (size_t{1} << bits) - 1;
     }
 
-    size_t BaseCell::max_raw() const noexcept
-    {
-        return mask_for_bits(this->cell_size_bits_);
-    }
 
     void BaseCell::set_raw(size_t raw_val)
     {
@@ -87,20 +83,6 @@ namespace gen
         return cell;
     }
 
-    size_t LuleaCell::flag_bit_mask() const noexcept
-    {
-        return size_t{1} << (this->bit_width() - 1);
-    }
-
-    size_t LuleaCell::payload_mask() const noexcept
-    {
-        return mask_for_bits(this->bit_width() - 1);
-    }
-
-    size_t LuleaCell::max_value() const noexcept
-    {
-        return this->payload_mask();
-    }
 
     void LuleaCell::set_port(port_t port_val)
     {
@@ -129,25 +111,6 @@ namespace gen
         this->set_raw(ptr_val | this->flag_bit_mask());
     }
 
-    bool LuleaCell::is_ptr() const noexcept
-    {
-        return (this->raw() & this->flag_bit_mask()) != 0;
-    }
-
-    bool LuleaCell::is_port() const noexcept
-    {
-        return !this->is_ptr();
-    }
-
-    bool LuleaCell::is_null() const noexcept
-    {
-        return this->value() == std::to_integer<size_t>(NULL_PORT);
-    }
-
-    size_t LuleaCell::value() const noexcept
-    {
-        return this->raw() & this->payload_mask();
-    }
 
     port_t LuleaCell::port() const
     {
