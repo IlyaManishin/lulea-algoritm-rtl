@@ -13,13 +13,13 @@
 #include <string>
 #include <vector>
 
-const size_t BUFFER_ENTRIES_COUNT = 4096;
-const size_t BUFFER_SIZE = ENTRY_SIZE * BUFFER_ENTRIES_COUNT;
-
 namespace gen
 {
     namespace
     {
+        const size_t BUFFER_ENTRIES_COUNT = 4096;
+        const size_t BUFFER_SIZE = ENTRY_SIZE * BUFFER_ENTRIES_COUNT;
+
         port_t truncate_port(reader_port_t raw_port)
         {
             if constexpr (sizeof(port_t) < sizeof(reader_port_t))

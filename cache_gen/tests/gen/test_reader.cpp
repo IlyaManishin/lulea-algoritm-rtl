@@ -16,6 +16,7 @@
 #include "gen/types.hpp"
 
 namespace fs = std::filesystem;
+using namespace gen;
 
 class ReaderTest : public ::testing::Test
 {
