@@ -1,12 +1,22 @@
 #pragma once
 
-#include "gen/types.hpp"
+#include "gen/config.hpp"
 
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace gen
 {
+
+    struct TMaskEntry
+    {
+        ipv4_t ip = 0;
+        mask_t mask = mask_t{0};
+        port_t port = NULL_PORT;
+    };
+
+    using MaskEntries = std::vector<TMaskEntry>;
 
     class PortOverflowError : public std::runtime_error
     {

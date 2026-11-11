@@ -3,8 +3,6 @@
 #include <cstdint>
 #include <string>
 
-#include "types.hpp"
-
 namespace gen
 {
     
