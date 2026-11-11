@@ -141,7 +141,7 @@ namespace gen
 
     bool LuleaCell::is_null() const noexcept
     {
-        return this->is_port() && (this->value() == std::to_integer<size_t>(NULL_PORT));
+        return this->value() == std::to_integer<size_t>(NULL_PORT);
     }
 
     size_t LuleaCell::value() const noexcept
