@@ -1,4 +1,4 @@
-#include "gen/core/lulea_algo.hpp"
+#include "gen/core/lulea_tree.hpp"
 
 #include "gen/config.hpp"
 #include "gen/core/cache.hpp"

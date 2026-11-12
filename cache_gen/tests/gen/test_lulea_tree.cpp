@@ -11,7 +11,7 @@
 
 #include "gen/config.hpp"
 #include "gen/core/cache.hpp"
-#include "gen/core/lulea_algo.hpp"
+#include "gen/core/lulea_tree.hpp"
 #include "gen/io/reader.hpp"
 #include "gen/lulea_config.hpp"
 
