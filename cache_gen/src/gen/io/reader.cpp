@@ -1,6 +1,6 @@
 #include "reader.hpp"
 
-#include "gen/config.hpp"
+#include "config.hpp"
 
 #include <algorithm>
 #include <cstddef>

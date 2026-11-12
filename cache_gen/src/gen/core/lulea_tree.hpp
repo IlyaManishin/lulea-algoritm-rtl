@@ -1,9 +1,9 @@
 #pragma once
 
-#include "gen/config.hpp"
-#include "gen/core/cache.hpp"
-#include "gen/io/reader.hpp"
-#include "gen/lulea_config.hpp"
+#include "config.hpp"
+#include "core/cache.hpp"
+#include "io/reader.hpp"
+#include "lulea_config.hpp"
 
 #include <cstddef>
 #include <vector>

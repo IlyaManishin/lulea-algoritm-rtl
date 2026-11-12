@@ -1,7 +1,8 @@
-#include "gen/core/lulea_algo.hpp"
+#include "core/lulea_algo.hpp"
 
-#include "gen/core/lulea_tree.hpp"
-#include "gen/io/reader.hpp"
+#include "core/lulea_tree.hpp"
+#include "gen.hpp"
+#include "io/reader.hpp"
 
 namespace gen
 {
@@ -11,6 +12,8 @@ namespace gen
     {
     }
 
+    LuleaAlgo::LuleaAlgo() : LuleaAlgo(LuleaTreeConfig{}) {}
+
     void LuleaAlgo::init(const MaskEntries &entries)
     {
         this->tree_.build(entries);
@@ -18,15 +21,16 @@ namespace gen
         this->caches_generated_ = false;
     }
 
-    void LuleaAlgo::generate_caches()
+    CacheStats LuleaAlgo::generate_caches()
     {
         if (!this->initialized_)
         {
-            return;
+            return {};
         }
 
         // Framework for generating L1, L2, and L3 caches (POP, CHUNK, SEQ).
         this->caches_generated_ = true;
+        return {};
     }
 
 } // namespace gen

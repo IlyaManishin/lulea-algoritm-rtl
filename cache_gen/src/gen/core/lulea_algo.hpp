@@ -1,9 +1,10 @@
 #pragma once
 
-#include "gen/config.hpp"
-#include "gen/core/lulea_tree.hpp"
-#include "gen/io/reader.hpp"
-#include "gen/lulea_config.hpp"
+#include "config.hpp"
+#include "core/lulea_tree.hpp"
+#include "gen.hpp"
+#include "io/reader.hpp"
+#include "lulea_config.hpp"
 
 namespace gen
 {
@@ -11,10 +12,11 @@ namespace gen
     class LuleaAlgo
     {
     public:
-        explicit LuleaAlgo(const LuleaTreeConfig &tree_config = {});
+        explicit LuleaAlgo(const LuleaTreeConfig &tree_config);
+        LuleaAlgo();
 
         void init(const MaskEntries &entries);
-        void generate_caches();
+        CacheStats generate_caches();
 
         const LuleaTreeConfig &config() const noexcept { return this->config_; }
         const LuleaTree &tree() const noexcept { return this->tree_; }

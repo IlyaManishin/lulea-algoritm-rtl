@@ -1,6 +1,6 @@
 #include "cache.hpp"
 
-#include "gen/config.hpp"
+#include "config.hpp"
 
 #include <cstddef>
 #include <cstdint>

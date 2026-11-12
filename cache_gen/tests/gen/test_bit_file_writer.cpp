@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include "gen/io/bit_file_writer.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -9,8 +11,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "gen/io/bit_file_writer.hpp"
 
 namespace fs = std::filesystem;
 
@@ -134,8 +134,7 @@ TEST_F(BitFileWriterTest, WriteBytesSpanFull)
 {
     const fs::path file_path = test_dir / "bytes_full.bin";
     const std::vector<std::byte> input = {
-        std::byte{0xDE}, std::byte{0xAD}, std::byte{0xBE}, std::byte{0xEF}
-    };
+        std::byte{0xDE}, std::byte{0xAD}, std::byte{0xBE}, std::byte{0xEF}};
 
     {
         gen::BitFileWriter writer(file_path);
@@ -155,8 +154,7 @@ TEST_F(BitFileWriterTest, WriteBytesSpanPartialBits)
 {
     const fs::path file_path = test_dir / "bytes_partial.bin";
     const std::vector<std::byte> input = {
-        std::byte{0xFF}, std::byte{0xFF}
-    };
+        std::byte{0xFF}, std::byte{0xFF}};
 
     {
         gen::BitFileWriter writer(file_path);

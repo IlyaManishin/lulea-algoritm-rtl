@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gen/lulea_config.hpp"
+#include "lulea_config.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -146,14 +146,14 @@ namespace gen
         size_t seq_bus = 0;
     };
 
-    struct LuleaDerivedParameters
+    struct LuleaParameters
     {
         LuleaLevelParameters l1;
         LuleaLevelParameters l2;
         LuleaLevelParameters l3;
     };
 
-    constexpr LuleaDerivedParameters compute_lulea_parameters(
+    constexpr LuleaParameters compute_lulea_parameters(
         const LuleaArchDefines &defines,
         const LuleaTableStatistics &stats) noexcept
     {
@@ -165,7 +165,7 @@ namespace gen
         const size_t l2_ch_sum_size = l2_chunks * stats.l2_pc_count;
         const size_t l3_ch_sum_size = l3_chunks * stats.l3_pc_count;
 
-        return LuleaDerivedParameters{
+        return LuleaParameters{
             .l1 = LuleaLevelParameters{
                 .chunks_per_block = l1_chunks,
                 .ch_sum_size = l1_ch_sum_size,

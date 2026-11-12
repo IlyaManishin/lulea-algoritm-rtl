@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gen/config.hpp"
+#include "config.hpp"
 
 #include <cstddef>
 #include <stdexcept>

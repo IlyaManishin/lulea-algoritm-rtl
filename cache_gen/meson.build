@@ -33,7 +33,7 @@ if get_option('strict_flags') and cpp.get_id() == 'gcc'
   add_project_arguments(gcc_strict_flags, language: 'cpp')
 endif
 
-inc_dirs = include_directories('src')
+inc_dirs = include_directories('src', 'src/gen')
 
 core_sources = files(
   'src/gen/gen.cpp',
