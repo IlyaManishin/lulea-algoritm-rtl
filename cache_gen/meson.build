@@ -33,7 +33,7 @@ if get_option('strict_flags') and cpp.get_id() == 'gcc'
   add_project_arguments(gcc_strict_flags, language: 'cpp')
 endif
 
-inc_dirs = include_directories('src', 'src/gen')
+inc_dirs = include_directories('src', 'src/gen', 'tests/lulea')
 
 core_sources = files(
   'src/gen/gen.cpp',
@@ -64,6 +64,9 @@ test_sources = files(
   'tests/gen/test_lulea_config.cpp',
   'tests/gen/test_reader.cpp',
   'tests/gen/test_bit_file_writer.cpp',
+  'tests/lulea/ip_gen.cpp',
+  'tests/lulea/reference_lpm.cpp',
+  'tests/lulea/test_lulea_tree_real.cpp',
 ) + core_sources
 
 test_exe = executable(
