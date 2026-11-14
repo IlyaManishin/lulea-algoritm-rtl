@@ -12,11 +12,17 @@
 #include "gen/config.hpp"
 #include "gen/core/cache.hpp"
 #include "gen/core/lulea_tree.hpp"
+#include "gen/engine/lookup_engine.hpp"
 #include "gen/io/reader.hpp"
 #include "gen/lulea_config.hpp"
 
 namespace
 {
+    gen::port_t tree_lookup(const gen::LuleaTree &tree, gen::ipv4_t ip)
+    {
+        return engine::LuleaTreeLookup(tree).lookup(ip);
+    }
+
     struct BlockPair
     {
         size_t lhs_idx = 0;
@@ -237,13 +243,13 @@ TEST(LuleaTreeTest, ThrowsOnInvalidConfig)
 TEST(LuleaTreeTest, ThrowsOnInvalidMaskLengthWithStrongSafety)
 {
     gen::LuleaTree tree({make_entry(0x0A000000, 8, 5)}, gen::LuleaTreeConfig{16, 8, 8});
-    EXPECT_EQ(tree.lookup(0x0A123456), gen::port_t{5});
+    EXPECT_EQ(tree_lookup(tree, 0x0A123456), gen::port_t{5});
 
     const gen::MaskEntries bad = {make_entry(0xC0A80100, 33, 9)};
     EXPECT_THROW(tree.build(bad), std::invalid_argument);
 
     // Existing state remains intact after failed build
-    EXPECT_EQ(tree.lookup(0x0A123456), gen::port_t{5});
+    EXPECT_EQ(tree_lookup(tree, 0x0A123456), gen::port_t{5});
 }
 
 TEST(LuleaTreeTest, EmptyTreeResolvesToNullPort)
@@ -260,9 +266,9 @@ TEST(LuleaTreeTest, EmptyTreeResolvesToNullPort)
     EXPECT_TRUE(tree.l2().empty());
     EXPECT_TRUE(tree.l3().empty());
 
-    EXPECT_EQ(tree.lookup(0x00000000), gen::NULL_PORT);
-    EXPECT_EQ(tree.lookup(0xC0A80101), gen::NULL_PORT);
-    EXPECT_EQ(tree.lookup(0xFFFFFFFF), gen::NULL_PORT);
+    EXPECT_EQ(tree_lookup(tree, 0x00000000), gen::NULL_PORT);
+    EXPECT_EQ(tree_lookup(tree, 0xC0A80101), gen::NULL_PORT);
+    EXPECT_EQ(tree_lookup(tree, 0xFFFFFFFF), gen::NULL_PORT);
 }
 
 TEST(LuleaTreeTest, DefaultRoutePopulatesL1Only)
@@ -273,9 +279,9 @@ TEST(LuleaTreeTest, DefaultRoutePopulatesL1Only)
 
     EXPECT_TRUE(tree.l2().empty());
     EXPECT_TRUE(tree.l3().empty());
-    EXPECT_EQ(tree.lookup(0x00000000), gen::port_t{42});
-    EXPECT_EQ(tree.lookup(0x7F000001), gen::port_t{42});
-    EXPECT_EQ(tree.lookup(0xFFFFFFFF), gen::port_t{42});
+    EXPECT_EQ(tree_lookup(tree, 0x00000000), gen::port_t{42});
+    EXPECT_EQ(tree_lookup(tree, 0x7F000001), gen::port_t{42});
+    EXPECT_EQ(tree_lookup(tree, 0xFFFFFFFF), gen::port_t{42});
 }
 
 TEST(LuleaTreeTest, MatchesScheme18_6_8HierarchyAndManualTraversal)
@@ -297,19 +303,19 @@ TEST(LuleaTreeTest, MatchesScheme18_6_8HierarchyAndManualTraversal)
 
     // L1 direct hit
     EXPECT_TRUE(tree.l1()[0x0C000000 >> 14].is_port());
-    EXPECT_EQ(tree.lookup(0x0CABCDEF), gen::port_t{10});
+    EXPECT_EQ(tree_lookup(tree, 0x0CABCDEF), gen::port_t{10});
 
     // L2 hit vs background NULL inside same /18 block
     EXPECT_TRUE(tree.l1()[0x80000000 >> 14].is_ptr());
-    EXPECT_EQ(tree.lookup(0x80000000), gen::port_t{1});
-    EXPECT_EQ(tree.lookup(0x800007FF), gen::port_t{1});
-    EXPECT_EQ(tree.lookup(0x80000800), gen::NULL_PORT);
+    EXPECT_EQ(tree_lookup(tree, 0x80000000), gen::port_t{1});
+    EXPECT_EQ(tree_lookup(tree, 0x800007FF), gen::port_t{1});
+    EXPECT_EQ(tree_lookup(tree, 0x80000800), gen::NULL_PORT);
 
     // L3 hit vs neighbor outside /30
     EXPECT_TRUE(tree.l1()[0x80040210 >> 14].is_ptr());
-    EXPECT_EQ(tree.lookup(0x80040210), gen::port_t{2});
-    EXPECT_EQ(tree.lookup(0x80040213), gen::port_t{2});
-    EXPECT_EQ(tree.lookup(0x80040214), gen::NULL_PORT);
+    EXPECT_EQ(tree_lookup(tree, 0x80040210), gen::port_t{2});
+    EXPECT_EQ(tree_lookup(tree, 0x80040213), gen::port_t{2});
+    EXPECT_EQ(tree_lookup(tree, 0x80040214), gen::NULL_PORT);
 }
 
 TEST(LuleaTreeTest, LongestPrefixMatchAcrossAllConfigsRegardlessOfInputOrder)
@@ -351,7 +357,7 @@ TEST(LuleaTreeTest, LongestPrefixMatchAcrossAllConfigsRegardlessOfInputOrder)
         for (const auto ip : probe_ips)
         {
             const auto expected = reference_lpm(entries, ip);
-            EXPECT_EQ(tree.lookup(ip), expected);
+            EXPECT_EQ(tree_lookup(tree, ip), expected);
         }
     }
 }
@@ -363,16 +369,16 @@ TEST(LuleaTreeTest, DuplicateOverwriteAndOrderIndependence)
         make_entry(0x0A010000, 24, 9),
     };
     const gen::LuleaTree dup_tree(dup_entries, gen::LuleaTreeConfig{18, 6, 8});
-    EXPECT_EQ(dup_tree.lookup(0x0A010001), gen::port_t{9});
-    EXPECT_EQ(dup_tree.lookup(0x0A0100FF), gen::port_t{9});
+    EXPECT_EQ(tree_lookup(dup_tree, 0x0A010001), gen::port_t{9});
+    EXPECT_EQ(tree_lookup(dup_tree, 0x0A0100FF), gen::port_t{9});
 
     const gen::MaskEntries dup_host_entries = {
         make_entry(0xC0A801FFu, 24, 11),
         make_entry(0xC0A80100u, 24, 22),
     };
     const gen::LuleaTree dup_host_tree(dup_host_entries);
-    EXPECT_EQ(dup_host_tree.lookup(0xC0A80101u), gen::port_t{22});
-    EXPECT_EQ(dup_host_tree.lookup(0xC0A801FEu), gen::port_t{22});
+    EXPECT_EQ(tree_lookup(dup_host_tree, 0xC0A80101u), gen::port_t{22});
+    EXPECT_EQ(tree_lookup(dup_host_tree, 0xC0A801FEu), gen::port_t{22});
 
     // Order independence across L1, L2, and L3 boundaries without collapsing
     const gen::MaskEntries short_first = {
@@ -397,8 +403,8 @@ TEST(LuleaTreeTest, DuplicateOverwriteAndOrderIndependence)
 
     for (const gen::ipv4_t ip : {0x0A000001u, 0x0A020000u, 0x0A020010u, 0x0A020011u, 0x0A020040u, 0x0A020800u, 0x0B000001u})
     {
-        EXPECT_EQ(t1.lookup(ip), t2.lookup(ip));
-        EXPECT_EQ(t1.lookup(ip), reference_lpm(short_first, ip));
+        EXPECT_EQ(tree_lookup(t1, ip), tree_lookup(t2, ip));
+        EXPECT_EQ(tree_lookup(t1, ip), reference_lpm(short_first, ip));
     }
 }
 
@@ -412,10 +418,10 @@ TEST(LuleaTreeTest, SupportsExplicitNullPortOverrideAndIgnoresHostBits)
 
     const gen::LuleaTree tree(entries, gen::LuleaTreeConfig{18, 6, 8});
 
-    EXPECT_EQ(tree.lookup(0x0A000001), gen::port_t{5});
-    EXPECT_EQ(tree.lookup(0x0A000101), gen::NULL_PORT);
-    EXPECT_EQ(tree.lookup(0x0A00017F), gen::NULL_PORT);
-    EXPECT_EQ(tree.lookup(0x0A00012A), gen::port_t{9});
+    EXPECT_EQ(tree_lookup(tree, 0x0A000001), gen::port_t{5});
+    EXPECT_EQ(tree_lookup(tree, 0x0A000101), gen::NULL_PORT);
+    EXPECT_EQ(tree_lookup(tree, 0x0A00017F), gen::NULL_PORT);
+    EXPECT_EQ(tree_lookup(tree, 0x0A00012A), gen::port_t{9});
 }
 
 TEST(LuleaTreeTest, ThrowsLuleaOverflowOnSmallCellBitsAndSupportsExplicitCellBits)
@@ -446,9 +452,9 @@ TEST(LuleaTreeTest, ThrowsLuleaOverflowOnSmallCellBitsAndSupportsExplicitCellBit
     for (uint32_t i = 0; i < 300; ++i)
     {
         const uint32_t base = (uint32_t{0x0A} << 24) | (i << 16);
-        EXPECT_EQ(tree.lookup(base | 0x00000001u), static_cast<gen::port_t>(10 + (i % 200)));
-        EXPECT_EQ(tree.lookup(base | 0x00000002u), gen::port_t{1});
-        EXPECT_EQ(tree.lookup(base | 0x00000102u), gen::NULL_PORT);
+        EXPECT_EQ(tree_lookup(tree, base | 0x00000001u), static_cast<gen::port_t>(10 + (i % 200)));
+        EXPECT_EQ(tree_lookup(tree, base | 0x00000002u), gen::port_t{1});
+        EXPECT_EQ(tree_lookup(tree, base | 0x00000102u), gen::NULL_PORT);
     }
 
     // Small l1_cell_bits = 2 allows at most 2 L2 blocks (ptr 0 and 1); 3rd L2 block throws LuleaOverflow.
@@ -485,8 +491,8 @@ TEST(LuleaTreeTest, MatchesReferenceLpmOnPseudoRandomPrefixes)
         for (const auto &entry : entries)
         {
             const uint32_t ip = entry.ip;
-            EXPECT_EQ(tree.lookup(ip), reference_lpm(entries, ip));
-            EXPECT_EQ(tree.lookup(ip ^ 1u), reference_lpm(entries, ip ^ 1u));
+            EXPECT_EQ(tree_lookup(tree, ip), reference_lpm(entries, ip));
+            EXPECT_EQ(tree_lookup(tree, ip ^ 1u), reference_lpm(entries, ip ^ 1u));
         }
 
         for (size_t q = 0; q < 2000; ++q)
@@ -494,7 +500,7 @@ TEST(LuleaTreeTest, MatchesReferenceLpmOnPseudoRandomPrefixes)
             const uint32_t ip = (q % 2 == 0)
                 ? (0xC0A80000u | (rng() & 0xFFFFu))
                 : rng();
-            EXPECT_EQ(tree.lookup(ip), reference_lpm(entries, ip));
+            EXPECT_EQ(tree_lookup(tree, ip), reference_lpm(entries, ip));
         }
     }
 }
@@ -554,7 +560,7 @@ TEST(LuleaTreeTest, ShuffledUniqueRandomPrefixesProduceIsomorphicTrees)
         const gen::LuleaTree baseline(entries, cfg);
         for (size_t idx = 0; idx < probes.size(); ++idx)
         {
-            EXPECT_EQ(baseline.lookup(probes[idx]), expected[idx]);
+            EXPECT_EQ(tree_lookup(baseline, probes[idx]), expected[idx]);
         }
 
         for (size_t perm = 0; perm < 8; ++perm)
@@ -565,7 +571,7 @@ TEST(LuleaTreeTest, ShuffledUniqueRandomPrefixesProduceIsomorphicTrees)
             EXPECT_TRUE(trees_isomorphic(baseline, permuted));
             for (size_t idx = 0; idx < probes.size(); ++idx)
             {
-                EXPECT_EQ(permuted.lookup(probes[idx]), expected[idx]);
+                EXPECT_EQ(tree_lookup(permuted, probes[idx]), expected[idx]);
             }
         }
     }
@@ -581,8 +587,8 @@ TEST(LuleaTreeTest, PreservesAllocatedBlocksWithoutCollapsing)
 
     EXPECT_EQ(tree.l2().size(), 1u);
     EXPECT_EQ(tree.l3().size(), 1u);
-    EXPECT_EQ(tree.lookup(0x0A020010u), gen::port_t{4});
-    EXPECT_EQ(tree.lookup(0x0A020090u), gen::port_t{4});
+    EXPECT_EQ(tree_lookup(tree, 0x0A020010u), gen::port_t{4});
+    EXPECT_EQ(tree_lookup(tree, 0x0A020090u), gen::port_t{4});
 }
 
 TEST(LuleaTreeTest, LazySplitAndShortMaskPropagation)
@@ -596,10 +602,10 @@ TEST(LuleaTreeTest, LazySplitAndShortMaskPropagation)
 
     EXPECT_EQ(tree.l2().size(), 1u);
     EXPECT_EQ(tree.l3().size(), 1u);
-    EXPECT_EQ(tree.lookup(0x0A000001u), gen::port_t{5});
-    EXPECT_EQ(tree.lookup(0x0A010001u), gen::port_t{3});
-    EXPECT_EQ(tree.lookup(0x0A010204u), gen::port_t{3});
-    EXPECT_EQ(tree.lookup(0x0A010203u), gen::port_t{9});
-    EXPECT_EQ(tree.lookup(0x0B000001u), gen::NULL_PORT);
+    EXPECT_EQ(tree_lookup(tree, 0x0A000001u), gen::port_t{5});
+    EXPECT_EQ(tree_lookup(tree, 0x0A010001u), gen::port_t{3});
+    EXPECT_EQ(tree_lookup(tree, 0x0A010204u), gen::port_t{3});
+    EXPECT_EQ(tree_lookup(tree, 0x0A010203u), gen::port_t{9});
+    EXPECT_EQ(tree_lookup(tree, 0x0B000001u), gen::NULL_PORT);
 }
 
