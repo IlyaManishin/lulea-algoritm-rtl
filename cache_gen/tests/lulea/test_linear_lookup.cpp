@@ -4,7 +4,7 @@
 #include "io/reader.hpp"
 #include "utils/linear_lookup.hpp"
 
-TEST(LinearLookupTest, MatchesLongestPrefixAndHandlesDefaultRoute)
+TEST(LinearLookupTest, LongestPrefixMatch)
 {
     const gen::MaskEntries entries = {
         gen::TMaskEntry{.ip = 0x00000000U, .mask = gen::mask_t{0}, .port = gen::port_t{10}},

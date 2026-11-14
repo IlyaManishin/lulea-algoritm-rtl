@@ -240,7 +240,7 @@ TEST(LuleaTreeTest, ThrowsOnInvalidConfig)
     EXPECT_THROW(gen::LuleaTree(gen::LuleaTreeConfig{16, 8, 9}), std::invalid_argument);
 }
 
-TEST(LuleaTreeTest, ThrowsOnInvalidMaskLengthWithStrongSafety)
+TEST(LuleaTreeTest, InvalidMaskLength)
 {
     gen::LuleaTree tree({make_entry(0x0A000000, 8, 5)}, gen::LuleaTreeConfig{16, 8, 8});
     EXPECT_EQ(tree_lookup(tree, 0x0A123456), gen::port_t{5});
@@ -284,7 +284,7 @@ TEST(LuleaTreeTest, DefaultRoutePopulatesL1Only)
     EXPECT_EQ(tree_lookup(tree, 0xFFFFFFFF), gen::port_t{42});
 }
 
-TEST(LuleaTreeTest, MatchesScheme18_6_8HierarchyAndManualTraversal)
+TEST(LuleaTreeTest, SchemeHierarchy)
 {
     // Models docs/cache_scheme.drawio (base_concept_18_6_8):
     // - A /7 prefix resolving directly in L1
@@ -318,7 +318,7 @@ TEST(LuleaTreeTest, MatchesScheme18_6_8HierarchyAndManualTraversal)
     EXPECT_EQ(tree_lookup(tree, 0x80040214), gen::NULL_PORT);
 }
 
-TEST(LuleaTreeTest, LongestPrefixMatchAcrossAllConfigsRegardlessOfInputOrder)
+TEST(LuleaTreeTest, LongestPrefixMatch)
 {
     // Deliberately unsorted: longest and shortest interleaved
     const gen::MaskEntries entries = {
@@ -362,7 +362,7 @@ TEST(LuleaTreeTest, LongestPrefixMatchAcrossAllConfigsRegardlessOfInputOrder)
     }
 }
 
-TEST(LuleaTreeTest, DuplicateOverwriteAndOrderIndependence)
+TEST(LuleaTreeTest, DuplicateOverwrite)
 {
     const gen::MaskEntries dup_entries = {
         make_entry(0x0A010000, 24, 5),
@@ -408,7 +408,7 @@ TEST(LuleaTreeTest, DuplicateOverwriteAndOrderIndependence)
     }
 }
 
-TEST(LuleaTreeTest, SupportsExplicitNullPortOverrideAndIgnoresHostBits)
+TEST(LuleaTreeTest, ExplicitNullPort)
 {
     const gen::MaskEntries entries = {
         make_entry(0x0A000000, 8, 5),    // 10.0.0.0/8 -> port 5
@@ -424,7 +424,7 @@ TEST(LuleaTreeTest, SupportsExplicitNullPortOverrideAndIgnoresHostBits)
     EXPECT_EQ(tree_lookup(tree, 0x0A00012A), gen::port_t{9});
 }
 
-TEST(LuleaTreeTest, ThrowsLuleaOverflowOnSmallCellBitsAndSupportsExplicitCellBits)
+TEST(LuleaTreeTest, LuleaOverflow)
 {
     gen::MaskEntries entries;
     // 300 distinct /16 prefixes with /24 and /32 inside allocate 300 L2 and 300 L3 blocks.
@@ -467,7 +467,7 @@ TEST(LuleaTreeTest, ThrowsLuleaOverflowOnSmallCellBitsAndSupportsExplicitCellBit
     EXPECT_THROW(gen::LuleaTree(three_l2, tiny_l1), gen::LuleaOverflow);
 }
 
-TEST(LuleaTreeTest, MatchesReferenceLpmOnPseudoRandomPrefixes)
+TEST(LuleaTreeTest, PseudoRandomPrefixes)
 {
     std::mt19937 rng(20261111u);
     gen::MaskEntries entries;
@@ -505,7 +505,7 @@ TEST(LuleaTreeTest, MatchesReferenceLpmOnPseudoRandomPrefixes)
     }
 }
 
-TEST(LuleaTreeTest, TreesIsomorphicIgnoresBlockNumberingAndDetectsDifferences)
+TEST(LuleaTreeTest, TreeIsomorphism)
 {
     const gen::LuleaTreeConfig cfg{18, 6, 8};
     const gen::MaskEntries order_a = {
@@ -536,7 +536,7 @@ TEST(LuleaTreeTest, TreesIsomorphicIgnoresBlockNumberingAndDetectsDifferences)
     EXPECT_FALSE(trees_isomorphic(tree_a, diff_cfg));
 }
 
-TEST(LuleaTreeTest, ShuffledUniqueRandomPrefixesProduceIsomorphicTrees)
+TEST(LuleaTreeTest, ShuffledPrefixes)
 {
     const gen::MaskEntries entries = make_unique_random_entries(20261112u, 300);
     const std::vector<gen::ipv4_t> probes = make_probe_ips(99887766u, 1000);
@@ -577,7 +577,7 @@ TEST(LuleaTreeTest, ShuffledUniqueRandomPrefixesProduceIsomorphicTrees)
     }
 }
 
-TEST(LuleaTreeTest, PreservesAllocatedBlocksWithoutCollapsing)
+TEST(LuleaTreeTest, PreserveBlocks)
 {
     const gen::MaskEntries entries = {
         make_entry(0x0A020000u, 25, 4),
@@ -591,7 +591,7 @@ TEST(LuleaTreeTest, PreservesAllocatedBlocksWithoutCollapsing)
     EXPECT_EQ(tree_lookup(tree, 0x0A020090u), gen::port_t{4});
 }
 
-TEST(LuleaTreeTest, LazySplitAndShortMaskPropagation)
+TEST(LuleaTreeTest, LazySplit)
 {
     const gen::MaskEntries entries = {
         make_entry(0x0A000000u, 8, 5),

@@ -16,7 +16,7 @@
 
 namespace fs = std::filesystem;
 
-TEST(LuleaTreeRealTableTest, VerifiesTreeAgainstReferenceOnAllTenRealTables)
+TEST(LuleaTreeRealTableTest, VerifyTreeWithReference)
 {
     const fs::path tables_root = tests::get_tables_root_dir();
     ASSERT_TRUE(fs::is_directory(tables_root)) << "Tables directory not found: " << tables_root;

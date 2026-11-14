@@ -8,7 +8,7 @@
 #include "io/reader.hpp"
 #include "utils/ip_gen.hpp"
 
-TEST(IpGenTest, GeneratesDeterministicRandomIps)
+TEST(IpGenTest, RandomIps)
 {
     const gen::MaskEntries entries = {
         gen::TMaskEntry{.ip = 0x0A000000U, .mask = gen::mask_t{8}, .port = gen::port_t{1}},
@@ -24,7 +24,7 @@ TEST(IpGenTest, GeneratesDeterministicRandomIps)
     EXPECT_NE(ips1, ips_diff);
 }
 
-TEST(IpGenTest, GeneratesStepProgression)
+TEST(IpGenTest, StepProgression)
 {
     const gen::MaskEntries entries;
     const tests::IpGen ip_gen(entries);
@@ -34,7 +34,7 @@ TEST(IpGenTest, GeneratesStepProgression)
     EXPECT_EQ(ips, expected);
 }
 
-TEST(IpGenTest, GeneratesSubnetEdgeCasesAndBoundaries)
+TEST(IpGenTest, SubnetEdgeCases)
 {
     const gen::MaskEntries entries = {
         gen::TMaskEntry{.ip = 0xC0A80100U, .mask = gen::mask_t{24}, .port = gen::port_t{1}}, // 192.168.1.0/24
