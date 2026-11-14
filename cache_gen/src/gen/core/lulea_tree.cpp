@@ -28,21 +28,15 @@ namespace gen
             uint8_t prio = 0;
         };
 
-        struct L2CellPos
-        {
-            size_t block_idx = 0;
-            size_t cell_idx = 0;
-        };
-
         struct BuildState
         {
             LuleaTreeConfig cfg;
             LuleaRoute l1;
             std::vector<uint8_t> l1_prio;
             std::vector<LuleaRoute> l2;
-            std::vector<std::vector<uint8_t>> l2_prio;
+            std::vector<uint8_t> l2_prio;
             std::vector<LuleaRoute> l3;
-            std::vector<std::vector<uint8_t>> l3_prio;
+            std::vector<uint8_t> l3_prio;
         };
 
         void validate_config(const LuleaTreeConfig &cfg)
@@ -102,65 +96,53 @@ namespace gen
             return static_cast<size_t>((ip_addr >> shift) & mask);
         }
 
-        size_t ensure_l2_block(BuildState &state, size_t l1_idx)
+        size_t ensure_block(
+            LuleaCell &parent,
+            uint8_t parent_prio,
+            std::vector<LuleaRoute> &blocks,
+            std::vector<uint8_t> &prios,
+            size_t block_bits,
+            size_t cell_bits)
         {
-            LuleaCell &parent = state.l1[l1_idx];
             if (parent.is_ptr())
             {
                 return parent.ptr();
             }
 
-            const size_t block_idx = state.l2.size();
-            const size_t block_size = size_t{1} << state.cfg.l2_bits;
-            LuleaRoute block(block_size, state.cfg.l2_cell_bits, parent.port());
-            // Update parent pointer before appending so overflow leaves state consistent.
+            const size_t block_idx = blocks.size();
+            const size_t block_size = size_t{1U} << block_bits;
+
+            LuleaRoute block(block_size, cell_bits, parent.port());
             parent.set_ptr(block_idx);
 
-            state.l2.push_back(std::move(block));
-            state.l2_prio.emplace_back(block_size, state.l1_prio[l1_idx]);
-            return block_idx;
-        }
-
-        size_t ensure_l3_block(BuildState &state, L2CellPos pos)
-        {
-            LuleaCell &parent = state.l2[pos.block_idx][pos.cell_idx];
-            if (parent.is_ptr())
-            {
-                return parent.ptr();
-            }
-
-            const size_t block_idx = state.l3.size();
-            const size_t block_size = size_t{1} << state.cfg.l3_bits;
-            LuleaRoute block(block_size, state.cfg.l3_cell_bits, parent.port());
-            parent.set_ptr(block_idx);
-
-            state.l3.push_back(std::move(block));
-            state.l3_prio.emplace_back(block_size, state.l2_prio[pos.block_idx][pos.cell_idx]);
+            blocks.push_back(std::move(block));
+            prios.resize(prios.size() + block_size, parent_prio);
             return block_idx;
         }
 
         void paint_l3_range(BuildState &state, size_t block_idx, CellRange range, PaintValue value)
         {
             LuleaRoute &block = state.l3[block_idx];
-            std::vector<uint8_t> &prio = state.l3_prio[block_idx];
+            const size_t offset = block_idx << state.cfg.l3_bits;
             const size_t end_idx = range.start + range.count;
 
             for (size_t cell_idx = range.start; cell_idx < end_idx; ++cell_idx)
             {
-                if (prio[cell_idx] > value.prio)
+                uint8_t &prio = state.l3_prio[offset + cell_idx];
+                if (prio > value.prio)
                 {
                     continue;
                 }
                 block[cell_idx].set_port(value.port);
-                prio[cell_idx] = value.prio;
+                prio = value.prio;
             }
         }
 
         void paint_l2_range(BuildState &state, size_t block_idx, CellRange range, PaintValue value)
         {
             LuleaRoute &block = state.l2[block_idx];
-            std::vector<uint8_t> &prio = state.l2_prio[block_idx];
-            const CellRange full_l3{0, size_t{1} << state.cfg.l3_bits};
+            const size_t offset = block_idx << state.cfg.l2_bits;
+            const CellRange full_l3{0, size_t{1U} << state.cfg.l3_bits};
             const size_t end_idx = range.start + range.count;
 
             for (size_t cell_idx = range.start; cell_idx < end_idx; ++cell_idx)
@@ -171,18 +153,19 @@ namespace gen
                     paint_l3_range(state, cell.ptr(), full_l3, value);
                     continue;
                 }
-                if (prio[cell_idx] > value.prio)
+                uint8_t &prio = state.l2_prio[offset + cell_idx];
+                if (prio > value.prio)
                 {
                     continue;
                 }
                 cell.set_port(value.port);
-                prio[cell_idx] = value.prio;
+                prio = value.prio;
             }
         }
 
         void paint_l1_range(BuildState &state, CellRange range, PaintValue value)
         {
-            const CellRange full_l2{0, size_t{1} << state.cfg.l2_bits};
+            const CellRange full_l2{0, size_t{1U} << state.cfg.l2_bits};
             const size_t end_idx = range.start + range.count;
 
             for (size_t cell_idx = range.start; cell_idx < end_idx; ++cell_idx)
@@ -226,7 +209,13 @@ namespace gen
             }
 
             // Level 2: prefix resolves in L2 or routes to L3
-            const size_t l2_block_idx = ensure_l2_block(state, l1_idx);
+            const size_t l2_block_idx = ensure_block(
+                state.l1[l1_idx],
+                state.l1_prio[l1_idx],
+                state.l2,
+                state.l2_prio,
+                cfg.l2_bits,
+                cfg.l2_cell_bits);
             const size_t l2_idx = level_index(masked_ip, l2_shift, cfg.l2_bits);
             if (prefix_len <= end2)
             {
@@ -236,7 +225,14 @@ namespace gen
             }
 
             // Level 3: prefix resolves in L3
-            const size_t l3_block_idx = ensure_l3_block(state, {l2_block_idx, l2_idx});
+            const size_t l2_cell_offset = (l2_block_idx << cfg.l2_bits) + l2_idx;
+            const size_t l3_block_idx = ensure_block(
+                state.l2[l2_block_idx][l2_idx],
+                state.l2_prio[l2_cell_offset],
+                state.l3,
+                state.l3_prio,
+                cfg.l3_bits,
+                cfg.l3_cell_bits);
             const size_t l3_idx = level_index(masked_ip, 0, cfg.l3_bits);
             const size_t count = size_t{1U} << (IP_SIZE_BITS - prefix_len);
             paint_l3_range(state, l3_block_idx, {l3_idx, count}, value);
