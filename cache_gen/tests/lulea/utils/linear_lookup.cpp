@@ -1,4 +1,4 @@
-#include "linear_lookup.hpp"
+#include "utils/linear_lookup.hpp"
 
 #include "config.hpp"
 #include "engine/lookup_engine.hpp"
@@ -39,7 +39,7 @@ namespace tests
                 continue;
             }
 
-            const ipv4_t netmask = (len == 0) ? 0u : static_cast<ipv4_t>(~ipv4_t{0} << (32 - len));
+            const ipv4_t netmask = (len == 0) ? 0U : static_cast<ipv4_t>(~ipv4_t{0} << (32 - len));
             if ((ip & netmask) == (entry.ip & netmask))
             {
                 // Later entries of the same prefix length overwrite earlier ones (exact LPM match order)
@@ -158,10 +158,7 @@ namespace tests
             else
             {
                 result.mismatched++;
-                if (result.mismatch_ips.size() < 16)
-                {
-                    result.mismatch_ips.push_back(ip);
-                }
+                result.mismatch_ips.push_back(ip);
             }
         }
 

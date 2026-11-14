@@ -35,19 +35,15 @@ namespace tests
         }
     };
 
-    // Reference longest prefix match via linear scan over all entries
     class LinearLookup : public ILookupEngine
     {
     public:
         explicit LinearLookup(const MaskEntries &entries);
 
-        // Implements ILookupEngine interface
         port_t lookup(ipv4_t ip) const override;
 
-        // Returns detailed match metadata
         LinearMatchResult match(ipv4_t ip) const noexcept;
 
-        // Parses a human-readable routes.txt file into MaskEntries
         static MaskEntries parse_routes_txt(const std::string &filepath);
 
         const MaskEntries &entries() const noexcept
@@ -59,7 +55,6 @@ namespace tests
         const MaskEntries *entries_;
     };
 
-    // Verification algorithm working with any ILookupEngine instances (no templates required)
     LookupVerificationResult verify_lookups(
         const ILookupEngine &target,
         const ILookupEngine &reference,
