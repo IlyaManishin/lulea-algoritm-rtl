@@ -40,6 +40,7 @@ core_sources = files(
   'src/gen/core/cache.cpp',
   'src/gen/core/lulea_tree.cpp',
   'src/gen/core/lulea_algo.cpp',
+  'src/gen/engine/lookup_engine.cpp',
   'src/gen/io/reader.cpp',
   'src/gen/io/bit_file_writer.cpp',
   'src/io/config_parser.cpp',
@@ -65,7 +66,7 @@ test_sources = files(
   'tests/gen/test_reader.cpp',
   'tests/gen/test_bit_file_writer.cpp',
   'tests/lulea/ip_gen.cpp',
-  'tests/lulea/reference_lpm.cpp',
+  'tests/lulea/linear_lookup.cpp',
   'tests/lulea/test_lulea_tree_real.cpp',
 ) + core_sources
 

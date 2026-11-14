@@ -272,25 +272,4 @@ namespace gen
         this->l3_ = std::move(state.l3);
     }
 
-    port_t LuleaTree::lookup(ipv4_t ip_addr) const
-    {
-        const size_t l1_shift = this->config_.l2_bits + this->config_.l3_bits;
-        const size_t l1_idx = level_index(ip_addr, {l1_shift, this->config_.l1_bits});
-        const LuleaCell &cell1 = this->l1_[l1_idx];
-        if (cell1.is_port())
-        {
-            return cell1.port();
-        }
-
-        const size_t l2_idx = level_index(ip_addr, {this->config_.l3_bits, this->config_.l2_bits});
-        const LuleaCell &cell2 = this->l2_[cell1.ptr()][l2_idx];
-        if (cell2.is_port())
-        {
-            return cell2.port();
-        }
-
-        const size_t l3_idx = level_index(ip_addr, {0, this->config_.l3_bits});
-        return this->l3_[cell2.ptr()][l3_idx].port();
-    }
-
 } // namespace gen

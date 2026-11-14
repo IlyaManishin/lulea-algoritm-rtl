@@ -28,7 +28,6 @@ namespace gen
         explicit LuleaTree(const MaskEntries &entries, const LuleaTreeConfig &tree_config = {});
 
         void build(const MaskEntries &entries);
-        port_t lookup(ipv4_t ip_addr) const;
 
         const LuleaTreeConfig &config() const noexcept { return this->config_; }
         const LuleaRoute &l1() const noexcept { return this->l1_; }
