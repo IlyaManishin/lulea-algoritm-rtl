@@ -133,14 +133,14 @@ namespace gen
     {
         size_t remaining_bits = std::min(num_bits, bytes.size() * 8);
 
-        for (const std::byte b : bytes)
+        for (const std::byte byte : bytes)
         {
             if (remaining_bits == 0)
             {
                 break;
             }
             const size_t bits_to_write = std::min<size_t>(remaining_bits, 8);
-            write_bits(static_cast<uint64_t>(std::to_integer<uint8_t>(b)), bits_to_write);
+            write_bits(static_cast<uint64_t>(std::to_integer<uint8_t>(byte)), bits_to_write);
             remaining_bits -= bits_to_write;
         }
     }

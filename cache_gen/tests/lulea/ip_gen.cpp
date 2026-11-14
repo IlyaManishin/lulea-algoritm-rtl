@@ -9,11 +9,11 @@
 #include <random>
 #include <vector>
 
-namespace gen
+namespace tests
 {
 
     IpGen::IpGen(const MaskEntries &entries)
-        : entries_(entries)
+        : entries_(&entries)
     {
     }
 
@@ -49,9 +49,9 @@ namespace gen
     std::vector<ipv4_t> IpGen::ip_gen_edge() const
     {
         std::vector<ipv4_t> result;
-        result.reserve(this->entries_.size() * 10);
+        result.reserve(this->entries_->size() * 10);
 
-        for (const auto &entry : this->entries_)
+        for (const auto &entry : *this->entries_)
         {
             const size_t len = static_cast<size_t>(std::to_integer<uint8_t>(entry.mask));
             if (len > 32)
@@ -127,4 +127,4 @@ namespace gen
         return result;
     }
 
-} // namespace gen
+} // namespace tests

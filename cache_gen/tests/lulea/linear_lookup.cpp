@@ -1,6 +1,7 @@
-#include "reference_lpm.hpp"
+#include "linear_lookup.hpp"
 
 #include "config.hpp"
+#include "engine/lookup_engine.hpp"
 #include "io/reader.hpp"
 
 #include <arpa/inet.h>
@@ -12,25 +13,25 @@
 #include <string>
 #include <vector>
 
-namespace gen
+namespace tests
 {
 
-    ReferenceLpm::ReferenceLpm(const MaskEntries &entries)
-        : entries_(entries)
+    LinearLookup::LinearLookup(const MaskEntries &entries)
+        : entries_(&entries)
     {
     }
 
-    port_t ReferenceLpm::lookup(ipv4_t ip) const noexcept
+    port_t LinearLookup::lookup(ipv4_t ip) const
     {
         return this->match(ip).port;
     }
 
-    LpmMatch ReferenceLpm::match(ipv4_t ip) const noexcept
+    LinearMatchResult LinearLookup::match(ipv4_t ip) const noexcept
     {
-        LpmMatch best;
+        LinearMatchResult best;
         int best_len = -1;
 
-        for (const auto &entry : this->entries_)
+        for (const auto &entry : *this->entries_)
         {
             const int len = std::to_integer<int>(entry.mask);
             if (len < 0 || len > 32)
@@ -56,7 +57,7 @@ namespace gen
         return best;
     }
 
-    MaskEntries ReferenceLpm::parse_routes_txt(const std::string &filepath)
+    MaskEntries LinearLookup::parse_routes_txt(const std::string &filepath)
     {
         std::ifstream file(filepath);
         if (!file.is_open())
@@ -137,4 +138,34 @@ namespace gen
         return entries;
     }
 
-} // namespace gen
+    LookupVerificationResult verify_lookups(
+        const ILookupEngine &target,
+        const ILookupEngine &reference,
+        const std::vector<ipv4_t> &ips)
+    {
+        LookupVerificationResult result;
+        result.total = ips.size();
+
+        for (const ipv4_t ip : ips)
+        {
+            const port_t actual = target.lookup(ip);
+            const port_t expected = reference.lookup(ip);
+
+            if (actual == expected)
+            {
+                result.matched++;
+            }
+            else
+            {
+                result.mismatched++;
+                if (result.mismatch_ips.size() < 16)
+                {
+                    result.mismatch_ips.push_back(ip);
+                }
+            }
+        }
+
+        return result;
+    }
+
+} // namespace tests

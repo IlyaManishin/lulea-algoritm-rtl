@@ -10,9 +10,10 @@
 
 #include "config.hpp"
 #include "core/lulea_tree.hpp"
+#include "engine/lookup_engine.hpp"
 #include "io/reader.hpp"
 #include "ip_gen.hpp"
-#include "reference_lpm.hpp"
+#include "linear_lookup.hpp"
 
 namespace fs = std::filesystem;
 
@@ -52,10 +53,10 @@ TEST(IpGenTest, GeneratesDeterministicRandomIps)
         gen::TMaskEntry{.ip = 0x0A000000u, .mask = gen::mask_t{8}, .port = gen::port_t{1}},
     };
 
-    const gen::IpGen gen(entries);
-    const auto ips1 = gen.ip_gen_random(100, 42);
-    const auto ips2 = gen.ip_gen_random(100, 42);
-    const auto ips_diff = gen.ip_gen_random(100, 43);
+    const tests::IpGen ip_gen(entries);
+    const auto ips1 = ip_gen.ip_gen_random(100, 42);
+    const auto ips2 = ip_gen.ip_gen_random(100, 42);
+    const auto ips_diff = ip_gen.ip_gen_random(100, 43);
 
     EXPECT_EQ(ips1.size(), 100u);
     EXPECT_EQ(ips1, ips2);
@@ -65,9 +66,9 @@ TEST(IpGenTest, GeneratesDeterministicRandomIps)
 TEST(IpGenTest, GeneratesStepProgression)
 {
     const gen::MaskEntries entries;
-    const gen::IpGen gen(entries);
+    const tests::IpGen ip_gen(entries);
 
-    const auto ips = gen.ip_gen_step(10, 5, 4);
+    const auto ips = ip_gen.ip_gen_step(10, 5, 4);
     const std::vector<gen::ipv4_t> expected = {10, 15, 20, 25};
     EXPECT_EQ(ips, expected);
 }
@@ -78,8 +79,8 @@ TEST(IpGenTest, GeneratesSubnetEdgeCasesAndBoundaries)
         gen::TMaskEntry{.ip = 0xC0A80100u, .mask = gen::mask_t{24}, .port = gen::port_t{1}}, // 192.168.1.0/24
     };
 
-    const gen::IpGen gen(entries);
-    const auto edge_ips = gen.ip_gen_edge();
+    const tests::IpGen ip_gen(entries);
+    const auto edge_ips = ip_gen.ip_gen_edge();
 
     EXPECT_FALSE(edge_ips.empty());
 
@@ -95,7 +96,7 @@ TEST(IpGenTest, GeneratesSubnetEdgeCasesAndBoundaries)
     EXPECT_TRUE(contains_ip(0xC0A80100u + 128u)); // center
 }
 
-TEST(ReferenceLpmTest, MatchesLongestPrefixAndHandlesDefaultRoute)
+TEST(LinearLookupTest, MatchesLongestPrefixAndHandlesDefaultRoute)
 {
     const gen::MaskEntries entries = {
         gen::TMaskEntry{.ip = 0x00000000u, .mask = gen::mask_t{0}, .port = gen::port_t{10}},
@@ -104,16 +105,16 @@ TEST(ReferenceLpmTest, MatchesLongestPrefixAndHandlesDefaultRoute)
         gen::TMaskEntry{.ip = 0x0A010200u, .mask = gen::mask_t{24}, .port = gen::port_t{3}},
     };
 
-    const gen::ReferenceLpm ref(entries);
+    const tests::LinearLookup linear(entries);
 
     // /24 match
-    EXPECT_EQ(ref.lookup(0x0A010205u), gen::port_t{3});
+    EXPECT_EQ(linear.lookup(0x0A010205u), gen::port_t{3});
     // /16 match
-    EXPECT_EQ(ref.lookup(0x0A010305u), gen::port_t{2});
+    EXPECT_EQ(linear.lookup(0x0A010305u), gen::port_t{2});
     // /8 match
-    EXPECT_EQ(ref.lookup(0x0A050505u), gen::port_t{1});
+    EXPECT_EQ(linear.lookup(0x0A050505u), gen::port_t{1});
     // default route match
-    EXPECT_EQ(ref.lookup(0xC0A80101u), gen::port_t{10});
+    EXPECT_EQ(linear.lookup(0xC0A80101u), gen::port_t{10});
 }
 
 TEST(LuleaTreeRealTableTest, VerifiesTreeAgainstReferenceOnAllTenRealTables)
@@ -142,8 +143,8 @@ TEST(LuleaTreeRealTableTest, VerifiesTreeAgainstReferenceOnAllTenRealTables)
         ASSERT_NE(bin_entries, nullptr);
         EXPECT_EQ(bin_entries->size(), 2048u);
 
-        // 2. Read text routes for Reference LPM
-        const gen::MaskEntries txt_entries = gen::ReferenceLpm::parse_routes_txt(txt_path.string());
+        // 2. Read text routes for LinearLookup
+        const gen::MaskEntries txt_entries = tests::LinearLookup::parse_routes_txt(txt_path.string());
         EXPECT_EQ(txt_entries.size(), bin_entries->size());
 
         // Verify binary and text entries are identical
@@ -154,28 +155,29 @@ TEST(LuleaTreeRealTableTest, VerifiesTreeAgainstReferenceOnAllTenRealTables)
             EXPECT_EQ((*bin_entries)[idx].port, txt_entries[idx].port);
         }
 
-        // 3. Build LuleaTree and ReferenceLpm
-        gen::LuleaTree tree(*bin_entries);
-        const gen::ReferenceLpm reference(txt_entries);
-        const gen::IpGen ip_gen(*bin_entries);
+        // 3. Build LuleaTree, LuleaTreeLookup and LinearLookup
+        const gen::LuleaTree tree(*bin_entries);
+        const engine::LuleaTreeLookup tree_lookup(tree);
+        const tests::LinearLookup linear_lookup(txt_entries);
+        const tests::IpGen ip_gen(*bin_entries);
 
         // 4. Verify Edge Cases (boundary testing)
         const auto edge_ips = ip_gen.ip_gen_edge();
-        const auto edge_res = gen::verify_lookups(tree, reference, edge_ips);
+        const auto edge_res = tests::verify_lookups(tree_lookup, linear_lookup, edge_ips);
         EXPECT_TRUE(edge_res.is_success())
             << "Edge verification failed on table_" << i
             << " (" << edge_res.mismatched << "/" << edge_res.total << " mismatches)";
 
         // 5. Verify Random IPs (pseudo-random sample)
         const auto random_ips = ip_gen.ip_gen_random(2000, static_cast<uint32_t>(1000 + i));
-        const auto rand_res = gen::verify_lookups(tree, reference, random_ips);
+        const auto rand_res = tests::verify_lookups(tree_lookup, linear_lookup, random_ips);
         EXPECT_TRUE(rand_res.is_success())
             << "Random verification failed on table_" << i
             << " (" << rand_res.mismatched << "/" << rand_res.total << " mismatches)";
 
         // 6. Verify Stepped IPs
         const auto step_ips = ip_gen.ip_gen_step(0x01000000u, 131072u, 1000);
-        const auto step_res = gen::verify_lookups(tree, reference, step_ips);
+        const auto step_res = tests::verify_lookups(tree_lookup, linear_lookup, step_ips);
         EXPECT_TRUE(step_res.is_success())
             << "Step verification failed on table_" << i
             << " (" << step_res.mismatched << "/" << step_res.total << " mismatches)";

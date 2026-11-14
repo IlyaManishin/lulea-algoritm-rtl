@@ -7,8 +7,9 @@
 #include <cstdint>
 #include <vector>
 
-namespace gen
+namespace tests
 {
+    using namespace gen;
 
     class IpGen
     {
@@ -48,13 +49,13 @@ namespace gen
 
         const MaskEntries &entries() const noexcept
         {
-            return this->entries_;
+            return *this->entries_;
         }
 
     private:
-        const MaskEntries &entries_;
+        const MaskEntries *entries_;
     };
 
     using IPGen = IpGen;
 
-} // namespace gen
+} // namespace tests
