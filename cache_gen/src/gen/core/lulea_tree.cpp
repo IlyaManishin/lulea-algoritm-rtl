@@ -16,12 +16,6 @@ namespace gen
     namespace
     {
 
-        struct BitSlice
-        {
-            size_t shift = 0;
-            size_t width = 0;
-        };
-
         struct CellRange
         {
             size_t start = 0;
@@ -102,10 +96,10 @@ namespace gen
             return static_cast<ipv4_t>(~ipv4_t{0} << (IP_SIZE_BITS - prefix_len));
         }
 
-        size_t level_index(ipv4_t ip_addr, BitSlice slice)
+        size_t level_index(ipv4_t ip_addr, size_t shift, size_t width)
         {
-            const ipv4_t mask = (ipv4_t{1} << slice.width) - ipv4_t{1};
-            return static_cast<size_t>((ip_addr >> slice.shift) & mask);
+            const ipv4_t mask = (ipv4_t{1U} << width) - ipv4_t{1U};
+            return static_cast<size_t>((ip_addr >> shift) & mask);
         }
 
         size_t ensure_l2_block(BuildState &state, size_t l1_idx)
@@ -214,42 +208,44 @@ namespace gen
             const ipv4_t masked_ip = entry.ip & prefix_netmask(prefix_len);
             const PaintValue value{entry.port, static_cast<uint8_t>(prefix_len)};
 
-            const size_t end1 = state.cfg.l1_bits;
-            const size_t end2 = end1 + state.cfg.l2_bits;
-            const size_t l1_shift = state.cfg.l2_bits + state.cfg.l3_bits;
+            const LuleaTreeConfig &cfg = state.cfg;
 
+            const size_t end1 = cfg.l1_bits;
+            const size_t end2 = cfg.l1_bits + cfg.l2_bits;
+
+            const size_t l1_shift = cfg.l2_bits + cfg.l3_bits;
+            const size_t l2_shift = cfg.l3_bits;
+
+            // Level 1: prefix resolves in L1 or routes to L2
+            const size_t l1_idx = level_index(masked_ip, l1_shift, cfg.l1_bits);
             if (prefix_len <= end1)
             {
-                const size_t start = level_index(masked_ip, {l1_shift, state.cfg.l1_bits});
-                const size_t count = size_t{1} << (end1 - prefix_len);
-                paint_l1_range(state, {start, count}, value);
+                const size_t count = size_t{1U} << (end1 - prefix_len);
+                paint_l1_range(state, {l1_idx, count}, value);
                 return;
             }
 
-            const size_t l1_idx = level_index(masked_ip, {l1_shift, state.cfg.l1_bits});
+            // Level 2: prefix resolves in L2 or routes to L3
             const size_t l2_block_idx = ensure_l2_block(state, l1_idx);
-
+            const size_t l2_idx = level_index(masked_ip, l2_shift, cfg.l2_bits);
             if (prefix_len <= end2)
             {
-                const size_t start = level_index(masked_ip, {state.cfg.l3_bits, state.cfg.l2_bits});
-                const size_t count = size_t{1} << (end2 - prefix_len);
-                paint_l2_range(state, l2_block_idx, {start, count}, value);
+                const size_t count = size_t{1U} << (end2 - prefix_len);
+                paint_l2_range(state, l2_block_idx, {l2_idx, count}, value);
                 return;
             }
 
-            const size_t l2_idx = level_index(masked_ip, {state.cfg.l3_bits, state.cfg.l2_bits});
+            // Level 3: prefix resolves in L3
             const size_t l3_block_idx = ensure_l3_block(state, {l2_block_idx, l2_idx});
-            const size_t start = level_index(masked_ip, {0, state.cfg.l3_bits});
-            const size_t count = size_t{1} << (IP_SIZE_BITS - prefix_len);
-            paint_l3_range(state, l3_block_idx, {start, count}, value);
+            const size_t l3_idx = level_index(masked_ip, 0, cfg.l3_bits);
+            const size_t count = size_t{1U} << (IP_SIZE_BITS - prefix_len);
+            paint_l3_range(state, l3_block_idx, {l3_idx, count}, value);
         }
 
     } // namespace
 
     LuleaTree::LuleaTree(const LuleaTreeConfig &tree_config)
-        : config_(tree_config), l1_(make_initial_l1(tree_config))
-    {
-    }
+        : config_(tree_config), l1_(make_initial_l1(tree_config)) {}
 
     LuleaTree::LuleaTree(const MaskEntries &entries, const LuleaTreeConfig &tree_config)
         : LuleaTree(tree_config)
