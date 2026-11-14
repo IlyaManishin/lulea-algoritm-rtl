@@ -8,7 +8,7 @@
 
 #include "config.hpp"
 #include "core/lulea_tree.hpp"
-#include "engine/lookup_engine.hpp"
+#include "engine/lulea_tree_lookup.hpp"
 #include "io/reader.hpp"
 #include "utils/ip_gen.hpp"
 #include "utils/linear_lookup.hpp"

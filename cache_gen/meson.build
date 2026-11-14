@@ -40,7 +40,7 @@ core_sources = files(
   'src/gen/core/cache.cpp',
   'src/gen/core/lulea_tree.cpp',
   'src/gen/core/lulea_algo.cpp',
-  'src/gen/engine/lookup_engine.cpp',
+  'src/gen/engine/lulea_tree_lookup.cpp',
   'src/gen/io/reader.cpp',
   'src/gen/io/bit_file_writer.cpp',
   'src/io/config_parser.cpp',

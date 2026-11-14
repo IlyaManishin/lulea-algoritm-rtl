@@ -1,7 +1,7 @@
 #include "utils/linear_lookup.hpp"
 
 #include "config.hpp"
-#include "engine/lookup_engine.hpp"
+#include "engine/lulea_tree_lookup.hpp"
 #include "io/reader.hpp"
 
 #include <arpa/inet.h>
