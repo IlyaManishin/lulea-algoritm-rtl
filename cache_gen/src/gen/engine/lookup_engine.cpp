@@ -14,16 +14,22 @@ namespace engine
         // Extracts a bit slice of length 'width' at bit offset 'shift' from the IPv4 address
         inline size_t extract_slice(ipv4_t ip, size_t shift, size_t width) noexcept
         {
-            const ipv4_t mask = (width >= 32) ? ~ipv4_t{0} : static_cast<ipv4_t>((ipv4_t{1} << width) - 1U);
-            return static_cast<size_t>((ip >> shift) & mask);
+            const ipv4_t shifted_ip = ip >> shift;
+
+            ipv4_t mask = ~ipv4_t{0};
+            if (width < 32)
+            {
+                mask = static_cast<ipv4_t>((ipv4_t{1U} << width) - 1U);
+            }
+
+            const ipv4_t slice = shifted_ip & mask;
+            return static_cast<size_t>(slice);
         }
 
     } // namespace
 
     LuleaTreeLookup::LuleaTreeLookup(const LuleaTree &tree)
-        : tree_(&tree)
-    {
-    }
+        : tree_(&tree) {};
 
     port_t LuleaTreeLookup::lookup(ipv4_t ip) const
     {
