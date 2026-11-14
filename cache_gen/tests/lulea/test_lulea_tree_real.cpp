@@ -38,27 +38,26 @@ TEST(LuleaTreeRealTableTest, VerifyTreeWithReference)
         ASSERT_TRUE(fs::is_regular_file(txt_path)) << "Missing " << txt_path;
 
         // 1. Read binary mapping for LuleaTree
-        std::unique_ptr<gen::MaskEntries> bin_entries(gen::read_mask_mapping(bin_path.string()));
-        ASSERT_NE(bin_entries, nullptr);
-        EXPECT_EQ(bin_entries->size(), 2048U);
+        const gen::MaskEntries bin_entries = gen::Reader::read(bin_path.string());
+        EXPECT_EQ(bin_entries.size(), 2048U);
 
         // 2. Read text routes for LinearLookup
         const gen::MaskEntries txt_entries = tests::LinearLookup::parse_routes_txt(txt_path.string());
-        EXPECT_EQ(txt_entries.size(), bin_entries->size());
+        EXPECT_EQ(txt_entries.size(), bin_entries.size());
 
         // Verify binary and text entries are identical
         for (size_t idx = 0; idx < txt_entries.size(); ++idx)
         {
-            EXPECT_EQ((*bin_entries)[idx].ip, txt_entries[idx].ip);
-            EXPECT_EQ((*bin_entries)[idx].mask, txt_entries[idx].mask);
-            EXPECT_EQ((*bin_entries)[idx].port, txt_entries[idx].port);
+            EXPECT_EQ(bin_entries[idx].ip, txt_entries[idx].ip);
+            EXPECT_EQ(bin_entries[idx].mask, txt_entries[idx].mask);
+            EXPECT_EQ(bin_entries[idx].port, txt_entries[idx].port);
         }
 
         // 3. Build LuleaTree, LuleaTreeLookup and LinearLookup
-        const gen::LuleaTree tree(*bin_entries);
+        const gen::LuleaTree tree(bin_entries);
         const engine::LuleaTreeLookup tree_lookup(tree);
         const tests::LinearLookup linear_lookup(txt_entries);
-        const tests::IpGen ip_gen(*bin_entries);
+        const tests::IpGen ip_gen(bin_entries);
 
         // 4. Verify Edge Cases (boundary testing)
         const auto edge_ips = ip_gen.ip_gen_edge();

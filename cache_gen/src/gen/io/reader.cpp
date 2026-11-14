@@ -7,7 +7,6 @@
 #include <cstring>
 #include <fstream>
 #include <ios>
-#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -32,9 +31,9 @@ namespace gen
             return static_cast<port_t>(raw_port);
         }
 
-        MaskEntries *read_mask_entries(std::ifstream &file, bin_entry_count_t count)
+        MaskEntries read_mask_entries(std::ifstream &file, bin_entry_count_t count)
         {
-            std::unique_ptr<MaskEntries> entries = std::make_unique<MaskEntries>(count);
+            MaskEntries entries(count);
             std::vector<char> buf(BUFFER_SIZE);
 
             size_t processed = 0;
@@ -50,7 +49,7 @@ namespace gen
 
                 for (size_t i = 0; i < batch; ++i)
                 {
-                    TMaskEntry &entry = (*entries)[processed + i];
+                    TMaskEntry &entry = entries[processed + i];
                     const char *entry_buf = buf.data() + i * ENTRY_SIZE;
                     size_t off = 0;
 
@@ -68,35 +67,44 @@ namespace gen
                 processed += batch;
             }
 
-            return entries.release();
+            return entries;
         }
     } // namespace
 
-    MaskEntries *read_mask_mapping(const std::string &map_path)
+    Reader::Reader(const std::string &filepath)
+        : filepath_(filepath) {}
+
+    MaskEntries Reader::read()
     {
-        std::ifstream map_file(map_path, std::ios::binary);
+        std::ifstream map_file(this->filepath_, std::ios::binary);
         if (!map_file.is_open())
         {
-            throw std::runtime_error("Failed to open file: " + map_path);
+            throw std::runtime_error("Failed to open file: " + this->filepath_);
         }
 
         std::vector<std::byte> header(HEADER_SIZE);
         map_file.read(reinterpret_cast<char *>(header.data()), HEADER_SIZE);
 
-        if (map_file.gcount() != (std::streamsize)HEADER_SIZE)
+        if (map_file.gcount() != static_cast<std::streamsize>(HEADER_SIZE))
         {
-            throw std::runtime_error("Unexpected EOF while reading header in: " + map_path);
+            throw std::runtime_error("Unexpected EOF while reading header in: " + this->filepath_);
         }
 
         if (std::memcmp(header.data(), BIN_MAGIC.data(), BIN_MAGIC.size()) != 0)
         {
-            throw std::runtime_error("Invalid magic signature in: " + map_path);
+            throw std::runtime_error("Invalid magic signature in: " + this->filepath_);
         }
 
         bin_entry_count_t mask_count = 0;
         std::memcpy(&mask_count, header.data() + BIN_MAGIC.size(), sizeof(bin_entry_count_t));
 
         return read_mask_entries(map_file, mask_count);
+    }
+
+    MaskEntries Reader::read(const std::string &filepath)
+    {
+        Reader reader(filepath);
+        return reader.read();
     }
 
 } // namespace gen

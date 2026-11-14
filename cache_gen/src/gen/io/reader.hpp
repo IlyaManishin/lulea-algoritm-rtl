@@ -25,6 +25,22 @@ namespace gen
             : std::runtime_error(message) {}
     };
 
-    MaskEntries *read_mask_mapping(const std::string &map_path);
+    class Reader
+    {
+    public:
+        explicit Reader(const std::string &filepath);
+
+        MaskEntries read();
+
+        const std::string &filepath() const noexcept
+        {
+            return this->filepath_;
+        }
+
+        static MaskEntries read(const std::string &filepath);
+
+    private:
+        std::string filepath_;
+    };
 
 } // namespace gen

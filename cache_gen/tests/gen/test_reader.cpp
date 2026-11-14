@@ -5,7 +5,6 @@
 #include <filesystem>
 #include <fstream>
 #include <ios>
-#include <memory>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -100,27 +99,26 @@ protected:
 
 TEST_F(ReaderTest, ThrowsOnNonExistentFile)
 {
-    EXPECT_THROW(
-        gen::read_mask_mapping((test_dir / "does_not_exist.bin").string()),
-        std::runtime_error);
+    Reader reader((test_dir / "does_not_exist.bin").string());
+    EXPECT_THROW(reader.read(), std::runtime_error);
 }
 
 TEST_F(ReaderTest, ThrowsOnEmptyFile)
 {
-    fs::path empty_file = create_empty_file("empty.bin");
-    EXPECT_THROW(
-        gen::read_mask_mapping(empty_file.string()),
-        std::runtime_error);
+    const fs::path empty_file = create_empty_file("empty.bin");
+    Reader reader(empty_file.string());
+    EXPECT_THROW(reader.read(), std::runtime_error);
 }
 
 TEST_F(ReaderTest, ReadsZeroEntries)
 {
-    fs::path zero_file = create_binary_map_file("zero_entries.bin", {});
-    std::unique_ptr<MaskEntries> entries(gen::read_mask_mapping(zero_file.string()));
+    const fs::path zero_file = create_binary_map_file("zero_entries.bin", {});
+    Reader reader(zero_file.string());
+    EXPECT_EQ(reader.filepath(), zero_file.string());
 
-    ASSERT_NE(entries, nullptr);
-    EXPECT_TRUE(entries->empty());
-    EXPECT_EQ(entries->size(), 0u);
+    const MaskEntries entries = reader.read();
+    EXPECT_TRUE(entries.empty());
+    EXPECT_EQ(entries.size(), 0u);
 }
 
 TEST_F(ReaderTest, ReadsMultipleEntries)
@@ -131,38 +129,39 @@ TEST_F(ReaderTest, ReadsMultipleEntries)
         {0xAC100000, static_cast<mask_t>(16), static_cast<port_t>(3)},
         {0x00000000, static_cast<mask_t>(0), static_cast<port_t>(255)}};
 
-    fs::path file_path = create_binary_map_file("multiple_entries.bin", expected);
-    std::unique_ptr<MaskEntries> entries(gen::read_mask_mapping(file_path.string()));
+    const fs::path file_path = create_binary_map_file("multiple_entries.bin", expected);
+    Reader reader(file_path.string());
+    const MaskEntries entries = reader.read();
 
-    ASSERT_NE(entries, nullptr);
-    ASSERT_EQ(entries->size(), expected.size());
+    ASSERT_EQ(entries.size(), expected.size());
 
     for (size_t i = 0; i < expected.size(); ++i)
     {
-        EXPECT_EQ((*entries)[i].ip, expected[i].ip);
-        EXPECT_EQ((*entries)[i].mask, expected[i].mask);
-        EXPECT_EQ((*entries)[i].port, expected[i].port);
+        EXPECT_EQ(entries[i].ip, expected[i].ip);
+        EXPECT_EQ(entries[i].mask, expected[i].mask);
+        EXPECT_EQ(entries[i].port, expected[i].port);
     }
+
+    const MaskEntries static_entries = Reader::read(file_path.string());
+    ASSERT_EQ(static_entries.size(), expected.size());
 }
 
 TEST_F(ReaderTest, ThrowsOnInvalidMagicSignature)
 {
-    fs::path bad_magic_file = create_binary_map_file("bad_magic.bin", {}, "XXXX");
-    EXPECT_THROW(
-        gen::read_mask_mapping(bad_magic_file.string()),
-        std::runtime_error);
+    const fs::path bad_magic_file = create_binary_map_file("bad_magic.bin", {}, "XXXX");
+    Reader reader(bad_magic_file.string());
+    EXPECT_THROW(reader.read(), std::runtime_error);
 }
 
 TEST_F(ReaderTest, ThrowsOnPortOverflowInFile)
 {
-    fs::path overflow_file = create_raw_entry_file(
+    const fs::path overflow_file = create_raw_entry_file(
         "overflow.bin",
         0x7F000001,
         static_cast<mask_t>(32),
         300 // Exceeds 8-bit port_t
     );
 
-    EXPECT_THROW(
-        gen::read_mask_mapping(overflow_file.string()),
-        gen::PortOverflowError);
+    Reader reader(overflow_file.string());
+    EXPECT_THROW(reader.read(), gen::PortOverflowError);
 }
