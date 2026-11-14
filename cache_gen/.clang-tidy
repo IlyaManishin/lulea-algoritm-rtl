@@ -9,7 +9,7 @@ Checks: >
   misc-*,
   readability-*,
   llvm-include-order,
-  
+
   -readability-magic-numbers,
   -cppcoreguidelines-avoid-magic-numbers,
   -portability-avoid-pragma-once,
@@ -26,4 +26,6 @@ CheckOptions:
   - key: cppcoreguidelines-owning-memory.LegacyResourceProducers
     value: 'malloc;calloc'
   - key: readability-identifier-length.MinimumVariableNameLength
-    value: 1
+    value: 2
+  - key: readability-identifier-length.MinimumParameterNameLength
+    value: 2
