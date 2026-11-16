@@ -13,6 +13,7 @@ namespace gen
     class BitFileWriter
     {
     public:
+        BitFileWriter();
         explicit BitFileWriter(const std::filesystem::path &file_path);
         explicit BitFileWriter(const std::filesystem::path &file_path, size_t buffer_size);
         ~BitFileWriter();
@@ -37,11 +38,12 @@ namespace gen
 
         std::ofstream file_;
         std::vector<std::byte> byte_buffer_;
-        size_t buffer_capacity_;
+        size_t buffer_capacity_{0};
 
         uint64_t accumulator_{0};
         size_t accumulated_bits_{0};
         size_t total_bits_{0};
+        bool is_file_mode_{false};
     };
 
 } // namespace gen

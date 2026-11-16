@@ -250,7 +250,6 @@ TEST_F(BitFileWriterTest, ExplicitFlushAndMultipleClose)
 
         writer.write_bits(0xBB, 8);
         writer.close();
-        // Calling close again should be a safe no-op
         writer.close();
     }
 
@@ -258,4 +257,89 @@ TEST_F(BitFileWriterTest, ExplicitFlushAndMultipleClose)
     ASSERT_EQ(data.size(), 2);
     EXPECT_EQ(data[0], 0xAA);
     EXPECT_EQ(data[1], 0xBB);
+}
+
+TEST_F(BitFileWriterTest, StatsModeCountsBitsWithoutCreatingFile)
+{
+    gen::BitFileWriter writer;
+    EXPECT_EQ(writer.total_bits_written(), 0);
+
+    writer.write_bits(0b101, 3);
+    EXPECT_EQ(writer.total_bits_written(), 3);
+
+    writer.write_bits(0xABCD, 16);
+    EXPECT_EQ(writer.total_bits_written(), 19);
+
+    const std::vector<std::byte> bytes = {std::byte{0x12}, std::byte{0x34}};
+    writer.write_bytes(bytes, 10);
+    EXPECT_EQ(writer.total_bits_written(), 29);
+
+    writer.write_bytes(bytes);
+    EXPECT_EQ(writer.total_bits_written(), 45);
+
+    writer.flush();
+    writer.close();
+    writer.close();
+    EXPECT_EQ(writer.total_bits_written(), 45);
+
+    EXPECT_TRUE(fs::is_empty(test_dir));
+}
+
+TEST_F(BitFileWriterTest, StatsModeMatchesFileModeBits)
+{
+    const fs::path file_path = test_dir / "match_bits.bin";
+    gen::BitFileWriter file_writer(file_path);
+    gen::BitFileWriter stats_writer;
+
+    const std::vector<std::byte> payload = {
+        std::byte{0xDE}, std::byte{0xAD}, std::byte{0xBE}, std::byte{0xEF}};
+
+    file_writer.write_bits(0b111, 3);
+    stats_writer.write_bits(0b111, 3);
+    EXPECT_EQ(stats_writer.total_bits_written(), file_writer.total_bits_written());
+
+    file_writer.write_bits(0x1234567890ABCDEFULL, 60);
+    stats_writer.write_bits(0x1234567890ABCDEFULL, 60);
+    EXPECT_EQ(stats_writer.total_bits_written(), file_writer.total_bits_written());
+
+    file_writer.write_bytes(payload, 17);
+    stats_writer.write_bytes(payload, 17);
+    EXPECT_EQ(stats_writer.total_bits_written(), file_writer.total_bits_written());
+
+    file_writer.write_bytes(payload);
+    stats_writer.write_bytes(payload);
+    EXPECT_EQ(stats_writer.total_bits_written(), file_writer.total_bits_written());
+
+    file_writer.write_bits(0, 0);
+    stats_writer.write_bits(0, 0);
+    EXPECT_EQ(stats_writer.total_bits_written(), file_writer.total_bits_written());
+
+    file_writer.close();
+    stats_writer.close();
+    EXPECT_EQ(stats_writer.total_bits_written(), file_writer.total_bits_written());
+}
+
+TEST_F(BitFileWriterTest, StatsModeMoveSemantics)
+{
+    gen::BitFileWriter w1;
+    w1.write_bits(0x42, 8);
+    EXPECT_EQ(w1.total_bits_written(), 8);
+
+    gen::BitFileWriter w2(std::move(w1));
+    EXPECT_EQ(w2.total_bits_written(), 8);
+
+    w2.write_bits(0x99, 8);
+    EXPECT_EQ(w2.total_bits_written(), 16);
+
+    gen::BitFileWriter w3;
+    w3 = std::move(w2);
+    EXPECT_EQ(w3.total_bits_written(), 16);
+
+    w3.write_bits(0x05, 3);
+    EXPECT_EQ(w3.total_bits_written(), 19);
+    w3.flush();
+    w3.close();
+    EXPECT_EQ(w3.total_bits_written(), 19);
+
+    EXPECT_TRUE(fs::is_empty(test_dir));
 }

@@ -17,11 +17,13 @@ constexpr size_t kDefaultBufferSize = 64ULL * 1024ULL;
 namespace gen
 {
 
+    BitFileWriter::BitFileWriter() = default;
+
     BitFileWriter::BitFileWriter(const std::filesystem::path &file_path)
         : BitFileWriter(file_path, kDefaultBufferSize) {}
 
     BitFileWriter::BitFileWriter(const std::filesystem::path &file_path, size_t buffer_size)
-        : buffer_capacity_(buffer_size)
+        : buffer_capacity_(buffer_size), is_file_mode_(true)
     {
         file_.open(file_path, std::ios::binary);
         if (!file_.is_open())
@@ -49,12 +51,14 @@ namespace gen
           buffer_capacity_(other.buffer_capacity_),
           accumulator_(other.accumulator_),
           accumulated_bits_(other.accumulated_bits_),
-          total_bits_(other.total_bits_)
+          total_bits_(other.total_bits_),
+          is_file_mode_(other.is_file_mode_)
     {
         other.buffer_capacity_ = 0;
         other.accumulator_ = 0;
         other.accumulated_bits_ = 0;
         other.total_bits_ = 0;
+        other.is_file_mode_ = false;
     }
 
     BitFileWriter &BitFileWriter::operator=(BitFileWriter &&other) noexcept
@@ -76,11 +80,13 @@ namespace gen
             accumulator_ = other.accumulator_;
             accumulated_bits_ = other.accumulated_bits_;
             total_bits_ = other.total_bits_;
+            is_file_mode_ = other.is_file_mode_;
 
             other.buffer_capacity_ = 0;
             other.accumulator_ = 0;
             other.accumulated_bits_ = 0;
             other.total_bits_ = 0;
+            other.is_file_mode_ = false;
         }
         return *this;
     }
@@ -93,6 +99,11 @@ namespace gen
         }
 
         total_bits_ += num_bits;
+
+        if (!is_file_mode_)
+        {
+            return;
+        }
 
         while (num_bits > 0)
         {
@@ -168,12 +179,18 @@ namespace gen
 
     void BitFileWriter::flush()
     {
+        if (!is_file_mode_)
+            return;
+
         flush_buffer_to_file();
         file_.flush();
     }
 
     void BitFileWriter::close()
     {
+        if (!is_file_mode_)
+            return;
+
         if (!file_.is_open())
         {
             return;
