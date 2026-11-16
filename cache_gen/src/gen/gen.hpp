@@ -1,11 +1,32 @@
 #pragma once
 
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 
 namespace gen
 {
-    
+
+    class GenException : public std::runtime_error
+    {
+    public:
+        explicit GenException(const std::string &message)
+            : std::runtime_error(message) {}
+
+        explicit GenException(const char *message)
+            : std::runtime_error(message) {}
+    };
+
+    class FatalGenException : public GenException
+    {
+    public:
+        explicit FatalGenException(const std::string &message)
+            : GenException(message) {}
+
+        explicit FatalGenException(const char *message)
+            : GenException(message) {}
+    };
+
     enum class Mode : std::uint8_t
     {
         Stats,
@@ -41,9 +62,6 @@ namespace gen
 
     struct BuildResult
     {
-        bool success = false;
-        bool is_fatal = false;
-        std::string error_message;
         CacheStats stats;
     };
 

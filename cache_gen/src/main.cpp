@@ -14,17 +14,30 @@ namespace
 {
     bool process_config_entry(const gen::Config &config, const StatsWriter &writer)
     {
-        const gen::BuildResult result = gen::build_lulea_cache(config);
-
-        if (!result.success)
+        try
+        {
+            const gen::BuildResult result = gen::build_lulea_cache(config);
+            writer.write(config.input_path, result.stats);
+            return true;
+        }
+        catch (const gen::FatalGenException &ex)
+        {
+            std::cerr << "Fatal build error for " << config.input_path
+                      << ": " << ex.what() << "\n";
+            return false;
+        }
+        catch (const gen::GenException &ex)
         {
             std::cerr << "Build error for " << config.input_path
-                      << ": " << result.error_message << "\n";
-            return !result.is_fatal;
+                      << ": " << ex.what() << "\n";
+            return true;
         }
-
-        writer.write(config.input_path, result.stats);
-        return true;
+        catch (const std::exception &ex)
+        {
+            std::cerr << "Unexpected error for " << config.input_path
+                      << ": " << ex.what() << "\n";
+            return false;
+        }
     }
 
     void process_config(const CliOptions &opt)

@@ -90,10 +90,7 @@ TEST_F(GenTest, EmptyInputPath)
         .dest_dir = ""
     };
 
-    const BuildResult result = build_lulea_cache(config);
-    EXPECT_FALSE(result.success);
-    EXPECT_TRUE(result.is_fatal);
-    EXPECT_FALSE(result.error_message.empty());
+    EXPECT_THROW(build_lulea_cache(config), FatalGenException);
 }
 
 TEST_F(GenTest, DumpWithoutDestDir)
@@ -104,10 +101,7 @@ TEST_F(GenTest, DumpWithoutDestDir)
         .dest_dir = ""
     };
 
-    const BuildResult result = build_lulea_cache(config);
-    EXPECT_FALSE(result.success);
-    EXPECT_TRUE(result.is_fatal);
-    EXPECT_FALSE(result.error_message.empty());
+    EXPECT_THROW(build_lulea_cache(config), FatalGenException);
 }
 
 TEST_F(GenTest, NonExistentFile)
@@ -118,10 +112,19 @@ TEST_F(GenTest, NonExistentFile)
         .dest_dir = ""
     };
 
-    const BuildResult result = build_lulea_cache(config);
-    EXPECT_FALSE(result.success);
-    EXPECT_FALSE(result.is_fatal);
-    EXPECT_FALSE(result.error_message.empty());
+    try
+    {
+        build_lulea_cache(config);
+        FAIL() << "Expected GenException";
+    }
+    catch (const FatalGenException &)
+    {
+        FAIL() << "Expected non-fatal GenException, but got FatalGenException";
+    }
+    catch (const GenException &ex)
+    {
+        EXPECT_FALSE(std::string(ex.what()).empty());
+    }
 }
 
 TEST_F(GenTest, PortOverflow)
@@ -139,10 +142,19 @@ TEST_F(GenTest, PortOverflow)
         .dest_dir = ""
     };
 
-    const BuildResult result = build_lulea_cache(config);
-    EXPECT_FALSE(result.success);
-    EXPECT_FALSE(result.is_fatal);
-    EXPECT_FALSE(result.error_message.empty());
+    try
+    {
+        build_lulea_cache(config);
+        FAIL() << "Expected GenException";
+    }
+    catch (const FatalGenException &)
+    {
+        FAIL() << "Expected non-fatal GenException, but got FatalGenException";
+    }
+    catch (const GenException &ex)
+    {
+        EXPECT_FALSE(std::string(ex.what()).empty());
+    }
 }
 
 TEST_F(GenTest, BuildSuccess)
@@ -160,8 +172,7 @@ TEST_F(GenTest, BuildSuccess)
         .dest_dir = ""
     };
 
-    const BuildResult result = build_lulea_cache(config);
-    EXPECT_TRUE(result.success);
-    EXPECT_FALSE(result.is_fatal);
-    EXPECT_TRUE(result.error_message.empty());
+    BuildResult result;
+    EXPECT_NO_THROW({ result = build_lulea_cache(config); });
+    (void)result;
 }
