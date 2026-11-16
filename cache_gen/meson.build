@@ -65,6 +65,7 @@ test_sources = files(
   'tests/gen/test_lulea_config.cpp',
   'tests/gen/test_reader.cpp',
   'tests/gen/test_bit_file_writer.cpp',
+  'tests/gen/test_gen.cpp',
   'tests/lulea/utils/ip_gen.cpp',
   'tests/lulea/utils/linear_lookup.cpp',
   'tests/lulea/test_ip_gen.cpp',

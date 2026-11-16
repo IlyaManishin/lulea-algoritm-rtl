@@ -42,6 +42,7 @@ namespace gen
     struct BuildResult
     {
         bool success = false;
+        bool is_fatal = false;
         std::string error_message;
         CacheStats stats;
     };

@@ -1,6 +1,7 @@
 #include "cache.hpp"
 
 #include "config.hpp"
+#include "errors.hpp"
 
 #include <cstddef>
 #include <cstdint>

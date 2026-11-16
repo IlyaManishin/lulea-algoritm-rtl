@@ -8,6 +8,7 @@
 
 #include "gen/config.hpp"
 #include "gen/core/cache.hpp"
+#include "gen/core/errors.hpp"
 
 TEST(BaseCellTest, DefaultsToZeroAndComputesCapacity)
 {

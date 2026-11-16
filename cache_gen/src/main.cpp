@@ -12,7 +12,7 @@ using namespace io;
 
 namespace
 {
-    void process_config_entry(const gen::Config &config, const StatsWriter &writer)
+    bool process_config_entry(const gen::Config &config, const StatsWriter &writer)
     {
         const gen::BuildResult result = gen::build_lulea_cache(config);
 
@@ -20,10 +20,11 @@ namespace
         {
             std::cerr << "Build error for " << config.input_path
                       << ": " << result.error_message << "\n";
-            return;
+            return !result.is_fatal;
         }
 
         writer.write(config.input_path, result.stats);
+        return true;
     }
 
     void process_config(const CliOptions &opt)
@@ -34,7 +35,11 @@ namespace
         gen::Config config;
         while (parser.next(config))
         {
-            process_config_entry(config, writer);
+            if (!process_config_entry(config, writer))
+            {
+                std::cerr << "Fatal error encountered. Aborting further processing.\n";
+                break;
+            }
         }
     }
 
