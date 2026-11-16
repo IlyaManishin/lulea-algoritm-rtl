@@ -1,9 +1,9 @@
 #include "gen.hpp"
 
-#include "core/errors.hpp"
-#include "core/lulea_algo.hpp"
-#include "core/lulea_tree.hpp"
 #include "io/reader.hpp"
+#include "lulea_algo/errors.hpp"
+#include "lulea_algo/lulea_algo.hpp"
+#include "lulea_algo/lulea_tree.hpp"
 
 #include <exception>
 #include <stdexcept>

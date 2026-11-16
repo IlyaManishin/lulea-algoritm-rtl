@@ -37,9 +37,9 @@ inc_dirs = include_directories('src', 'src/gen', 'tests/lulea', 'tests/lulea/uti
 
 core_sources = files(
   'src/gen/gen.cpp',
-  'src/gen/core/cache.cpp',
-  'src/gen/core/lulea_tree.cpp',
-  'src/gen/core/lulea_algo.cpp',
+  'src/gen/lulea_algo/cache.cpp',
+  'src/gen/lulea_algo/lulea_tree.cpp',
+  'src/gen/lulea_algo/lulea_algo.cpp',
   'src/gen/engine/lulea_tree_lookup.cpp',
   'src/gen/io/reader.cpp',
   'src/gen/io/bit_file_writer.cpp',

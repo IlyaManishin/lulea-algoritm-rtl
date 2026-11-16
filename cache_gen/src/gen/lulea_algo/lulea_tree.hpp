@@ -1,7 +1,7 @@
 #pragma once
 
+#include "cache.hpp"
 #include "config.hpp"
-#include "core/cache.hpp"
 #include "io/reader.hpp"
 #include "lulea_config.hpp"
 

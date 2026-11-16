@@ -1,8 +1,8 @@
 #include "engine/lulea_tree_lookup.hpp"
 
 #include "config.hpp"
-#include "core/cache.hpp"
-#include "core/lulea_tree.hpp"
+#include "lulea_algo/cache.hpp"
+#include "lulea_algo/lulea_tree.hpp"
 
 #include <cstddef>
 

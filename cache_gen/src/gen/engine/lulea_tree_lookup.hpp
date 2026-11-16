@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config.hpp"
-#include "core/lulea_tree.hpp"
+#include "lulea_algo/lulea_tree.hpp"
 
 namespace engine
 {

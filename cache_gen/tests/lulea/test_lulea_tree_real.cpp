@@ -7,9 +7,9 @@
 #include <string>
 
 #include "config.hpp"
-#include "core/lulea_tree.hpp"
 #include "engine/lulea_tree_lookup.hpp"
 #include "io/reader.hpp"
+#include "lulea_algo/lulea_tree.hpp"
 #include "utils/ip_gen.hpp"
 #include "utils/linear_lookup.hpp"
 #include "utils/test_env.hpp"

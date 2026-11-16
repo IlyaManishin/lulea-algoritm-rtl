@@ -1,8 +1,8 @@
-#include "core/lulea_algo.hpp"
+#include "lulea_algo.hpp"
 
-#include "core/lulea_tree.hpp"
 #include "gen.hpp"
 #include "io/reader.hpp"
+#include "lulea_tree.hpp"
 
 #include <stdexcept>
 #include <utility>
