@@ -67,7 +67,7 @@ namespace gen
         try
         {
             LuleaAlgo algo(std::move(tree), config);
-            const CacheStats stats = algo.generate_caches();
+            const CacheStats stats = algo.generate_caches(config.mode == Mode::Dump);
 
             return BuildResult{.stats = stats};
         }

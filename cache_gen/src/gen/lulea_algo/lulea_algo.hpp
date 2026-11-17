@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cache_set.hpp"
 #include "config.hpp"
 #include "gen.hpp"
 #include "io/reader.hpp"
@@ -18,7 +19,7 @@ namespace gen
 
         void init(LuleaTree routing_tree);
         void init(const MaskEntries &entries);
-        CacheStats generate_caches();
+        CacheStats generate_caches(bool write_files = true);
 
         const LuleaTreeConfig &config() const noexcept { return this->config_; }
         const Config &app_config() const noexcept { return this->app_config_; }

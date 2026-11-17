@@ -180,7 +180,9 @@ namespace gen
     void BitFileWriter::flush()
     {
         if (!is_file_mode_)
+        {
             return;
+        }
 
         flush_buffer_to_file();
         file_.flush();
@@ -189,7 +191,9 @@ namespace gen
     void BitFileWriter::close()
     {
         if (!is_file_mode_)
+        {
             return;
+        }
 
         if (!file_.is_open())
         {
