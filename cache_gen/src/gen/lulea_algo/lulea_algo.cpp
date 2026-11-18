@@ -12,10 +12,21 @@ namespace gen
 {
     namespace
     {
+        void write_level_caches(const LuleaRoute &tree, BitFileWriter &cache)
+        {
+            size_t last = 0;
+            (void)last;
+            for (const LuleaCell &cell : tree)
+            {
+                (void)cell;
+            }
+            (void)cache;
+        }
+
         void generate_l1(const LuleaTree &tree, CacheSet &caches)
         {
-            (void)tree;
             (void)caches;
+            write_level_caches(tree.l1(), caches.l1_pop());
         }
 
         void generate_l2(const LuleaTree &tree, CacheSet &caches)

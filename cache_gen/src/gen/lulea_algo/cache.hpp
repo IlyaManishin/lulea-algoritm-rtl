@@ -66,12 +66,12 @@ namespace gen
 
         LuleaRoute(size_t size, size_t cell_size_bits, port_t default_port = NULL_PORT);
 
-        LuleaCell &operator[](size_t index) { return this->data_[index]; }
-        const LuleaCell &operator[](size_t index) const { return this->data_[index]; }
-
         size_t size() const noexcept { return this->data_.size(); }
         bool empty() const noexcept { return this->data_.empty(); }
         size_t cell_size_bits() const noexcept { return this->cell_size_bits_; }
+
+        LuleaCell &operator[](size_t index) { return this->data_[index]; }
+        const LuleaCell &operator[](size_t index) const { return this->data_[index]; }
 
         iterator begin() noexcept { return this->data_.begin(); }
         iterator end() noexcept { return this->data_.end(); }
