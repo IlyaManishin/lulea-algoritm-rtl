@@ -33,6 +33,7 @@ namespace gen
     inline constexpr size_t L1_PC_CELL = PC_CHUNK_SIZE;
     inline constexpr size_t L1_CH_SUM_CELL = CH_SUM_CELL_BITS;
     inline constexpr size_t L1_DEFAULT_SEQ_CELL = 2 * BRAM_CELL_ALIGN_BITS; // 18 bits
+    inline constexpr size_t L1_CHUNKS_PER_BLOCK = (size_t{1} << L1_IP_SIZE) / PC_CHUNK_SIZE;
 
     // =========================================================================
     //  L2 CACHE (6 bits: ip[13:8])
@@ -43,6 +44,7 @@ namespace gen
     inline constexpr size_t L2_PC_CELL = PC_CHUNK_SIZE;
     inline constexpr size_t L2_CH_SUM_CELL = CH_SUM_CELL_BITS;
     inline constexpr size_t L2_DEFAULT_SEQ_CELL = BRAM_CELL_ALIGN_BITS; // 9 bits
+    inline constexpr size_t L2_CHUNKS_PER_BLOCK = (size_t{1} << L2_IP_SIZE) / PC_CHUNK_SIZE;
 
     // =========================================================================
     //  L3 CACHE (8 bits: ip[7:0])
@@ -53,7 +55,12 @@ namespace gen
     inline constexpr size_t L3_PC_CELL = PC_CHUNK_SIZE;
     inline constexpr size_t L3_CH_SUM_CELL = CH_SUM_CELL_BITS;
     inline constexpr size_t L3_DEFAULT_SEQ_CELL = BRAM_CELL_ALIGN_BITS; // 9 bits
+    inline constexpr size_t L3_CHUNKS_PER_BLOCK = (size_t{1} << L3_IP_SIZE) / PC_CHUNK_SIZE;
 
+    // =========================================================================
+    //  ASSERTIONS
+    // =========================================================================
+    
     static_assert(
         PORT_SIZE <= (sizeof(port_t) * static_cast<size_t>(std::numeric_limits<unsigned char>::digits)),
         "PORT_SIZE must fit within port_t");

@@ -13,10 +13,10 @@ namespace gen
 
     using bin_entry_count_t = uint32_t;
 
-    const size_t HEADER_SIZE = 8;
-    const size_t ENTRY_SIZE = 8;
-    const std::string_view BIN_MAGIC = "LRB1";
+    inline constexpr size_t HEADER_SIZE = 8;
+    inline constexpr size_t ENTRY_SIZE = 8;
+    inline constexpr std::string_view BIN_MAGIC = "LRB1";
     
-    const port_t NULL_PORT = (port_t)0;
+    inline constexpr port_t NULL_PORT = static_cast<port_t>(0);
 
 } // namespace gen

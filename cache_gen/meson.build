@@ -64,7 +64,6 @@ test_sources = files(
   'tests/gen/test_cache.cpp',
   'tests/gen/test_cache_set.cpp',
   'tests/gen/test_lulea_tree.cpp',
-  'tests/gen/test_lulea_config.cpp',
   'tests/gen/test_reader.cpp',
   'tests/gen/test_bit_file_writer.cpp',
   'tests/gen/test_gen.cpp',
