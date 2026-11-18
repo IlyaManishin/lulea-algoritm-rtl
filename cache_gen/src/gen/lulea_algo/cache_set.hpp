@@ -3,26 +3,21 @@
 #include "gen.hpp"
 #include "io/bit_file_writer.hpp"
 
+#include <array>
 #include <cstddef>
-#include <cstdint>
 #include <filesystem>
 
 namespace gen
 {
 
-    struct LevelWriters
+    struct LevelCaches
     {
-        BitFileWriter &pop;
-        BitFileWriter &chunk;
-        BitFileWriter &seq;
+        BitFileWriter pop;
+        BitFileWriter chunk;
+        BitFileWriter seq;
     };
 
-    struct ConstLevelWriters
-    {
-        const BitFileWriter &pop;
-        const BitFileWriter &chunk;
-        const BitFileWriter &seq;
-    };
+    using LevelWriters = LevelCaches;
 
     class CacheSet
     {
@@ -32,32 +27,40 @@ namespace gen
 
         bool write_files() const noexcept { return this->write_files_; }
 
-        BitFileWriter &l1_pop() noexcept { return this->l1_pop_; }
-        BitFileWriter &l1_chunk() noexcept { return this->l1_chunk_; }
-        BitFileWriter &l1_seq() noexcept { return this->l1_seq_; }
+        LevelCaches &level(size_t level_idx);
+        const LevelCaches &level(size_t level_idx) const;
 
-        BitFileWriter &l2_pop() noexcept { return this->l2_pop_; }
-        BitFileWriter &l2_chunk() noexcept { return this->l2_chunk_; }
-        BitFileWriter &l2_seq() noexcept { return this->l2_seq_; }
+        LevelCaches &l1() noexcept { return this->levels_[0]; }
+        LevelCaches &l2() noexcept { return this->levels_[1]; }
+        LevelCaches &l3() noexcept { return this->levels_[2]; }
 
-        BitFileWriter &l3_pop() noexcept { return this->l3_pop_; }
-        BitFileWriter &l3_chunk() noexcept { return this->l3_chunk_; }
-        BitFileWriter &l3_seq() noexcept { return this->l3_seq_; }
+        const LevelCaches &l1() const noexcept { return this->levels_[0]; }
+        const LevelCaches &l2() const noexcept { return this->levels_[1]; }
+        const LevelCaches &l3() const noexcept { return this->levels_[2]; }
 
-        const BitFileWriter &l1_pop() const noexcept { return this->l1_pop_; }
-        const BitFileWriter &l1_chunk() const noexcept { return this->l1_chunk_; }
-        const BitFileWriter &l1_seq() const noexcept { return this->l1_seq_; }
+        BitFileWriter &l1_pop() noexcept { return this->levels_[0].pop; }
+        BitFileWriter &l1_chunk() noexcept { return this->levels_[0].chunk; }
+        BitFileWriter &l1_seq() noexcept { return this->levels_[0].seq; }
 
-        const BitFileWriter &l2_pop() const noexcept { return this->l2_pop_; }
-        const BitFileWriter &l2_chunk() const noexcept { return this->l2_chunk_; }
-        const BitFileWriter &l2_seq() const noexcept { return this->l2_seq_; }
+        BitFileWriter &l2_pop() noexcept { return this->levels_[1].pop; }
+        BitFileWriter &l2_chunk() noexcept { return this->levels_[1].chunk; }
+        BitFileWriter &l2_seq() noexcept { return this->levels_[1].seq; }
 
-        const BitFileWriter &l3_pop() const noexcept { return this->l3_pop_; }
-        const BitFileWriter &l3_chunk() const noexcept { return this->l3_chunk_; }
-        const BitFileWriter &l3_seq() const noexcept { return this->l3_seq_; }
+        BitFileWriter &l3_pop() noexcept { return this->levels_[2].pop; }
+        BitFileWriter &l3_chunk() noexcept { return this->levels_[2].chunk; }
+        BitFileWriter &l3_seq() noexcept { return this->levels_[2].seq; }
 
-        LevelWriters level(size_t level_idx);
-        ConstLevelWriters level(size_t level_idx) const;
+        const BitFileWriter &l1_pop() const noexcept { return this->levels_[0].pop; }
+        const BitFileWriter &l1_chunk() const noexcept { return this->levels_[0].chunk; }
+        const BitFileWriter &l1_seq() const noexcept { return this->levels_[0].seq; }
+
+        const BitFileWriter &l2_pop() const noexcept { return this->levels_[1].pop; }
+        const BitFileWriter &l2_chunk() const noexcept { return this->levels_[1].chunk; }
+        const BitFileWriter &l2_seq() const noexcept { return this->levels_[1].seq; }
+
+        const BitFileWriter &l3_pop() const noexcept { return this->levels_[2].pop; }
+        const BitFileWriter &l3_chunk() const noexcept { return this->levels_[2].chunk; }
+        const BitFileWriter &l3_seq() const noexcept { return this->levels_[2].seq; }
 
         CacheStats collect_stats() const;
 
@@ -66,15 +69,7 @@ namespace gen
 
     private:
         bool write_files_ = true;
-        BitFileWriter l1_pop_;
-        BitFileWriter l1_chunk_;
-        BitFileWriter l1_seq_;
-        BitFileWriter l2_pop_;
-        BitFileWriter l2_chunk_;
-        BitFileWriter l2_seq_;
-        BitFileWriter l3_pop_;
-        BitFileWriter l3_chunk_;
-        BitFileWriter l3_seq_;
+        std::array<LevelCaches, 3> levels_;
     };
 
 } // namespace gen
