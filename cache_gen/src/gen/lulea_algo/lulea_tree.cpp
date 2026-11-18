@@ -3,7 +3,6 @@
 #include "cache.hpp"
 #include "config.hpp"
 #include "io/reader.hpp"
-#include "lulea_config.hpp"
 
 #include <cstddef>
 #include <cstdint>

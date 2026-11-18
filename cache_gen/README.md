@@ -19,7 +19,6 @@ cache_gen/
 │       ├── gen.{hpp,cpp}       # Top-level build_lulea_cache pipeline (stub)
 │       ├── config.hpp          # Core types (ipv4_t, mask_t, port_t, NULL_PORT)
 │       ├── lulea_config.hpp    # 18-6-8 scheme constants and cell bit widths
-│       ├── utils/rtl.hpp       # RTL helper math (clog2, BRAM alignment, etc.)
 │       ├── lulea_algo/
 │       │   ├── cache.*         # BaseCell, LuleaCell, LuleaRoute, LuleaOverflow
 │       │   ├── lulea_tree.*    # 3-level LuleaTree builder and lookup (LPM)
