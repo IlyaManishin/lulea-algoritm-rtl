@@ -170,17 +170,6 @@ TEST_F(CacheSetTest, LevelAccessorThrowsOnInvalidIndex)
     EXPECT_EQ(&caches.level(1), &caches.l1());
     EXPECT_EQ(&caches.level(2), &caches.l2());
     EXPECT_EQ(&caches.level(3), &caches.l3());
-
-    const auto &const_caches = caches;
-    EXPECT_THROW(const_caches.level(0), std::out_of_range);
-    EXPECT_THROW(const_caches.level(4), std::out_of_range);
-    EXPECT_NO_THROW(const_caches.level(1));
-    EXPECT_NO_THROW(const_caches.level(2));
-    EXPECT_NO_THROW(const_caches.level(3));
-
-    EXPECT_EQ(&const_caches.level(1), &const_caches.l1());
-    EXPECT_EQ(&const_caches.level(2), &const_caches.l2());
-    EXPECT_EQ(&const_caches.level(3), &const_caches.l3());
 }
 
 TEST_F(CacheSetTest, LuleaAlgoMatchesStatsBetweenModes)

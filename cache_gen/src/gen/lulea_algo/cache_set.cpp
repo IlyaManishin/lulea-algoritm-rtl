@@ -58,23 +58,6 @@ namespace gen
         throw std::out_of_range("Invalid cache level index");
     }
 
-    const LevelCaches &CacheSet::level(size_t level_idx) const
-    {
-        if (level_idx == 1)
-        {
-            return this->levels_[0];
-        }
-        if (level_idx == 2)
-        {
-            return this->levels_[1];
-        }
-        if (level_idx == 3)
-        {
-            return this->levels_[2];
-        }
-        throw std::out_of_range("Invalid cache level index");
-    }
-
     CacheStats CacheSet::collect_stats() const
     {
         return CacheStats{
