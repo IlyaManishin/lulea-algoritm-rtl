@@ -135,40 +135,6 @@ namespace gen
             cache.write_bits(ch_sum, cell_size);
         }
 
-        void validate_level(std::span<const LuleaRoute> blocks, const CacheLevelConfig &conf)
-        {
-            if (conf.chunk_size == 0 || conf.chunks_per_block == 0)
-            {
-                throw std::runtime_error("Invalid chunk config for " + std::string(conf.level_name));
-            }
-
-            const size_t expected_block_size = conf.chunks_per_block * conf.chunk_size;
-            size_t expected_bit_width = 0;
-
-            for (const LuleaRoute &block : blocks)
-            {
-                if (block.size() != expected_block_size)
-                {
-                    throw std::runtime_error("Invalid block size for " + std::string(conf.level_name));
-                }
-
-                const size_t bit_width = block[0].bit_width();
-                if (bit_width > conf.seq_cell)
-                {
-                    throw std::runtime_error("Cell bit width exceeds seq cell size for " + std::string(conf.level_name));
-                }
-
-                if (expected_bit_width == 0)
-                {
-                    expected_bit_width = bit_width;
-                }
-                else if (bit_width != expected_bit_width)
-                {
-                    throw std::runtime_error("Inconsistent cell bit width for " + std::string(conf.level_name));
-                }
-            }
-        }
-
         void write_level_caches(const LevelCellsView &cells,
                                 LevelCaches &lcaches,
                                 const CacheLevelConfig &conf)
