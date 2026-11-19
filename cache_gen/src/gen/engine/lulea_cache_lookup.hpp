@@ -16,6 +16,13 @@ namespace engine
         std::vector<uint8_t> seq;
     };
 
+    struct LevelMemory
+    {
+        std::vector<uint64_t> pop;
+        std::vector<uint32_t> chunk;
+        std::vector<uint32_t> seq;
+    };
+
     class LuleaCacheLookup : public ILookupEngine
     {
     public:
@@ -32,6 +39,10 @@ namespace engine
         CacheLevelBuffers l1_;
         CacheLevelBuffers l2_;
         CacheLevelBuffers l3_;
+
+        LevelMemory l1_mem_;
+        LevelMemory l2_mem_;
+        LevelMemory l3_mem_;
     };
 
-}
+} // namespace engine

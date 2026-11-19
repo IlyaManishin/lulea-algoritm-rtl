@@ -23,10 +23,12 @@ namespace engine
         struct LevelLayout
         {
             size_t ip_shift;
-            size_t ip_bits;
-            size_t chunks_per_block;
+            uint32_t ip_mask;
+            size_t chunks_per_block_shift;
             size_t ch_sum_cell;
             size_t seq_cell;
+            size_t flag_shift;
+            uint32_t payload_mask;
         };
 
         struct DecodedCell
@@ -35,50 +37,54 @@ namespace engine
             uint32_t payload;
         };
 
-        constexpr LevelLayout L1_LAYOUT{
-            .ip_shift = L2_IP_SIZE + L3_IP_SIZE,
-            .ip_bits = L1_IP_SIZE,
-            .chunks_per_block = L1_CHUNKS_PER_BLOCK,
-            .ch_sum_cell = L1_CH_SUM_CELL,
-            .seq_cell = L1_DEFAULT_SEQ_CELL,
-        };
-
-        constexpr LevelLayout L2_LAYOUT{
-            .ip_shift = L3_IP_SIZE,
-            .ip_bits = L2_IP_SIZE,
-            .chunks_per_block = L2_CHUNKS_PER_BLOCK,
-            .ch_sum_cell = L2_CH_SUM_CELL,
-            .seq_cell = L2_DEFAULT_SEQ_CELL,
-        };
-
-        constexpr LevelLayout L3_LAYOUT{
-            .ip_shift = 0,
-            .ip_bits = L3_IP_SIZE,
-            .chunks_per_block = L3_CHUNKS_PER_BLOCK,
-            .ch_sum_cell = L3_CH_SUM_CELL,
-            .seq_cell = L3_DEFAULT_SEQ_CELL,
-        };
-
         constexpr uint64_t bit_mask(size_t width) noexcept
         {
-            if (width >= 64)
-            {
-                return ~uint64_t{0};
-            }
-            return (uint64_t{1} << width) - 1;
+            return (width >= 64) ? ~uint64_t{0} : ((uint64_t{1} << width) - 1);
         }
+
+        constexpr LevelLayout make_layout(size_t ip_shift,
+                                          size_t ip_bits,
+                                          size_t chunks_per_block,
+                                          size_t ch_sum_cell,
+                                          size_t seq_cell) noexcept
+        {
+            return {
+                .ip_shift = ip_shift,
+                .ip_mask = static_cast<uint32_t>(bit_mask(ip_bits)),
+                .chunks_per_block_shift = static_cast<size_t>(std::countr_zero(chunks_per_block)),
+                .ch_sum_cell = ch_sum_cell,
+                .seq_cell = seq_cell,
+                .flag_shift = seq_cell - 1,
+                .payload_mask = static_cast<uint32_t>(bit_mask(seq_cell - 1)),
+            };
+        }
+
+        constexpr size_t CHUNK_SIZE = static_cast<size_t>(PC_CHUNK_SIZE);
+        constexpr size_t CHUNK_SHIFT = static_cast<size_t>(std::countr_zero(CHUNK_SIZE));
+        constexpr size_t CHUNK_MASK = CHUNK_SIZE - 1;
+
+        constexpr LevelLayout L1_LAYOUT = make_layout(
+            L2_IP_SIZE + L3_IP_SIZE, L1_IP_SIZE, L1_CHUNKS_PER_BLOCK, L1_CH_SUM_CELL, L1_DEFAULT_SEQ_CELL);
+        constexpr LevelLayout L2_LAYOUT = make_layout(
+            L3_IP_SIZE, L2_IP_SIZE, L2_CHUNKS_PER_BLOCK, L2_CH_SUM_CELL, L2_DEFAULT_SEQ_CELL);
+        constexpr LevelLayout L3_LAYOUT = make_layout(
+            0, L3_IP_SIZE, L3_CHUNKS_PER_BLOCK, L3_CH_SUM_CELL, L3_DEFAULT_SEQ_CELL);
 
         constexpr size_t extract_slice(ipv4_t ip, const LevelLayout &layout) noexcept
         {
-            return static_cast<size_t>((ip >> layout.ip_shift) & bit_mask(layout.ip_bits));
+            return static_cast<size_t>((ip >> layout.ip_shift) & layout.ip_mask);
         }
 
-        constexpr DecodedCell decode_branch_cell(uint64_t raw_cell, size_t seq_cell_bits) noexcept
+        constexpr uint64_t prefix_mask(size_t bit_pos) noexcept
         {
-            const size_t flag_bit = seq_cell_bits - 1;
+            return (~uint64_t{0}) >> (63 - bit_pos);
+        }
+
+        constexpr DecodedCell decode_branch_cell(uint32_t raw_cell, const LevelLayout &layout) noexcept
+        {
             return {
-                .is_ptr = ((raw_cell >> flag_bit) & uint64_t{1}) != 0,
-                .payload = static_cast<uint32_t>(raw_cell & bit_mask(flag_bit)),
+                .is_ptr = ((raw_cell >> layout.flag_shift) & uint32_t{1}) != 0,
+                .payload = raw_cell & layout.payload_mask,
             };
         }
 
@@ -127,8 +133,8 @@ namespace engine
             }
 
             uint64_t result = 0;
-            size_t byte_idx = bit_offset / 8;
-            size_t bit_idx = bit_offset % 8;
+            size_t byte_idx = bit_offset >> 3;
+            size_t bit_idx = bit_offset & 7;
             size_t bits_read = 0;
 
             while (bits_read < num_bits)
@@ -149,22 +155,23 @@ namespace engine
             return result;
         }
 
-        uint64_t lookup_level_raw(const CacheLevelBuffers &buffers,
+        uint32_t lookup_level_raw(const CacheLevelBuffers &buffers,
                                   const LevelLayout &layout,
                                   size_t block_idx,
                                   size_t entry_idx)
         {
-            const size_t chunk_in_block = entry_idx / PC_CHUNK_SIZE;
-            const size_t word_addr = (block_idx * layout.chunks_per_block) + chunk_in_block;
-            const size_t bit_pos = entry_idx % PC_CHUNK_SIZE;
+            const size_t chunk_in_block = entry_idx >> CHUNK_SHIFT;
+            const size_t word_addr = (block_idx << layout.chunks_per_block_shift) | chunk_in_block;
+            const size_t bit_pos = entry_idx & CHUNK_MASK;
 
-            const uint64_t pop_word = read_bits(buffers.pop, word_addr * PC_CHUNK_SIZE, PC_CHUNK_SIZE);
-            const size_t offset = static_cast<size_t>(std::popcount(pop_word & bit_mask(bit_pos + 1)));
+            const uint64_t pop_word = read_bits(buffers.pop, word_addr << CHUNK_SHIFT, CHUNK_SIZE);
+            const size_t offset = static_cast<size_t>(std::popcount(pop_word & prefix_mask(bit_pos)));
             const size_t chunk_sum = static_cast<size_t>(
                 read_bits(buffers.chunk, word_addr * layout.ch_sum_cell, layout.ch_sum_cell));
             const size_t seq_addr = chunk_sum + offset;
 
-            return read_bits(buffers.seq, seq_addr * layout.seq_cell, layout.seq_cell);
+            return static_cast<uint32_t>(
+                read_bits(buffers.seq, seq_addr * layout.seq_cell, layout.seq_cell));
         }
     } // namespace
 
@@ -185,7 +192,7 @@ namespace engine
         const size_t l1_idx = extract_slice(ip, L1_LAYOUT);
         const DecodedCell l1_cell = decode_branch_cell(
             lookup_level_raw(this->l1_, L1_LAYOUT, 0, l1_idx),
-            L1_LAYOUT.seq_cell);
+            L1_LAYOUT);
         if (!l1_cell.is_ptr)
         {
             return static_cast<port_t>(l1_cell.payload);
@@ -194,15 +201,15 @@ namespace engine
         const size_t l2_idx = extract_slice(ip, L2_LAYOUT);
         const DecodedCell l2_cell = decode_branch_cell(
             lookup_level_raw(this->l2_, L2_LAYOUT, l1_cell.payload, l2_idx),
-            L2_LAYOUT.seq_cell);
+            L2_LAYOUT);
         if (!l2_cell.is_ptr)
         {
             return static_cast<port_t>(l2_cell.payload);
         }
 
         const size_t l3_idx = extract_slice(ip, L3_LAYOUT);
-        const uint64_t l3_raw = lookup_level_raw(this->l3_, L3_LAYOUT, l2_cell.payload, l3_idx);
-        return static_cast<port_t>(l3_raw);
+        const uint32_t l3_raw = lookup_level_raw(this->l3_, L3_LAYOUT, l2_cell.payload, l3_idx);
+        return static_cast<port_t>(l3_raw & L3_LAYOUT.payload_mask);
     }
 
 } // namespace engine
