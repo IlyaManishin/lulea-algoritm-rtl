@@ -86,6 +86,7 @@ namespace gen
                     pop_wr.write_bits(0, 1);
                 }
             }
+            state.chunk_sum = chunk_sum;
         }
 
         void write_level_block(const LuleaRoute &block,
