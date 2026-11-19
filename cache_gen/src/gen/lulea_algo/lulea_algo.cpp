@@ -23,6 +23,8 @@ namespace gen
 
         struct CacheLevelConfig
         {
+            std::string_view level_name = "";
+
             size_t ip_size = 0;
             size_t pc_cell = 0;
             size_t ch_sum_cell = 0;
@@ -30,53 +32,70 @@ namespace gen
             size_t chunks_per_block = 0;
         };
 
-        void write_level_caches(const LuleaRoute &tree, LevelCaches &lcaches, const CacheLevelConfig &config)
+        void write_level_block(const LuleaRoute &block,
+                               LevelCaches &lcaches,
+                               const CacheLevelConfig &config,
+                               WriterState &state)
+        {
+        }
+
+        void write_level_block(const LuleaRoute &block,
+                               LevelCaches &lcaches,
+                               const CacheLevelConfig &config)
+        {
+            WriterState state;
+            write_level_block(block, lcaches, config, state);
+        }
+
+        void write_level_caches(const std::vector<LuleaRoute> level,
+                                LevelCaches &lcaches,
+                                const CacheLevelConfig &config)
         {
             size_t last = 0;
-            for (const LuleaCell &cell : tree)
+            WriterState state;
+            for (const auto &block : level)
             {
-                (void)cell;
+                write_level_block(block, lcaches, config, state);
             }
-            (void)lcaches;
         }
 
         void generate_l1(const LuleaTree &tree, CacheSet &caches)
         {
-            // make config
             const CacheLevelConfig l1_conf{
+                .level_name = "L1",
                 .ip_size = L1_IP_SIZE,
                 .pc_cell = L1_PC_CELL,
                 .ch_sum_cell = L1_CH_SUM_CELL,
                 .seq_cell = L1_DEFAULT_SEQ_CELL,
                 .chunks_per_block = L1_CHUNKS_PER_BLOCK,
             };
-            write_level_caches(tree.l1(), caches.l1(), l1_conf);
+            write_level_block(tree.l1(), caches.l1(), l1_conf);
         }
 
         void generate_l2(const LuleaTree &tree, CacheSet &caches)
         {
-            // make config
             const CacheLevelConfig l2_conf{
+                .level_name = "L2",
                 .ip_size = L2_IP_SIZE,
                 .pc_cell = L2_PC_CELL,
                 .ch_sum_cell = L2_CH_SUM_CELL,
                 .seq_cell = L2_DEFAULT_SEQ_CELL,
                 .chunks_per_block = L2_CHUNKS_PER_BLOCK,
             };
-            write_level_caches(tree.l1(), caches.l1(), l2_conf);
+            write_level_caches(tree.l2(), caches.l2(), l2_conf);
         }
 
         void generate_l3(const LuleaTree &tree, CacheSet &caches)
         {
-            // make config
             const CacheLevelConfig l3_conf{
+                .level_name = "L3",
                 .ip_size = L3_IP_SIZE,
                 .pc_cell = L3_PC_CELL,
                 .ch_sum_cell = L3_CH_SUM_CELL,
                 .seq_cell = L3_DEFAULT_SEQ_CELL,
                 .chunks_per_block = L3_CHUNKS_PER_BLOCK,
             };
-            write_level_caches(tree.l1(), caches.l1(), l3_conf);
+            write_level_caches(tree.l3(), caches.l3(), l3_conf);
         }
     } // namespace
 
