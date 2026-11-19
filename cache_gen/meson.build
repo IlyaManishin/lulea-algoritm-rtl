@@ -42,6 +42,7 @@ core_sources = files(
   'src/gen/lulea_algo/lulea_tree.cpp',
   'src/gen/lulea_algo/lulea_algo.cpp',
   'src/gen/engine/lulea_tree_lookup.cpp',
+  'src/gen/engine/lulea_cache_lookup.cpp',
   'src/gen/io/reader.cpp',
   'src/gen/io/bit_file_writer.cpp',
   'src/io/config_parser.cpp',
@@ -69,9 +70,11 @@ test_sources = files(
   'tests/gen/test_gen.cpp',
   'tests/lulea/utils/ip_gen.cpp',
   'tests/lulea/utils/linear_lookup.cpp',
-  'tests/lulea/test_ip_gen.cpp',
-  'tests/lulea/test_linear_lookup.cpp',
+  'tests/lulea/utils/utils.cpp',
+  'tests/lulea/secondary/test_ip_gen.cpp',
+  'tests/lulea/secondary/test_linear_lookup.cpp',
   'tests/lulea/test_lulea_tree_real.cpp',
+  'tests/lulea/test_lulea_cache_real.cpp',
 ) + core_sources
 
 test_exe = executable(
