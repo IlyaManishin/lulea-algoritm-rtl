@@ -12,12 +12,10 @@ namespace gen
 {
     namespace
     {
-        class WriterState
+        struct WriterState
         {
-        private:
             size_t chunk_sum = 0;
 
-        public:
             WriterState(size_t chunk_sum = 0) : chunk_sum(chunk_sum) {};
         };
 
@@ -30,32 +28,82 @@ namespace gen
             size_t ch_sum_cell = 0;
             size_t seq_cell = 0;
             size_t chunks_per_block = 0;
+            size_t chunk_size = 0;
         };
 
-        void write_level_block(const LuleaRoute &block,
-                               LevelCaches &lcaches,
-                               const CacheLevelConfig &config,
-                               WriterState &state)
+        void write_chunk_sum(BitFileWriter &cache, size_t ch_sum, size_t cell_size, std::string_view level)
         {
+            // check overflow, throw LUleaoverflow
         }
 
         void write_level_block(const LuleaRoute &block,
                                LevelCaches &lcaches,
-                               const CacheLevelConfig &config)
+                               const CacheLevelConfig &conf,
+                               WriterState &state)
+        {
+            (void)lcaches;
+            (void)conf;
+            (void)state;
+
+            if (block.size() % conf.chunk_size != 0 ||
+                block.size() / conf.chunk_size != conf.chunks_per_block ||
+                block.size() == 0)
+            {
+                // runtime error
+            }
+            if (block[0].bit_width() > conf.seq_cell)
+            {
+                // runtime error
+            }
+
+            BitFileWriter &pop_wr = lcaches.pop;
+            BitFileWriter &chunk_wr = lcaches.chunk;
+            BitFileWriter &seq_wr = lcaches.seq;
+
+            size_t block_offset = conf.chunk_size;
+            size_t last_cell_val = block[0].value();
+            size_t chunk_sum = state.chunk_sum;
+
+            for (const LuleaCell &cell : block)
+            {
+                if (block_offset == conf.chunk_size)
+                {
+                    write_chunk_sum(chunk_wr, chunk_sum, conf.ch_sum_cell, conf.level_name);
+                    block_offset = 0;
+                }
+                block_offset++;
+
+                if (cell.value() != last_cell_val)
+                {
+                    pop_wr.write_bits(1, 1);
+                    seq_wr.write_bits(cell.value(), conf.seq_cell);
+
+                    last_cell_val = cell.value();
+                    chunk_sum++;
+                }
+                else
+                {
+                    pop_wr.write_bits(0, 1);
+                }
+            }
+        }
+
+        void write_level_block(const LuleaRoute &block,
+                               LevelCaches &lcaches,
+                               const CacheLevelConfig &conf)
         {
             WriterState state;
-            write_level_block(block, lcaches, config, state);
+            write_level_block(block, lcaches, conf, state);
         }
 
         void write_level_caches(const std::vector<LuleaRoute> level,
                                 LevelCaches &lcaches,
-                                const CacheLevelConfig &config)
+                                const CacheLevelConfig &conf)
         {
-            size_t last = 0;
             WriterState state;
             for (const auto &block : level)
             {
-                write_level_block(block, lcaches, config, state);
+                write_level_block(block, lcaches, conf, state);
             }
         }
 
@@ -68,6 +116,7 @@ namespace gen
                 .ch_sum_cell = L1_CH_SUM_CELL,
                 .seq_cell = L1_DEFAULT_SEQ_CELL,
                 .chunks_per_block = L1_CHUNKS_PER_BLOCK,
+                .chunk_size = PC_CHUNK_SIZE,
             };
             write_level_block(tree.l1(), caches.l1(), l1_conf);
         }
@@ -81,6 +130,7 @@ namespace gen
                 .ch_sum_cell = L2_CH_SUM_CELL,
                 .seq_cell = L2_DEFAULT_SEQ_CELL,
                 .chunks_per_block = L2_CHUNKS_PER_BLOCK,
+                .chunk_size = PC_CHUNK_SIZE,
             };
             write_level_caches(tree.l2(), caches.l2(), l2_conf);
         }
@@ -94,6 +144,7 @@ namespace gen
                 .ch_sum_cell = L3_CH_SUM_CELL,
                 .seq_cell = L3_DEFAULT_SEQ_CELL,
                 .chunks_per_block = L3_CHUNKS_PER_BLOCK,
+                .chunk_size = PC_CHUNK_SIZE,
             };
             write_level_caches(tree.l3(), caches.l3(), l3_conf);
         }
