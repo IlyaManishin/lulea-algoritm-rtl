@@ -14,6 +14,8 @@ agents.md
 .env
 .env.*
 !.env.example
+.stignore
+/.stfolder
 
 # ==============================================================================
 # FPGA / Vivado
@@ -26,6 +28,11 @@ agents.md
 *.pb
 cfg/*
 !cfg/*.wcfg
+**/prj/
+**/prj1/
+**/rtl_check/results/
+**/rtl_check/popcount_timing_test/results/
+
 
 # ==============================================================================
 # Simulation
@@ -35,6 +42,9 @@ cfg/*
 *.fst
 sim_build/
 results.xml
+obj_dir/
+xsim.dir/
+xsim_dir/
 ip/
 .$*.bkp
 .$*.dtmp
@@ -75,6 +85,6 @@ htmlcov/
 # ==============================================================================
 .directory
 **/mrt_files
-internal/
+/internal/
 *.gz
 *.bz2

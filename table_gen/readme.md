@@ -60,7 +60,7 @@ Samples converted full-tables into multiple fixed-size sub-tables (`1024`, `2048
 - **Sample Count Formula**:
   $$\text{samples} = \left\lfloor \frac{\text{total\_routes} \times \text{coeff}}{\text{target\_size}} \right\rfloor$$
   The parameter `coeff` (`SAMPLE_FILL_COEFF`, default `1.0`) controls table reuse. Across independent seeds, $c=1.0$ statistically samples ~63.2% unique routes from the full table.
-- **Atomic File Writes**: Serializers in `engine/utils/route_saver.py` write to `.tmp.<pid>` files first before calling `os.replace`, guaranteeing that files are never left half-written or corrupted if interrupted.
+- **Atomic File Writes**: Serializers in `engine/utils/route_writer.py` write to `.tmp.<pid>` files first before calling `os.replace`, guaranteeing that files are never left half-written or corrupted if interrupted.
 - **Progress Monitoring**: Powered by `rich` with live ETA, elapsed time, and task counters. Exits with status code `1` if any errors occur.
 - **Output Hierarchy**:
   ```
@@ -104,18 +104,18 @@ Stores `<port_id> <next_hop>`:
 Sampled tables use compact binary formats with magic headers. `read_routes()`, `read_port_map()`, and `read_route_count()` automatically detect the format by inspecting the first 4 bytes.
 
 #### Binary Routes (`LRB1`)
-- **Header** (8 bytes): `b"LRB1"` + `count: uint32` (Big-Endian)
-- **Records** (8 bytes per entry, struct `>IBHx`):
-  - `ip_int: uint32` (BE) — IPv4 prefix base as integer
+- **Header** (8 bytes): `b"LRB1"` + `count: uint32` (Little-Endian)
+- **Records** (8 bytes per entry, struct `<IBHx`):
+  - `ip_int: uint32` (LE) — IPv4 prefix base as integer
   - `mask: uint8` (1..32) — Prefix mask length
-  - `port_id: uint16` (BE) — Hardware egress port identifier
+  - `port_id: uint16` (LE) — Hardware egress port identifier
   - `pad: uint8` (0x00) — Alignment padding
 
 #### Binary Port Map (`LPB1`)
-- **Header** (8 bytes): `b"LPB1"` + `count: uint32` (BE)
-- **Records** (6 bytes per entry, struct `>HI`):
-  - `port_id: uint16` (BE)
-  - `ip_int: uint32` (BE) — IPv4 next-hop address as integer
+- **Header** (8 bytes): `b"LPB1"` + `count: uint32` (LE)
+- **Records** (6 bytes per entry, struct `<HI`):
+  - `port_id: uint16` (LE)
+  - `ip_int: uint32` (LE) — IPv4 next-hop address as integer
 
 ### Conversion Report (`info.txt`)
 ```text
@@ -155,7 +155,7 @@ table_gen/
         ├── concurrency.py      # ThreadPool & fork ProcessPool runners with Ctrl+C abort
         ├── port_mapping.py     # Next-hop to port mapping (hardware limit: 255 ports)
         ├── route_reader.py     # Binary & text parser with auto-format detection
-        └── route_saver.py      # Binary & text atomic serializers
+        └── route_writer.py     # Binary & text atomic serializers
 ```
 
 ### Pure Relative Imports Inside `engine/`
@@ -173,7 +173,7 @@ Other tools in the repository (e.g. golden models, hardware testbenches, stats s
 
 ```python
 from table_gen.engine.utils.route_reader import read_routes, read_port_map
-from table_gen.engine.utils.route_saver import save_routes, save_port_map, FileFormat
+from table_gen.engine.utils.route_writer import save_routes, save_port_map, FileFormat
 from table_gen.engine.core.gen_types import RouteRecord, PortMapping
 from table_gen.engine.config import PORTS_COUNT_MAX
 

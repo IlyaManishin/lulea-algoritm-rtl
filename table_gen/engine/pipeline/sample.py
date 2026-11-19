@@ -9,7 +9,7 @@ from ..core.gen_types import PortMapping, RouteRecord
 from ..core.mrt_filter import filter_mrt_routes
 from ..utils.concurrency import run_in_fork_process_pool
 from ..utils.route_reader import RouteReadError, read_port_map, read_route_count, read_routes
-from ..utils.route_saver import FileFormat, save_converted
+from ..utils.route_writer import FileFormat, save_routes_and_ports
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,7 +171,7 @@ def _execute_sample_worker_task(args: tuple[SingleSampleTask, bool]) -> SampleRe
     }
 
     try:
-        save_converted(
+        save_routes_and_ports(
             routes=sampled,
             port_map=sample_port_map,
             routes_path=task.output_dir / ROUTE_FILENAME,

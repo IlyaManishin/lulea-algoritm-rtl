@@ -7,7 +7,7 @@ from ..core.random_gen import generate_random_routes
 
 from ..config import GeneratorType, ROUTE_COUNT, PORT_MAP_EXTENSION
 from ..utils.port_mapping import map_next_hops_to_ports
-from ..utils.route_saver import save_routes_and_ports
+from ..utils.route_writer import save_routes_and_ports
 
 
 def generate_route_table(
@@ -48,6 +48,6 @@ def generate_route_table(
     save_routes_and_ports(
         routes=routes,
         port_map=port_map,
-        routes_output_path=output_path,
-        port_map_output_path=port_map_path,
+        routes_path=output_path,
+        port_map_path=port_map_path,
     )
