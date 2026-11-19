@@ -12,8 +12,6 @@ namespace gen
     //  GLOBAL DEFINES (docs/implementation_18_6_8.drawio -> configuration)
     // =========================================================================
 
-    inline constexpr size_t IP_SIZE_BITS =
-        sizeof(ipv4_t) * static_cast<size_t>(std::numeric_limits<unsigned char>::digits);
     inline constexpr size_t PORT_SIZE = 8;
 
     inline constexpr size_t PC_CHUNK_BYTES = 8;

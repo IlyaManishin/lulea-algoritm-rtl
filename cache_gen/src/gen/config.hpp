@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <string_view>
 
 namespace gen
@@ -12,7 +13,8 @@ namespace gen
     using reader_port_t = uint16_t;
 
     using bin_entry_count_t = uint32_t;
-
+    
+    inline constexpr size_t IP_SIZE_BITS = sizeof(ipv4_t) * 8;
     inline constexpr size_t HEADER_SIZE = 8;
     inline constexpr size_t ENTRY_SIZE = 8;
     inline constexpr std::string_view BIN_MAGIC = "LRB1";

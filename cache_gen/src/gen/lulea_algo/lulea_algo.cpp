@@ -1,12 +1,20 @@
 #include "lulea_algo.hpp"
 
+#include "cache.hpp"
 #include "cache_set.hpp"
+#include "errors.hpp"
 #include "gen.hpp"
+#include "io/bit_file_writer.hpp"
 #include "io/reader.hpp"
+#include "lulea_config.hpp"
 #include "lulea_tree.hpp"
 
+#include <cstddef>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 namespace gen
 {
@@ -15,13 +23,11 @@ namespace gen
         struct WriterState
         {
             size_t chunk_sum = 0;
-
-            WriterState(size_t chunk_sum = 0) : chunk_sum(chunk_sum) {};
         };
 
         struct CacheLevelConfig
         {
-            std::string_view level_name = "";
+            std::string_view level_name;
 
             size_t ip_size = 0;
             size_t pc_cell = 0;
@@ -33,7 +39,17 @@ namespace gen
 
         void write_chunk_sum(BitFileWriter &cache, size_t ch_sum, size_t cell_size, std::string_view level)
         {
-            // check overflow, throw LUleaoverflow
+            if (cell_size < sizeof(size_t) * 8)
+            {
+                const size_t max_val = (size_t{1} << cell_size) - 1;
+                if (ch_sum > max_val)
+                {
+                    throw LuleaOverflow(
+                        std::string(level) + " chunk sum " + std::to_string(ch_sum) +
+                        " exceeds cell capacity " + std::to_string(max_val));
+                }
+            }
+            cache.write_bits(ch_sum, cell_size);
         }
 
         void write_level_block(const LuleaRoute &block,
@@ -41,19 +57,16 @@ namespace gen
                                const CacheLevelConfig &conf,
                                WriterState &state)
         {
-            (void)lcaches;
-            (void)conf;
-            (void)state;
-
-            if (block.size() % conf.chunk_size != 0 ||
-                block.size() / conf.chunk_size != conf.chunks_per_block ||
-                block.size() == 0)
+            if (conf.chunk_size == 0 ||
+                block.empty() ||
+                block.size() % conf.chunk_size != 0 ||
+                block.size() / conf.chunk_size != conf.chunks_per_block)
             {
-                // runtime error
+                throw std::runtime_error("Invalid block size for " + std::string(conf.level_name));
             }
             if (block[0].bit_width() > conf.seq_cell)
             {
-                // runtime error
+                throw std::runtime_error("Cell bit width exceeds seq cell size for " + std::string(conf.level_name));
             }
 
             BitFileWriter &pop_wr = lcaches.pop;
@@ -61,7 +74,7 @@ namespace gen
             BitFileWriter &seq_wr = lcaches.seq;
 
             size_t block_offset = conf.chunk_size;
-            size_t last_cell_val = block[0].value();
+            size_t last_cell_raw = block[0].raw();
             size_t chunk_sum = state.chunk_sum;
 
             for (const LuleaCell &cell : block)
@@ -73,12 +86,12 @@ namespace gen
                 }
                 block_offset++;
 
-                if (cell.value() != last_cell_val)
+                if (cell.raw() != last_cell_raw)
                 {
                     pop_wr.write_bits(1, 1);
-                    seq_wr.write_bits(cell.value(), conf.seq_cell);
+                    seq_wr.write_bits(cell.raw(), conf.seq_cell);
 
-                    last_cell_val = cell.value();
+                    last_cell_raw = cell.raw();
                     chunk_sum++;
                 }
                 else
@@ -97,7 +110,7 @@ namespace gen
             write_level_block(block, lcaches, conf, state);
         }
 
-        void write_level_caches(const std::vector<LuleaRoute> level,
+        void write_level_caches(const std::vector<LuleaRoute> &level,
                                 LevelCaches &lcaches,
                                 const CacheLevelConfig &conf)
         {
