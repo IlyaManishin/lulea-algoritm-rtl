@@ -12,10 +12,10 @@
 #include "gen/config.hpp"
 #include "gen/engine/lulea_tree_lookup.hpp"
 #include "gen/io/reader.hpp"
-#include "gen/lulea_algo/cache.hpp"
 #include "gen/lulea_algo/errors.hpp"
 #include "gen/lulea_algo/lulea_tree.hpp"
 #include "gen/lulea_config.hpp"
+#include "gen/lulea_data/route.hpp"
 
 namespace
 {

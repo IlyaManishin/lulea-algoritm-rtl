@@ -1,9 +1,9 @@
 #pragma once
 
-#include "cache.hpp"
 #include "config.hpp"
 #include "io/reader.hpp"
 #include "lulea_config.hpp"
+#include "lulea_data/route.hpp"
 
 #include <cstddef>
 #include <vector>

@@ -37,8 +37,8 @@ inc_dirs = include_directories('src', 'src/gen', 'tests/lulea', 'tests/lulea/uti
 
 core_sources = files(
   'src/gen/gen.cpp',
-  'src/gen/lulea_algo/cache.cpp',
-  'src/gen/lulea_algo/cache_set.cpp',
+  'src/gen/lulea_data/route.cpp',
+  'src/gen/lulea_data/cache_set.cpp',
   'src/gen/lulea_algo/lulea_tree.cpp',
   'src/gen/lulea_algo/lulea_algo.cpp',
   'src/gen/engine/lulea_tree_lookup.cpp',
@@ -62,7 +62,7 @@ gtest_dep = dependency('gtest_main')
 test_sources = files(
   'tests/test_config.cpp',
   'tests/test_stats_writer.cpp',
-  'tests/gen/test_cache.cpp',
+  'tests/gen/test_route.cpp',
   'tests/gen/test_cache_set.cpp',
   'tests/gen/test_lulea_tree.cpp',
   'tests/gen/test_reader.cpp',

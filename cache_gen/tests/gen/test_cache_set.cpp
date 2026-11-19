@@ -9,9 +9,9 @@
 
 #include "gen/config.hpp"
 #include "gen/gen.hpp"
-#include "gen/lulea_algo/cache_set.hpp"
 #include "gen/lulea_algo/lulea_algo.hpp"
 #include "gen/lulea_algo/lulea_tree.hpp"
+#include "gen/lulea_data/cache_set.hpp"
 
 namespace fs = std::filesystem;
 

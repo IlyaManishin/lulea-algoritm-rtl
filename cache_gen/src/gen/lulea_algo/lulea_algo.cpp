@@ -1,12 +1,12 @@
 #include "lulea_algo.hpp"
 
-#include "cache.hpp"
-#include "cache_set.hpp"
 #include "errors.hpp"
 #include "gen.hpp"
 #include "io/bit_file_writer.hpp"
 #include "io/reader.hpp"
 #include "lulea_config.hpp"
+#include "lulea_data/cache_set.hpp"
+#include "lulea_data/route.hpp"
 #include "lulea_tree.hpp"
 
 #include <cstddef>

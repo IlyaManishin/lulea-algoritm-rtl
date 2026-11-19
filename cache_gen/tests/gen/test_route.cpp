@@ -7,8 +7,8 @@
 #include <type_traits>
 
 #include "gen/config.hpp"
-#include "gen/lulea_algo/cache.hpp"
 #include "gen/lulea_algo/errors.hpp"
+#include "gen/lulea_data/route.hpp"
 
 TEST(BaseCellTest, DefaultsToZeroAndComputesCapacity)
 {
