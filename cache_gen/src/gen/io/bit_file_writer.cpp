@@ -186,6 +186,10 @@ namespace gen
 
         flush_buffer_to_file();
         file_.flush();
+        if (!file_)
+        {
+            throw std::runtime_error("Failed to flush cache file");
+        }
     }
 
     void BitFileWriter::close()
@@ -209,6 +213,10 @@ namespace gen
 
         flush_buffer_to_file();
         file_.close();
+        if (!file_)
+        {
+            throw std::runtime_error("Failed to close cache file");
+        }
     }
 
     size_t BitFileWriter::total_bits_written() const noexcept
