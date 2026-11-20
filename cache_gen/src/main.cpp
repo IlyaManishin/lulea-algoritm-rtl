@@ -4,6 +4,7 @@
 #include "io/stats_writer.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <iostream>
 #include <span>
@@ -12,48 +13,62 @@ using namespace io;
 
 namespace
 {
-    bool process_config_entry(const gen::Config &config, const StatsWriter &writer)
+    enum class EntryResult : std::uint8_t
+    {
+        Success,
+        Failed,
+        Fatal
+    };
+
+    EntryResult process_config_entry(const gen::Config &config, const StatsWriter &writer)
     {
         try
         {
             const gen::BuildResult result = gen::build_lulea_cache(config);
             writer.write(config.input_path, result.stats);
-            return true;
+            return EntryResult::Success;
         }
         catch (const gen::FatalGenException &ex)
         {
             std::cerr << "Fatal build error for " << config.input_path
                       << ": " << ex.what() << "\n";
-            return false;
+            return EntryResult::Fatal;
         }
         catch (const gen::GenException &ex)
         {
             std::cerr << "Build error for " << config.input_path
                       << ": " << ex.what() << "\n";
-            return true;
+            return EntryResult::Failed;
         }
         catch (const std::exception &ex)
         {
             std::cerr << "Unexpected error for " << config.input_path
                       << ": " << ex.what() << "\n";
-            return false;
+            return EntryResult::Fatal;
         }
     }
 
-    void process_config(const CliOptions &opt)
+    int process_config(const CliOptions &opt)
     {
         ConfigParser parser(opt.config_file);
         const StatsWriter writer(opt.out_csv);
 
         gen::Config config;
+        int status = 0;
         while (parser.next(config))
         {
-            if (!process_config_entry(config, writer))
+            const EntryResult result = process_config_entry(config, writer);
+            if (result == EntryResult::Fatal)
             {
                 std::cerr << "Fatal error encountered. Aborting further processing.\n";
-                break;
+                return 1;
+            }
+            if (result == EntryResult::Failed)
+            {
+                status = 1;
             }
         }
+        return status;
     }
 
     int run_program(std::span<char *const> args)
@@ -68,8 +83,7 @@ namespace
 
         try
         {
-            process_config(options.value());
-            return 0;
+            return process_config(options.value());
         }
         catch (const std::exception &e)
         {
