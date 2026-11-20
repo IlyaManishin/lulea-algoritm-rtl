@@ -3,6 +3,7 @@
 #include "gen.hpp"
 #include "io/bit_file_writer.hpp"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -10,6 +11,38 @@
 
 namespace gen
 {
+
+    namespace
+    {
+        uint32_t cache_size_bytes(const BitFileWriter &writer, bool aligned, bool bitmap)
+        {
+            const size_t bits = writer.total_bits_written();
+            if (!aligned)
+            {
+                return static_cast<uint32_t>((bits + 7) / 8);
+            }
+
+            // RAMB36: 512 x 64 usable bits. RAMB18: 1024 x 18 or 2048 x 9.
+            const size_t usable_bits = bitmap ? 512 * 64 : 1024 * 18;
+            const size_t block_bytes = bitmap ? 4608 : 2304;
+            return static_cast<uint32_t>(((bits + usable_bits - 1) / usable_bits) * block_bytes);
+        }
+
+        CacheByteSizes collect_sizes(const std::array<LevelCaches, 3> &levels, bool aligned)
+        {
+            return {
+                .l1_pop = cache_size_bytes(levels[0].pop, aligned, true),
+                .l1_chunk = cache_size_bytes(levels[0].chunk, aligned, false),
+                .l1_seq = cache_size_bytes(levels[0].seq, aligned, false),
+                .l2_pop = cache_size_bytes(levels[1].pop, aligned, true),
+                .l2_chunk = cache_size_bytes(levels[1].chunk, aligned, false),
+                .l2_seq = cache_size_bytes(levels[1].seq, aligned, false),
+                .l3_pop = cache_size_bytes(levels[2].pop, aligned, true),
+                .l3_chunk = cache_size_bytes(levels[2].chunk, aligned, false),
+                .l3_seq = cache_size_bytes(levels[2].seq, aligned, false),
+            };
+        }
+    } // namespace
 
     CacheSet::CacheSet(const std::filesystem::path &dest_dir, bool write_files)
         : write_files_(write_files)
@@ -60,18 +93,9 @@ namespace gen
 
     CacheStats CacheSet::collect_stats() const
     {
-        return CacheStats{
-            .cache_sizes = {
-                .l1_pop = static_cast<uint32_t>((this->levels_[0].pop.total_bits_written() + 7U) / 8U),
-                .l1_chunk = static_cast<uint32_t>((this->levels_[0].chunk.total_bits_written() + 7U) / 8U),
-                .l1_seq = static_cast<uint32_t>((this->levels_[0].seq.total_bits_written() + 7U) / 8U),
-                .l2_pop = static_cast<uint32_t>((this->levels_[1].pop.total_bits_written() + 7U) / 8U),
-                .l2_chunk = static_cast<uint32_t>((this->levels_[1].chunk.total_bits_written() + 7U) / 8U),
-                .l2_seq = static_cast<uint32_t>((this->levels_[1].seq.total_bits_written() + 7U) / 8U),
-                .l3_pop = static_cast<uint32_t>((this->levels_[2].pop.total_bits_written() + 7U) / 8U),
-                .l3_chunk = static_cast<uint32_t>((this->levels_[2].chunk.total_bits_written() + 7U) / 8U),
-                .l3_seq = static_cast<uint32_t>((this->levels_[2].seq.total_bits_written() + 7U) / 8U),
-            }
+        return {
+            .cache_sizes = collect_sizes(this->levels_, false),
+            .cache_sizes_aligned = collect_sizes(this->levels_, true),
         };
     }
 

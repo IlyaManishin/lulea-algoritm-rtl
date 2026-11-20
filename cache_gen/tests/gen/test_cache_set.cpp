@@ -199,3 +199,24 @@ TEST_F(CacheSetTest, LuleaAlgoMatchesStatsBetweenModes)
     EXPECT_EQ(stats_only.cache_sizes.l3_chunk, write_files.cache_sizes.l3_chunk);
     EXPECT_EQ(stats_only.cache_sizes.l3_seq, write_files.cache_sizes.l3_seq);
 }
+
+TEST_F(CacheSetTest, PhysicalMemoryRoundsEachArrayAtItsOwnBlockDepth)
+{
+    gen::CacheSet caches(false);
+    caches.l1_pop().write_bits(0, 512 * 64);
+    caches.l1_chunk().write_bits(0, 1024 * 18);
+    caches.l2_seq().write_bits(0, 2048 * 9);
+    const auto exact = caches.collect_stats().cache_sizes_aligned;
+    EXPECT_EQ(exact.l1_pop, 4608U);
+    EXPECT_EQ(exact.l1_chunk, 2304U);
+    EXPECT_EQ(exact.l2_seq, 2304U);
+    EXPECT_EQ(exact.l3_seq, 0U);
+
+    caches.l1_pop().write_bits(0, 64);
+    caches.l1_chunk().write_bits(0, 18);
+    caches.l2_seq().write_bits(0, 9);
+    const auto next = caches.collect_stats().cache_sizes_aligned;
+    EXPECT_EQ(next.l1_pop, 9216U);
+    EXPECT_EQ(next.l1_chunk, 4608U);
+    EXPECT_EQ(next.l2_seq, 4608U);
+}

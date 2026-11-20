@@ -51,8 +51,9 @@ TEST_F(StatsWriterTest, WritesToCsvFile)
     std::string content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 
     const std::string expected =
-        "file,l1_pop,l1_chunk,l1_seq,l2_pop,l2_chunk,l2_seq,l3_pop,l3_chunk,l3_seq\n"
-        "input.lrb1,11,12,13,21,22,23,31,32,33\n";
+        "file,l1_pop,l1_chunk,l1_seq,l2_pop,l2_chunk,l2_seq,l3_pop,l3_chunk,l3_seq,"
+        "l1_pop_aligned,l1_chunk_aligned,l1_seq_aligned,l2_pop_aligned,l2_chunk_aligned,l2_seq_aligned,l3_pop_aligned,l3_chunk_aligned,l3_seq_aligned\n"
+        "input.lrb1,11,12,13,21,22,23,31,32,33,0,0,0,0,0,0,0,0,0\n";
 
     EXPECT_EQ(content, expected);
 }
@@ -76,7 +77,7 @@ TEST_F(StatsWriterTest, WritesToStdoutWhenNoCsv)
     writer.write("test_file.lrb1", stats);
     std::cout.rdbuf(old_cout);
 
-    EXPECT_EQ(oss.str(), "test_file.lrb1\t10 20 30 40 50 60 70 80 90\n");
+    EXPECT_EQ(oss.str(), "test_file.lrb1\t10 20 30 40 50 60 70 80 90\t0 0 0 0 0 0 0 0 0\n");
 }
 
 TEST_F(StatsWriterTest, ThrowsOnInvalidFilePath)

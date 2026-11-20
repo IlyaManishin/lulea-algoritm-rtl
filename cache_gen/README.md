@@ -91,7 +91,7 @@ meson test -C build -v
   ```
   - `mode`: `stats` or `dump`
   - `dest_dir`: optional (`-` means no output folder)
-- **CSV columns** (`--out-csv`): `file,l1_pop,l1_chunk,l1_seq,l2_pop,l2_chunk,l2_seq,l3_pop,l3_chunk,l3_seq`.
+- **CSV columns** (`--out-csv`): `file,l1_pop,l1_chunk,l1_seq,l2_pop,l2_chunk,l2_seq,l3_pop,l3_chunk,l3_seq`. The next nine columns use the suffix `_aligned` and report allocated BRAM bytes.
 
 ### 4. Run Linters (`cppcheck` and `clang-tidy`)
 

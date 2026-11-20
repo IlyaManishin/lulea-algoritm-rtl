@@ -58,6 +58,7 @@ namespace gen
     struct CacheStats
     {
         CacheByteSizes cache_sizes;
+        CacheByteSizes cache_sizes_aligned{};
     };
 
     struct BuildResult

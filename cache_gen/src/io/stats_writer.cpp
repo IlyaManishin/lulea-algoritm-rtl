@@ -14,7 +14,8 @@ namespace io
     namespace
     {
         constexpr std::string_view CSV_HEADER =
-            "file,l1_pop,l1_chunk,l1_seq,l2_pop,l2_chunk,l2_seq,l3_pop,l3_chunk,l3_seq\n";
+            "file,l1_pop,l1_chunk,l1_seq,l2_pop,l2_chunk,l2_seq,l3_pop,l3_chunk,l3_seq,"
+            "l1_pop_aligned,l1_chunk_aligned,l1_seq_aligned,l2_pop_aligned,l2_chunk_aligned,l2_seq_aligned,l3_pop_aligned,l3_chunk_aligned,l3_seq_aligned\n";
 
         void write_sizes(std::ostream &out, const gen::CacheByteSizes &sizes, char sep)
         {
@@ -62,6 +63,8 @@ namespace io
         }
         out << (csv ? ',' : '\t');
         write_sizes(out, stats.cache_sizes, sep);
+        out << (csv ? ',' : '\t');
+        write_sizes(out, stats.cache_sizes_aligned, sep);
         if (!(out << '\n' << std::flush))
         {
             throw std::runtime_error("Failed to write cache statistics");
