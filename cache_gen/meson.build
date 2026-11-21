@@ -85,7 +85,7 @@ test_exe = executable(
   dependencies: gtest_dep,
 )
 
-test('cache_gen_tests', test_exe)
+test('cache_gen_tests', test_exe, timeout: 300)
 
 lint_script = files('scripts/run_linters.sh')
 

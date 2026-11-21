@@ -1,5 +1,8 @@
 #pragma once
 
+#include "config.hpp"
+
+#include <cstddef>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -7,6 +10,11 @@
 namespace tests
 {
     namespace fs = std::filesystem;
+
+    inline constexpr size_t REAL_TABLE_RANDOM_IP_COUNT = 32768;
+    inline constexpr size_t REAL_TABLE_STEP_IP_COUNT = 16384;
+    // An odd step covers nearly the full IPv4 range and varies the low address bits.
+    inline constexpr gen::ipv4_t REAL_TABLE_IP_STEP = 262143U;
 
     struct TableTestFiles
     {

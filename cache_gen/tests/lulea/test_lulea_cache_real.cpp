@@ -25,12 +25,10 @@ namespace
         }
     }
 
-    void verify_table(const tests::TableTestFiles &table, const fs::path &test_dir, uint32_t seed)
+    void verify_table_caches(const tests::TableTestFiles &table, const fs::path &test_dir, uint32_t seed)
     {
         SCOPED_TRACE(table.name);
         const gen::MaskEntries bin_entries = gen::Reader::read(table.bin_path.string());
-        EXPECT_EQ(bin_entries.size(), 2048U);
-
         const gen::MaskEntries txt_entries = tests::LinearLookup::parse_routes_txt(table.txt_path.string());
         ASSERT_EQ(txt_entries.size(), bin_entries.size());
 
@@ -54,12 +52,12 @@ namespace
         EXPECT_TRUE(edge_res.is_success())
             << "Edge verification failed (" << edge_res.mismatched << "/" << edge_res.total << " mismatches)";
 
-        const auto random_ips = tests::IpGen::ip_gen_random(2000, seed);
+        const auto random_ips = tests::IpGen::ip_gen_random(tests::REAL_TABLE_RANDOM_IP_COUNT, seed);
         const auto rand_res = tests::verify_lookups(cache_lookup, linear_lookup, random_ips);
         EXPECT_TRUE(rand_res.is_success())
             << "Random verification failed (" << rand_res.mismatched << "/" << rand_res.total << " mismatches)";
 
-        const auto step_ips = tests::IpGen::ip_gen_step(0x01000000U, 131072U, 1000);
+        const auto step_ips = tests::IpGen::ip_gen_step(0U, tests::REAL_TABLE_IP_STEP, tests::REAL_TABLE_STEP_IP_COUNT);
         const auto step_res = tests::verify_lookups(cache_lookup, linear_lookup, step_ips);
         EXPECT_TRUE(step_res.is_success())
             << "Step verification failed (" << step_res.mismatched << "/" << step_res.total << " mismatches)";
@@ -77,7 +75,7 @@ TEST(LuleaCacheRealTableTest, VerifyCachesWithReference)
     for (const auto &table : tables)
     {
         const auto seed = static_cast<uint32_t>(1000 + tables_tested);
-        ASSERT_NO_FATAL_FAILURE(verify_table(table, test_dir, seed));
+        ASSERT_NO_FATAL_FAILURE(verify_table_caches(table, test_dir, seed));
         tables_tested++;
     }
 

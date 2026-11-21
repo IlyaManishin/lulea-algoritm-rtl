@@ -2,19 +2,14 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <filesystem>
-#include <memory>
 #include <string>
 
-#include "config.hpp"
 #include "engine/lulea_tree_lookup.hpp"
 #include "io/reader.hpp"
 #include "lulea_algo/lulea_tree.hpp"
 #include "utils/ip_gen.hpp"
 #include "utils/linear_lookup.hpp"
 #include "utils/utils.hpp"
-
-namespace fs = std::filesystem;
 
 TEST(LuleaTreeRealTableTest, VerifyTreeWithReference)
 {
@@ -26,10 +21,8 @@ TEST(LuleaTreeRealTableTest, VerifyTreeWithReference)
     for (const auto &table : tables)
     {
         const gen::MaskEntries bin_entries = gen::Reader::read(table.bin_path.string());
-        EXPECT_EQ(bin_entries.size(), 2048U);
-
         const gen::MaskEntries txt_entries = tests::LinearLookup::parse_routes_txt(table.txt_path.string());
-        EXPECT_EQ(txt_entries.size(), bin_entries.size());
+        ASSERT_EQ(txt_entries.size(), bin_entries.size()) << table.name;
 
         // Verify binary and text entries are identical
         for (size_t idx = 0; idx < txt_entries.size(); ++idx)
@@ -50,13 +43,14 @@ TEST(LuleaTreeRealTableTest, VerifyTreeWithReference)
             << "Edge verification failed on " << table.name
             << " (" << edge_res.mismatched << "/" << edge_res.total << " mismatches)";
 
-        const auto random_ips = ip_gen.ip_gen_random(2000, static_cast<uint32_t>(1000 + tables_tested));
+        const auto seed = static_cast<uint32_t>(1000 + tables_tested);
+        const auto random_ips = tests::IpGen::ip_gen_random(tests::REAL_TABLE_RANDOM_IP_COUNT, seed);
         const auto rand_res = tests::verify_lookups(tree_lookup, linear_lookup, random_ips);
         EXPECT_TRUE(rand_res.is_success())
             << "Random verification failed on " << table.name
             << " (" << rand_res.mismatched << "/" << rand_res.total << " mismatches)";
 
-        const auto step_ips = ip_gen.ip_gen_step(0x01000000U, 131072U, 1000);
+        const auto step_ips = tests::IpGen::ip_gen_step(0U, tests::REAL_TABLE_IP_STEP, tests::REAL_TABLE_STEP_IP_COUNT);
         const auto step_res = tests::verify_lookups(tree_lookup, linear_lookup, step_ips);
         EXPECT_TRUE(step_res.is_success())
             << "Step verification failed on " << table.name

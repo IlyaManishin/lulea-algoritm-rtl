@@ -2,7 +2,7 @@
 """Generate sampled routing tables from clean converted MRT tables for C++ tests.
 
 Reads a converted routing table (from build/converted/...), performs Hamilton
-stratified sampling to size 2k (2048 routes), and saves both human-readable
+stratified sampling to the requested size, and saves both human-readable
 text and compact binary LRB1 representations.
 """
 
@@ -95,13 +95,18 @@ def write_table_dir(
 def generate(
     source_file: Path,
     output_dir: Path,
-    count: int = 2048,
+    count: int,
     num_tables: int = 10,
     base_seed: int = 42,
 ) -> None:
+    if count <= 0:
+        raise ValueError("Route count must be positive")
+
     print(f"Reading clean converted routes from: {source_file}")
     routes = read_routes(source_file)
     print(f"Total routes loaded: {len(routes)}")
+    if count > len(routes):
+        raise ValueError(f"Requested {count} routes, but the source contains only {len(routes)}")
 
     port_map: PortMapping | None = None
     ports_candidate = source_file.with_name("routes.ports")
@@ -129,13 +134,13 @@ def generate(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate 2k test tables from converted MRT tables.")
+        description="Generate test tables from converted MRT tables.")
     parser.add_argument("-i", "--input", type=Path, default=DEFAULT_CONVERTED_SRC,
                         help="Source routes.txt in build/converted/")
     parser.add_argument("-o", "--output-dir", type=Path,
                         default=DEFAULT_OUTPUT_DIR, help="Destination directory for tables")
     parser.add_argument("-c", "--count", type=int,
-                        default=2048, help="Number of routes per table")
+                        required=True, help="Number of routes per table")
     parser.add_argument("-n", "--num-tables", type=int,
                         default=10, help="Number of tables")
     parser.add_argument("-s", "--seed", type=int,
@@ -146,13 +151,16 @@ def main() -> None:
         print(f"Error: input file not found: {args.input}", file=sys.stderr)
         sys.exit(1)
 
-    generate(
-        source_file=args.input,
-        output_dir=args.output_dir,
-        count=args.count,
-        num_tables=args.num_tables,
-        base_seed=args.seed,
-    )
+    try:
+        generate(
+            source_file=args.input,
+            output_dir=args.output_dir,
+            count=args.count,
+            num_tables=args.num_tables,
+            base_seed=args.seed,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
 
 
 if __name__ == "__main__":
