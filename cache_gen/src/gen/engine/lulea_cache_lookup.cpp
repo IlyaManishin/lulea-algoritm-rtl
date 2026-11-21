@@ -26,6 +26,7 @@ namespace engine
         using chunk_sum_t = uint32_t;
 
         constexpr seq_cell_t PORT_MASK = (1U << PORT_SIZE) - 1;
+        constexpr size_t CHUNK_BIT_MASK = PC_CHUNK_SIZE - 1;
 
         static_assert(gen::L1_IP_SIZE == 18 && gen::L2_IP_SIZE == 6 && gen::L3_IP_SIZE == 8 && gen::PC_CHUNK_SIZE == 64);
         static_assert(std::max({L1_DEFAULT_SEQ_CELL, L2_DEFAULT_SEQ_CELL, L3_DEFAULT_SEQ_CELL}) <= std::numeric_limits<seq_cell_t>::digits);
@@ -122,7 +123,7 @@ namespace engine
     port_t LuleaCacheLookup::lookup(ipv4_t ip) const
     {
         // L1: chunk address = ip[31:20], position = ip[19:14].
-        const seq_cell_t l1_cell = read_cell(impl_->l1, ip >> 20, (ip >> 14) & 63U);
+        const seq_cell_t l1_cell = read_cell(impl_->l1, ip >> 20, (ip >> 14) & CHUNK_BIT_MASK);
         constexpr seq_cell_t l1_flag_mask = 1U << (L1_DEFAULT_SEQ_CELL - 1);
         if ((l1_cell & l1_flag_mask) == 0)
         {
@@ -132,7 +133,7 @@ namespace engine
 
         // L2: one chunk per block, position = ip[13:8].
         const size_t l2_block = l1_cell & l1_ptr_mask;
-        const seq_cell_t l2_cell = read_cell(impl_->l2, l2_block, (ip >> 8) & 63U);
+        const seq_cell_t l2_cell = read_cell(impl_->l2, l2_block, (ip >> 8) & CHUNK_BIT_MASK);
         constexpr seq_cell_t l2_flag_mask = 1U << (L2_DEFAULT_SEQ_CELL - 1);
         if ((l2_cell & l2_flag_mask) == 0)
         {
@@ -143,7 +144,7 @@ namespace engine
         // L3: concatenate the block pointer with ip[7:6], position = ip[5:0].
         const size_t l3_block = l2_cell & l2_ptr_mask;
         const size_t chunk_addr = (l3_block << 2) | ((ip >> 6) & 3U);
-        const seq_cell_t l3_cell = read_cell(impl_->l3, chunk_addr, ip & 63U);
+        const seq_cell_t l3_cell = read_cell(impl_->l3, chunk_addr, ip & CHUNK_BIT_MASK);
         return static_cast<port_t>(l3_cell & PORT_MASK);
     }
 
