@@ -3,90 +3,37 @@
 #include "config.hpp"
 #include "lulea_config.hpp"
 
-#include <algorithm>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <ios>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 namespace engine
 {
     namespace
     {
-        struct LevelLayout
+        static_assert(gen::L1_IP_SIZE == 18 && gen::L2_IP_SIZE == 6 && gen::L3_IP_SIZE == 8 && gen::PC_CHUNK_SIZE == 64);
+
+        struct CacheLevelBuffers
         {
-            size_t ip_shift;
-            uint32_t ip_mask;
-            size_t chunks_per_block_shift;
-            size_t ch_sum_cell;
-            size_t seq_cell;
-            size_t flag_shift;
-            uint32_t payload_mask;
+            std::vector<uint8_t> pop;
+            std::vector<uint8_t> chunk;
+            std::vector<uint8_t> seq;
         };
 
-        struct DecodedCell
+        struct LevelMemory
         {
-            bool is_ptr;
-            uint32_t payload;
+            std::vector<uint64_t> pop;
+            std::vector<uint32_t> chunk;
+            std::vector<uint32_t> seq;
         };
-
-        constexpr uint64_t bit_mask(size_t width) noexcept
-        {
-            return (width >= 64) ? ~uint64_t{0} : ((uint64_t{1} << width) - 1);
-        }
-
-        constexpr LevelLayout make_layout(size_t ip_shift,
-                                          size_t ip_bits,
-                                          size_t chunks_per_block,
-                                          size_t ch_sum_cell,
-                                          size_t seq_cell) noexcept
-        {
-            return {
-                .ip_shift = ip_shift,
-                .ip_mask = static_cast<uint32_t>(bit_mask(ip_bits)),
-                .chunks_per_block_shift = static_cast<size_t>(std::countr_zero(chunks_per_block)),
-                .ch_sum_cell = ch_sum_cell,
-                .seq_cell = seq_cell,
-                .flag_shift = seq_cell - 1,
-                .payload_mask = static_cast<uint32_t>(bit_mask(seq_cell - 1)),
-            };
-        }
-
-        constexpr size_t CHUNK_SIZE = static_cast<size_t>(PC_CHUNK_SIZE);
-        constexpr size_t CHUNK_SHIFT = static_cast<size_t>(std::countr_zero(CHUNK_SIZE));
-        constexpr size_t CHUNK_MASK = CHUNK_SIZE - 1;
-
-        constexpr LevelLayout L1_LAYOUT = make_layout(
-            L2_IP_SIZE + L3_IP_SIZE, L1_IP_SIZE, L1_CHUNKS_PER_BLOCK, L1_CH_SUM_CELL, L1_DEFAULT_SEQ_CELL);
-        constexpr LevelLayout L2_LAYOUT = make_layout(
-            L3_IP_SIZE, L2_IP_SIZE, L2_CHUNKS_PER_BLOCK, L2_CH_SUM_CELL, L2_DEFAULT_SEQ_CELL);
-        constexpr LevelLayout L3_LAYOUT = make_layout(
-            0, L3_IP_SIZE, L3_CHUNKS_PER_BLOCK, L3_CH_SUM_CELL, L3_DEFAULT_SEQ_CELL);
-
-        constexpr size_t extract_slice(ipv4_t ip, const LevelLayout &layout) noexcept
-        {
-            return static_cast<size_t>((ip >> layout.ip_shift) & layout.ip_mask);
-        }
-
-        constexpr uint64_t prefix_mask(size_t bit_pos) noexcept
-        {
-            return (~uint64_t{0}) >> (63 - bit_pos);
-        }
-
-        constexpr DecodedCell decode_branch_cell(uint32_t raw_cell, const LevelLayout &layout) noexcept
-        {
-            return {
-                .is_ptr = ((raw_cell >> layout.flag_shift) & uint32_t{1}) != 0,
-                .payload = raw_cell & layout.payload_mask,
-            };
-        }
 
         std::vector<uint8_t> read_binary_file(const std::filesystem::path &path)
         {
@@ -121,95 +68,80 @@ namespace engine
             };
         }
 
-        uint64_t read_bits(const std::vector<uint8_t> &data, size_t bit_offset, size_t num_bits)
+        template <typename Word>
+        std::vector<Word> unpack(const std::vector<uint8_t> &bytes, size_t width)
         {
-            if (num_bits == 0)
+            // Each file is a continuous LSB-first stream, padded to the last byte.
+            std::vector<Word> words(bytes.size() * 8 / width);
+            size_t pos = 0;
+            for (Word &word : words)
             {
-                return 0;
-            }
-            if (num_bits > 64)
-            {
-                throw std::invalid_argument("Cannot read more than 64 bits");
-            }
-
-            uint64_t result = 0;
-            size_t byte_idx = bit_offset >> 3;
-            size_t bit_idx = bit_offset & 7;
-            size_t bits_read = 0;
-
-            while (bits_read < num_bits)
-            {
-                if (byte_idx >= data.size())
+                for (size_t bit = 0; bit < width; ++bit, ++pos)
                 {
-                    throw std::out_of_range("Attempt to read past end of cache buffer");
+                    const Word value = (bytes[pos / 8] >> (pos % 8)) & 1U;
+                    word |= value << bit;
                 }
-
-                const size_t bits_to_read = std::min(num_bits - bits_read, 8 - bit_idx);
-                const uint64_t chunk = (static_cast<uint64_t>(data[byte_idx]) >> bit_idx) & bit_mask(bits_to_read);
-                result |= (chunk << bits_read);
-
-                bits_read += bits_to_read;
-                byte_idx++;
-                bit_idx = 0;
             }
-            return result;
+            return words;
         }
 
-        uint32_t lookup_level_raw(const CacheLevelBuffers &buffers,
-                                  const LevelLayout &layout,
-                                  size_t block_idx,
-                                  size_t entry_idx)
+        LevelMemory unpack_level(const CacheLevelBuffers &buffers, size_t seq_width)
         {
-            const size_t chunk_in_block = entry_idx >> CHUNK_SHIFT;
-            const size_t word_addr = (block_idx << layout.chunks_per_block_shift) | chunk_in_block;
-            const size_t bit_pos = entry_idx & CHUNK_MASK;
+            return {unpack<uint64_t>(buffers.pop, PC_CHUNK_SIZE),
+                    unpack<uint32_t>(buffers.chunk, CH_SUM_CELL_BITS),
+                    unpack<uint32_t>(buffers.seq, seq_width)};
+        }
 
-            const uint64_t pop_word = read_bits(buffers.pop, word_addr << CHUNK_SHIFT, CHUNK_SIZE);
-            const size_t offset = static_cast<size_t>(std::popcount(pop_word & prefix_mask(bit_pos)));
-            const size_t chunk_sum = static_cast<size_t>(
-                read_bits(buffers.chunk, word_addr * layout.ch_sum_cell, layout.ch_sum_cell));
-            const size_t seq_addr = chunk_sum + offset;
-
-            return static_cast<uint32_t>(
-                read_bits(buffers.seq, seq_addr * layout.seq_cell, layout.seq_cell));
+        uint32_t read_cell(const LevelMemory &level, size_t word_addr, size_t bit_pos)
+        {
+            // Keep bits [bit_pos:0], including bit 63 for a full word.
+            const uint64_t mask = UINT64_MAX >> (63U - bit_pos);
+            const auto offset = static_cast<uint32_t>(std::popcount(level.pop.at(word_addr) & mask));
+            const size_t seq_addr = level.chunk.at(word_addr) + offset;
+            return level.seq.at(seq_addr);
         }
     } // namespace
 
-    LuleaCacheLookup::LuleaCacheLookup(const std::filesystem::path &cache_dir)
-        : l1_(load_level_buffers(cache_dir, "l1")),
-          l2_(load_level_buffers(cache_dir, "l2")),
-          l3_(load_level_buffers(cache_dir, "l3"))
+    struct LuleaCacheLookup::Impl
     {
-    }
+        LevelMemory l1;
+        LevelMemory l2;
+        LevelMemory l3;
+    };
 
-    LuleaCacheLookup::LuleaCacheLookup(CacheLevelBuffers l1, CacheLevelBuffers l2, CacheLevelBuffers l3)
-        : l1_(std::move(l1)), l2_(std::move(l2)), l3_(std::move(l3))
+    LuleaCacheLookup::LuleaCacheLookup(const std::filesystem::path &cache_dir)
     {
+        Impl impl_val = {
+            .l1 = unpack_level(load_level_buffers(cache_dir, "l1"), L1_DEFAULT_SEQ_CELL),
+            .l2 = unpack_level(load_level_buffers(cache_dir, "l2"), L2_DEFAULT_SEQ_CELL),
+            .l3 = unpack_level(load_level_buffers(cache_dir, "l3"), L3_DEFAULT_SEQ_CELL),
+        };
+        impl_ = std::make_shared<const Impl>(impl_val);
     }
 
     port_t LuleaCacheLookup::lookup(ipv4_t ip) const
     {
-        const size_t l1_idx = extract_slice(ip, L1_LAYOUT);
-        const DecodedCell l1_cell = decode_branch_cell(
-            lookup_level_raw(this->l1_, L1_LAYOUT, 0, l1_idx),
-            L1_LAYOUT);
-        if (!l1_cell.is_ptr)
+        // L1: word = ip[31:20], position = ip[19:14].
+        const uint32_t l1_cell = read_cell(impl_->l1, ip >> 20, (ip >> 14) & 63U);
+        constexpr uint32_t l1_flag = 1U << (L1_DEFAULT_SEQ_CELL - 1);
+        if ((l1_cell & l1_flag) == 0)
         {
-            return static_cast<port_t>(l1_cell.payload);
+            return static_cast<port_t>(l1_cell);
         }
 
-        const size_t l2_idx = extract_slice(ip, L2_LAYOUT);
-        const DecodedCell l2_cell = decode_branch_cell(
-            lookup_level_raw(this->l2_, L2_LAYOUT, l1_cell.payload, l2_idx),
-            L2_LAYOUT);
-        if (!l2_cell.is_ptr)
+        // L2: one word per block, position = ip[13:8].
+        const uint32_t l2_block = l1_cell & (l1_flag - 1);
+        const uint32_t l2_cell = read_cell(impl_->l2, l2_block, (ip >> 8) & 63U);
+        constexpr uint32_t l2_flag = 1U << (L2_DEFAULT_SEQ_CELL - 1);
+        if ((l2_cell & l2_flag) == 0)
         {
-            return static_cast<port_t>(l2_cell.payload);
+            return static_cast<port_t>(l2_cell);
         }
 
-        const size_t l3_idx = extract_slice(ip, L3_LAYOUT);
-        const uint32_t l3_raw = lookup_level_raw(this->l3_, L3_LAYOUT, l2_cell.payload, l3_idx);
-        return static_cast<port_t>(l3_raw & L3_LAYOUT.payload_mask);
+        // L3: concatenate the block pointer with ip[7:6], position = ip[5:0].
+        const uint32_t l3_block = l2_cell & (l2_flag - 1);
+        const size_t word_addr = (l3_block << 2) | ((ip >> 6) & 3U);
+        return static_cast<port_t>(read_cell(impl_->l3, word_addr, ip & 63U) & 0xffU);
     }
 
 } // namespace engine
