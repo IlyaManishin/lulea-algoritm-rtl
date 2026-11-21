@@ -3,6 +3,7 @@
 #include "config.hpp"
 #include "lulea_config.hpp"
 
+#include <algorithm>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
@@ -27,6 +28,9 @@ namespace engine
         constexpr seq_cell_t PORT_MASK = (1U << PORT_SIZE) - 1;
 
         static_assert(gen::L1_IP_SIZE == 18 && gen::L2_IP_SIZE == 6 && gen::L3_IP_SIZE == 8 && gen::PC_CHUNK_SIZE == 64);
+        static_assert(std::max({L1_DEFAULT_SEQ_CELL, L2_DEFAULT_SEQ_CELL, L3_DEFAULT_SEQ_CELL}) <= std::numeric_limits<seq_cell_t>::digits);
+        static_assert(PC_CHUNK_SIZE <= std::numeric_limits<chunk_t>::digits);
+        static_assert(CH_SUM_CELL_BITS <= std::numeric_limits<chunk_sum_t>::digits);
 
         struct LevelMemory
         {
