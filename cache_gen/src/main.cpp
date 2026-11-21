@@ -1,142 +1,101 @@
-#include <fstream>
-#include <iostream>
-#include <optional>
-#include <string>
-
 #include "gen/gen.hpp"
-#include "parser.hpp"
+#include "io/cli.hpp"
+#include "io/config_parser.hpp"
+#include "io/stats_writer.hpp"
+
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <iostream>
+#include <span>
+
+using namespace io;
 
 namespace
 {
-
-    struct CliOptions
+    enum class EntryResult : std::uint8_t
     {
-        std::string config_file;
-        std::string out_csv;
+        Success,
+        Failed,
+        Fatal
     };
 
-    void print_usage(const char *prog_name)
+    EntryResult process_config_entry(const gen::Config &config, const StatsWriter &writer)
     {
-        std::cerr << "Usage: " << prog_name << " <config_file.tsv> [--out-csv <results.csv>]\n"
-                  << "       " << prog_name << " --batch <config_file.tsv> [--out-csv <results.csv>]\n";
-    }
-
-    std::optional<CliOptions> parse_cli_args(int argc, char *argv[])
-    {
-        if (argc < 2)
+        try
         {
-            return std::nullopt;
+            const gen::BuildResult result = gen::build_lulea_cache(config);
+            writer.write(config.input_path, result.stats);
+            return EntryResult::Success;
         }
-
-        CliOptions options;
-
-        for (int i = 1; i < argc; ++i)
+        catch (const gen::FatalGenException &ex)
         {
-            std::string arg = argv[i];
-            if (arg == "--batch" && i + 1 < argc)
-            {
-                options.config_file = argv[++i];
-            }
-            else if (arg == "--out-csv" && i + 1 < argc)
-            {
-                options.out_csv = argv[++i];
-            }
-            else if (options.config_file.empty() && arg[0] != '-')
-            {
-                options.config_file = arg;
-            }
+            std::cerr << "Fatal build error for " << config.input_path
+                      << ": " << ex.what() << "\n";
+            return EntryResult::Fatal;
         }
-
-        if (options.config_file.empty())
-        {
-            return std::nullopt;
-        }
-
-        return options;
-    }
-
-    void print_stats_stdout(const std::string &input_path, const gen::CacheStats &stats)
-    {
-        std::cout << input_path << "\t"
-                  << stats.l1_pop << " " << stats.l1_chunk << " " << stats.l1_seq << " "
-                  << stats.l2_pop << " " << stats.l2_chunk << " " << stats.l2_seq << " "
-                  << stats.l3_pop << " " << stats.l3_chunk << " " << stats.l3_seq << "\n";
-    }
-
-    void write_stats_csv(std::ostream &out, const std::string &input_path, const gen::CacheStats &stats)
-    {
-        out << input_path << ","
-            << stats.l1_pop << "," << stats.l1_chunk << "," << stats.l1_seq << ","
-            << stats.l2_pop << "," << stats.l2_chunk << "," << stats.l2_seq << ","
-            << stats.l3_pop << "," << stats.l3_chunk << "," << stats.l3_seq << "\n";
-    }
-
-    void process_config_entry(const gen::Config &config, std::ofstream &csv_file)
-    {
-        gen::BuildResult result = gen::build_lulea_cache(config);
-
-        if (!result.success)
+        catch (const gen::GenException &ex)
         {
             std::cerr << "Build error for " << config.input_path
-                      << ": " << result.error_message << "\n";
-            return;
+                      << ": " << ex.what() << "\n";
+            return EntryResult::Failed;
         }
-
-        const auto &stats = result.stats;
-
-        if (csv_file.is_open())
+        catch (const std::exception &ex)
         {
-            write_stats_csv(csv_file, config.input_path, stats);
-        }
-        else
-        {
-            print_stats_stdout(config.input_path, stats);
+            std::cerr << "Unexpected error for " << config.input_path
+                      << ": " << ex.what() << "\n";
+            return EntryResult::Fatal;
         }
     }
 
-    int process_manifest(const CliOptions &options)
+    int process_config(const CliOptions &opt)
     {
-        ConfigParser parser(options.config_file);
-        std::ofstream csv_file;
-
-        if (!options.out_csv.empty())
-        {
-            csv_file.open(options.out_csv);
-            if (!csv_file.is_open())
-            {
-                std::cerr << "Error: cannot open output CSV: " << options.out_csv << "\n";
-                return 1;
-            }
-            csv_file << "file,l1_pop,l1_chunk,l1_seq,l2_pop,l2_chunk,l2_seq,l3_pop,l3_chunk,l3_seq\n";
-        }
+        ConfigParser parser(opt.config_file);
+        const StatsWriter writer(opt.out_csv);
 
         gen::Config config;
+        int status = 0;
         while (parser.next(config))
         {
-            process_config_entry(config, csv_file);
+            const EntryResult result = process_config_entry(config, writer);
+            if (result == EntryResult::Fatal)
+            {
+                std::cerr << "Fatal error encountered. Aborting further processing.\n";
+                return 1;
+            }
+            if (result == EntryResult::Failed)
+            {
+                status = 1;
+            }
         }
-
-        return 0;
+        return status;
     }
 
-} // anonymous namespace
+    int run_program(std::span<char *const> args)
+    {
+        const auto options = parse_cli_args(args);
+        if (!options.has_value())
+        {
+            const char *prog_name = (args.empty() || args.front() == nullptr) ? "lulea_builder" : args.front();
+            print_usage(prog_name);
+            return 1;
+        }
+
+        try
+        {
+            return process_config(options.value());
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Error: " << e.what() << "\n";
+            return 1;
+        }
+    }
+
+} // namespace
 
 int main(int argc, char *argv[])
 {
-    auto options = parse_cli_args(argc, argv);
-    if (!options.has_value())
-    {
-        print_usage(argv[0]);
-        return 1;
-    }
-
-    try
-    {
-        return process_manifest(options.value());
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Error: " << e.what() << "\n";
-        return 1;
-    }
+    const std::span<char *const> args(argv, static_cast<size_t>(argc));
+    return run_program(args);
 }

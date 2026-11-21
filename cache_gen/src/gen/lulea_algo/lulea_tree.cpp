@@ -1,0 +1,266 @@
+#include "lulea_tree.hpp"
+
+#include "config.hpp"
+#include "io/reader.hpp"
+#include "lulea_data/route.hpp"
+
+#include <cstddef>
+#include <cstdint>
+#include <stdexcept>
+#include <utility>
+#include <vector>
+
+namespace gen
+{
+    namespace
+    {
+
+        struct CellRange
+        {
+            size_t start = 0;
+            size_t count = 0;
+        };
+
+        struct PaintValue
+        {
+            port_t port = NULL_PORT;
+            uint8_t prio = 0;
+        };
+
+        struct BuildState
+        {
+            LuleaTreeConfig cfg;
+            LuleaRoute l1;
+            std::vector<uint8_t> l1_prio;
+            std::vector<LuleaRoute> l2;
+            std::vector<uint8_t> l2_prio;
+            std::vector<LuleaRoute> l3;
+            std::vector<uint8_t> l3_prio;
+        };
+
+        void validate_config(const LuleaTreeConfig &cfg)
+        {
+            if (cfg.l1_bits == 0 || cfg.l2_bits == 0 || cfg.l3_bits == 0)
+            {
+                throw std::invalid_argument("Lulea level bit widths must be non-zero");
+            }
+            if ((cfg.l1_bits + cfg.l2_bits + cfg.l3_bits) != IP_SIZE_BITS)
+            {
+                throw std::invalid_argument("Lulea level bit widths must sum to 32");
+            }
+        }
+
+        LuleaRoute make_initial_l1(const LuleaTreeConfig &cfg)
+        {
+            validate_config(cfg);
+            return LuleaRoute(size_t{1} << cfg.l1_bits, cfg.l1_cell_bits, NULL_PORT);
+        }
+
+        BuildState make_build_state(const LuleaTreeConfig &cfg)
+        {
+            const size_t l1_size = size_t{1} << cfg.l1_bits;
+            return BuildState{
+                cfg,
+                LuleaRoute(l1_size, cfg.l1_cell_bits, NULL_PORT),
+                std::vector<uint8_t>(l1_size, 0),
+                {},
+                {},
+                {},
+                {},
+            };
+        }
+
+        size_t extract_prefix_len(mask_t mask)
+        {
+            const size_t len = std::to_integer<size_t>(mask);
+            if (len > IP_SIZE_BITS)
+            {
+                throw std::invalid_argument("Prefix length exceeds 32 bits");
+            }
+            return len;
+        }
+
+        ipv4_t prefix_netmask(size_t prefix_len)
+        {
+            if (prefix_len == 0)
+            {
+                return 0;
+            }
+            return static_cast<ipv4_t>(~ipv4_t{0} << (IP_SIZE_BITS - prefix_len));
+        }
+
+        size_t level_index(ipv4_t ip_addr, size_t shift, size_t width)
+        {
+            const ipv4_t mask = (ipv4_t{1U} << width) - ipv4_t{1U};
+            return static_cast<size_t>((ip_addr >> shift) & mask);
+        }
+
+        size_t ensure_block(
+            LuleaCell &parent,
+            uint8_t parent_prio,
+            std::vector<LuleaRoute> &blocks,
+            std::vector<uint8_t> &prios,
+            size_t block_bits,
+            size_t cell_bits)
+        {
+            if (parent.is_ptr())
+            {
+                return parent.ptr();
+            }
+
+            const size_t block_idx = blocks.size();
+            const size_t block_size = size_t{1U} << block_bits;
+
+            LuleaRoute block(block_size, cell_bits, parent.port());
+            parent.set_ptr(block_idx);
+
+            blocks.push_back(std::move(block));
+            prios.resize(prios.size() + block_size, parent_prio);
+            return block_idx;
+        }
+
+        void paint_l3_range(BuildState &state, size_t block_idx, CellRange range, PaintValue value)
+        {
+            LuleaRoute &block = state.l3[block_idx];
+            const size_t offset = block_idx << state.cfg.l3_bits;
+            const size_t end_idx = range.start + range.count;
+
+            for (size_t cell_idx = range.start; cell_idx < end_idx; ++cell_idx)
+            {
+                uint8_t &prio = state.l3_prio[offset + cell_idx];
+                if (prio > value.prio)
+                {
+                    continue;
+                }
+                block[cell_idx].set_port(value.port);
+                prio = value.prio;
+            }
+        }
+
+        void paint_l2_range(BuildState &state, size_t block_idx, CellRange range, PaintValue value)
+        {
+            LuleaRoute &block = state.l2[block_idx];
+            const size_t offset = block_idx << state.cfg.l2_bits;
+            const CellRange full_l3{0, size_t{1U} << state.cfg.l3_bits};
+            const size_t end_idx = range.start + range.count;
+
+            for (size_t cell_idx = range.start; cell_idx < end_idx; ++cell_idx)
+            {
+                LuleaCell &cell = block[cell_idx];
+                if (cell.is_ptr())
+                {
+                    paint_l3_range(state, cell.ptr(), full_l3, value);
+                    continue;
+                }
+                uint8_t &prio = state.l2_prio[offset + cell_idx];
+                if (prio > value.prio)
+                {
+                    continue;
+                }
+                cell.set_port(value.port);
+                prio = value.prio;
+            }
+        }
+
+        void paint_l1_range(BuildState &state, CellRange range, PaintValue value)
+        {
+            const CellRange full_l2{0, size_t{1U} << state.cfg.l2_bits};
+            const size_t end_idx = range.start + range.count;
+
+            for (size_t cell_idx = range.start; cell_idx < end_idx; ++cell_idx)
+            {
+                LuleaCell &cell = state.l1[cell_idx];
+                if (cell.is_ptr())
+                {
+                    paint_l2_range(state, cell.ptr(), full_l2, value);
+                    continue;
+                }
+                if (state.l1_prio[cell_idx] > value.prio)
+                {
+                    continue;
+                }
+                cell.set_port(value.port);
+                state.l1_prio[cell_idx] = value.prio;
+            }
+        }
+
+        void insert_entry(BuildState &state, const TMaskEntry &entry)
+        {
+            const size_t prefix_len = extract_prefix_len(entry.mask);
+            const ipv4_t masked_ip = entry.ip & prefix_netmask(prefix_len);
+            const PaintValue value{entry.port, static_cast<uint8_t>(prefix_len)};
+
+            const LuleaTreeConfig &cfg = state.cfg;
+
+            const size_t end1 = cfg.l1_bits;
+            const size_t end2 = cfg.l1_bits + cfg.l2_bits;
+
+            const size_t l1_shift = cfg.l2_bits + cfg.l3_bits;
+            const size_t l2_shift = cfg.l3_bits;
+
+            // Level 1: prefix resolves in L1 or routes to L2
+            const size_t l1_idx = level_index(masked_ip, l1_shift, cfg.l1_bits);
+            if (prefix_len <= end1)
+            {
+                const size_t count = size_t{1U} << (end1 - prefix_len);
+                paint_l1_range(state, {l1_idx, count}, value);
+                return;
+            }
+
+            // Level 2: prefix resolves in L2 or routes to L3
+            const size_t l2_block_idx = ensure_block(
+                state.l1[l1_idx],
+                state.l1_prio[l1_idx],
+                state.l2,
+                state.l2_prio,
+                cfg.l2_bits,
+                cfg.l2_cell_bits);
+            const size_t l2_idx = level_index(masked_ip, l2_shift, cfg.l2_bits);
+            if (prefix_len <= end2)
+            {
+                const size_t count = size_t{1U} << (end2 - prefix_len);
+                paint_l2_range(state, l2_block_idx, {l2_idx, count}, value);
+                return;
+            }
+
+            // Level 3: prefix resolves in L3
+            const size_t l2_cell_offset = (l2_block_idx << cfg.l2_bits) + l2_idx;
+            const size_t l3_block_idx = ensure_block(
+                state.l2[l2_block_idx][l2_idx],
+                state.l2_prio[l2_cell_offset],
+                state.l3,
+                state.l3_prio,
+                cfg.l3_bits,
+                cfg.l3_cell_bits);
+            const size_t l3_idx = level_index(masked_ip, 0, cfg.l3_bits);
+            const size_t count = size_t{1U} << (IP_SIZE_BITS - prefix_len);
+            paint_l3_range(state, l3_block_idx, {l3_idx, count}, value);
+        }
+
+    } // namespace
+
+    LuleaTree::LuleaTree(const LuleaTreeConfig &tree_config)
+        : config_(tree_config), l1_(make_initial_l1(tree_config)) {}
+
+    LuleaTree::LuleaTree(const MaskEntries &entries, const LuleaTreeConfig &tree_config)
+        : LuleaTree(tree_config)
+    {
+        this->build(entries);
+    }
+
+    void LuleaTree::build(const MaskEntries &entries)
+    {
+        validate_config(this->config_);
+        BuildState state = make_build_state(this->config_);
+
+        for (const TMaskEntry &entry : entries)
+        {
+            insert_entry(state, entry);
+        }
+
+        this->l1_ = std::move(state.l1);
+        this->l2_ = std::move(state.l2);
+        this->l3_ = std::move(state.l3);
+    }
+
+} // namespace gen

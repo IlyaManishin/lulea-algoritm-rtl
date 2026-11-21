@@ -1,12 +1,29 @@
 #include "bit_file_writer.hpp"
+
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <ios>
+#include <iostream>
+#include <span>
 #include <stdexcept>
+#include <utility>
+#include <vector>
+
+constexpr size_t kDefaultBufferSize = 64ULL * 1024ULL;
 
 namespace gen
 {
 
-    BitFileWriter::BitFileWriter(const std::filesystem::path &file_path, std::size_t buffer_size)
-        : buffer_capacity_(buffer_size)
+    BitFileWriter::BitFileWriter() = default;
+
+    BitFileWriter::BitFileWriter(const std::filesystem::path &file_path)
+        : BitFileWriter(file_path, kDefaultBufferSize) {}
+
+    BitFileWriter::BitFileWriter(const std::filesystem::path &file_path, size_t buffer_size)
+        : buffer_capacity_(buffer_size), is_file_mode_(true)
     {
         file_.open(file_path, std::ios::binary);
         if (!file_.is_open())
@@ -24,6 +41,7 @@ namespace gen
         }
         catch (...)
         {
+            std::cerr << "BitFileWriter error during destruction\n";
         }
     }
 
@@ -33,12 +51,14 @@ namespace gen
           buffer_capacity_(other.buffer_capacity_),
           accumulator_(other.accumulator_),
           accumulated_bits_(other.accumulated_bits_),
-          total_bits_(other.total_bits_)
+          total_bits_(other.total_bits_),
+          is_file_mode_(other.is_file_mode_)
     {
         other.buffer_capacity_ = 0;
         other.accumulator_ = 0;
         other.accumulated_bits_ = 0;
         other.total_bits_ = 0;
+        other.is_file_mode_ = false;
     }
 
     BitFileWriter &BitFileWriter::operator=(BitFileWriter &&other) noexcept
@@ -51,6 +71,7 @@ namespace gen
             }
             catch (...)
             {
+                std::cerr << "BitFileWriter error during move assignment\n";
             }
 
             file_ = std::move(other.file_);
@@ -59,16 +80,18 @@ namespace gen
             accumulator_ = other.accumulator_;
             accumulated_bits_ = other.accumulated_bits_;
             total_bits_ = other.total_bits_;
+            is_file_mode_ = other.is_file_mode_;
 
             other.buffer_capacity_ = 0;
             other.accumulator_ = 0;
             other.accumulated_bits_ = 0;
             other.total_bits_ = 0;
+            other.is_file_mode_ = false;
         }
         return *this;
     }
 
-    void BitFileWriter::write_bits(uint64_t value, std::size_t num_bits)
+    void BitFileWriter::write_bits(uint64_t value, size_t num_bits)
     {
         if (num_bits == 0)
         {
@@ -77,10 +100,15 @@ namespace gen
 
         total_bits_ += num_bits;
 
+        if (!is_file_mode_)
+        {
+            return;
+        }
+
         while (num_bits > 0)
         {
-            const std::size_t space_in_accumulator = 64 - accumulated_bits_;
-            const std::size_t bits_to_take = std::min(num_bits, space_in_accumulator);
+            const size_t space_in_accumulator = 64 - accumulated_bits_;
+            const size_t bits_to_take = std::min(num_bits, space_in_accumulator);
 
             const uint64_t mask = (bits_to_take == 64) ? ~0ULL : ((1ULL << bits_to_take) - 1);
             const uint64_t chunk = value & mask;
@@ -112,18 +140,18 @@ namespace gen
         }
     }
 
-    void BitFileWriter::write_bytes(std::span<const std::byte> bytes, std::size_t num_bits)
+    void BitFileWriter::write_bytes(std::span<const std::byte> bytes, size_t num_bits)
     {
-        std::size_t remaining_bits = std::min(num_bits, bytes.size() * 8);
+        size_t remaining_bits = std::min(num_bits, bytes.size() * 8);
 
-        for (std::byte b : bytes)
+        for (const std::byte byte : bytes)
         {
             if (remaining_bits == 0)
             {
                 break;
             }
-            const std::size_t bits_to_write = std::min<std::size_t>(remaining_bits, 8);
-            write_bits(static_cast<uint64_t>(std::to_integer<uint8_t>(b)), bits_to_write);
+            const size_t bits_to_write = std::min<size_t>(remaining_bits, 8);
+            write_bits(static_cast<uint64_t>(std::to_integer<uint8_t>(byte)), bits_to_write);
             remaining_bits -= bits_to_write;
         }
     }
@@ -151,12 +179,26 @@ namespace gen
 
     void BitFileWriter::flush()
     {
+        if (!is_file_mode_)
+        {
+            return;
+        }
+
         flush_buffer_to_file();
         file_.flush();
+        if (!file_)
+        {
+            throw std::runtime_error("Failed to flush cache file");
+        }
     }
 
     void BitFileWriter::close()
     {
+        if (!is_file_mode_)
+        {
+            return;
+        }
+
         if (!file_.is_open())
         {
             return;
@@ -171,9 +213,13 @@ namespace gen
 
         flush_buffer_to_file();
         file_.close();
+        if (!file_)
+        {
+            throw std::runtime_error("Failed to close cache file");
+        }
     }
 
-    std::size_t BitFileWriter::total_bits_written() const noexcept
+    size_t BitFileWriter::total_bits_written() const noexcept
     {
         return total_bits_;
     }

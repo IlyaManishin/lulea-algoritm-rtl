@@ -1,8 +1,10 @@
-#include "parser.hpp"
+#include "config_parser.hpp"
+#include "gen/gen.hpp"
 
 #include <sstream>
 #include <stdexcept>
-#include <vector>
+#include <string>
+#include <utility>
 
 ConfigParser::ConfigParser(const std::string &filepath)
     : filepath_(filepath), file_(filepath)
@@ -39,7 +41,7 @@ bool ConfigParser::next(gen::Config &config_out)
         // Optional 3rd field: dest_dir
         std::getline(ss, dest_dir, '\t');
 
-        gen::Mode mode;
+        gen::Mode mode = gen::Mode::Stats;
         if (mode_str == "stats")
         {
             mode = gen::Mode::Stats;

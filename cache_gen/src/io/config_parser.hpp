@@ -1,9 +1,10 @@
 #pragma once
 
+#include "gen/gen.hpp"
+
+#include <cstddef>
 #include <fstream>
 #include <string>
-
-#include "gen/gen.hpp"
 
 class ConfigParser
 {
@@ -13,6 +14,9 @@ public:
 
     ConfigParser(const ConfigParser &) = delete;
     ConfigParser &operator=(const ConfigParser &) = delete;
+
+    ConfigParser(ConfigParser &&) = delete;
+    ConfigParser &operator=(ConfigParser &&) = delete;
 
     // Reads the next record and converts it to a gen::Config instance.
     // Returns true if a record was successfully read, false on EOF.

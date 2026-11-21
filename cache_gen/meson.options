@@ -1,0 +1,6 @@
+option(
+  'strict_flags',
+  type: 'boolean',
+  value: false,
+  description: 'Enable strict GCC flags and static analyzer (-fanalyzer, -Werror, etc.)'
+)

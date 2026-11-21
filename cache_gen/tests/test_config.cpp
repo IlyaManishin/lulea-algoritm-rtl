@@ -2,10 +2,11 @@
 
 #include <filesystem>
 #include <fstream>
+#include <stdexcept>
 #include <string>
 
 #include "gen/gen.hpp"
-#include "parser.hpp"
+#include "io/config_parser.hpp"
 
 namespace fs = std::filesystem;
 
@@ -23,7 +24,7 @@ protected:
         fs::remove_all(test_dir);
     }
 
-    fs::path create_manifest_file(const std::string &filename, const std::string &content)
+    fs::path create_manifest_file(const std::string &filename, const std::string &content) const
     {
         fs::path file_path = test_dir / filename;
         std::ofstream ofs(file_path);
