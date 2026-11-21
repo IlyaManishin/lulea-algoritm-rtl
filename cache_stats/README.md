@@ -21,3 +21,19 @@ to the next 2.25 KiB block. Each RAMB36 counts as two RAMB18s.
 For each table size, divide the number of tables that fit by the total number
 sampled at that size. The configuration score is the sum of these fractions.
 Use the full aligned CSV for group totals so that tables over budget still count.
+
+### 8,192-route tables
+
+All 4,262 sampled tables at this size have the same BRAM requirements. Their
+packed sizes vary, but rounding each bank up to a whole BRAM block yields the
+same allocation for every sample. The table lists RAMB18 equivalents.
+
+| Level | `pop` | `chunk` | `seq` | Total |
+| --- | ---: | ---: | ---: | ---: |
+| L1 | 16 | 4 | 14 | 34 |
+| L2 | 28 | 7 | 8 | 43 |
+| L3 | 2 | 1 | 1 | 4 |
+| **Total** | **46** | **12** | **23** | **81** |
+
+Sizing the banks to these requirements uses **81 of 89 RAMB18 equivalents**
+(182.25 KiB), leaving **8 RAMB18 equivalents (18 KiB)** free.
