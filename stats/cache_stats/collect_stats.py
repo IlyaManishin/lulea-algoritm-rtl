@@ -10,7 +10,8 @@ from typing import NamedTuple
 
 CACHE_STATS_DIR = Path(__file__).resolve().parent
 ROOT = CACHE_STATS_DIR.parents[1]
-BRAM_BUDGET_BYTES = 90 * 2304
+RAMB18_BYTES = 2304
+BRAM_BUDGET_BYTES = 90 * RAMB18_BYTES
 PACKED_CSV = "cache_sizes_packed.csv"
 ALIGNED_CSV = "cache_sizes.csv"
 IN_BUDGET_CSV = "cache_sizes_in_budget.csv"
