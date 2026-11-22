@@ -12,8 +12,8 @@ namespace io
 
     void print_usage(const char *prog_name)
     {
-        std::cerr << "Usage: " << prog_name << " <config_file.tsv> [--out-csv <results.csv>]\n"
-                  << "       " << prog_name << " --batch <config_file.tsv> [--out-csv <results.csv>]\n";
+        std::cerr << "Usage: " << prog_name << " <config_file.tsv> [--out-csv <results.csv>] [--progress]\n"
+                  << "       " << prog_name << " --batch <config_file.tsv> [--out-csv <results.csv>] [--progress]\n";
     }
 
     std::optional<CliOptions> parse_cli_args(std::span<char *const> args)
@@ -35,6 +35,10 @@ namespace io
             else if (arg == "--out-csv" && i + 1 < args.size())
             {
                 options.out_csv = args[++i];
+            }
+            else if (arg == "--progress")
+            {
+                options.progress = true;
             }
             else if (options.config_file.empty() && !arg.starts_with('-'))
             {

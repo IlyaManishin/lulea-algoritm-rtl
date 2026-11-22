@@ -18,6 +18,8 @@ public:
     ConfigParser(ConfigParser &&) = delete;
     ConfigParser &operator=(ConfigParser &&) = delete;
 
+    std::size_t count_remaining();
+
     // Reads the next record and converts it to a gen::Config instance.
     // Returns true if a record was successfully read, false on EOF.
     bool next(gen::Config &config_out);
