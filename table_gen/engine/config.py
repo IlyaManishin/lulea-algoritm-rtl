@@ -21,7 +21,7 @@ CONVERTED_DIR = BUILD_DIR / "converted"
 SAMPLED_DIR = BUILD_DIR / "sampled"
 
 # Batch pipeline settings
-TABLE_SIZES: list[int] = [1024, 2048, 4096, 8192, 16384]
+TABLE_SIZES: list[int] = [1024, 2048, 4096, 8192, 8704, 9216, 9728, 10240]
 
 # Concurrency settings
 CONVERT_WORKERS: int = 4
