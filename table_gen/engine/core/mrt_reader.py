@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
@@ -50,22 +51,19 @@ def _process_text_record(
                 return
 
 
-def parse_mrt_text(file_path: str | Path) -> list[MrtRecord]:
-    path = Path(file_path)
-    if not path.is_file():
-        raise FileNotFoundError(f"MRT text file not found: {path}")
-
-    unique_routes: dict[str, MrtRecord] = {}
+def iter_mrt_text_records(
+    path: Path, *, encoding_errors: str = "strict"
+) -> Iterator[dict[str, str]]:
+    """Yield the fields of each blank-line-separated bgpdump record."""
     current_record: dict[str, str] = {}
-
     try:
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, 'r', encoding='utf-8', errors=encoding_errors) as f:
             for line in f:
                 line = line.strip()
 
                 if not line:
                     if current_record:
-                        _process_text_record(current_record, unique_routes)
+                        yield current_record
                         current_record = {}
                     continue
 
@@ -74,10 +72,19 @@ def parse_mrt_text(file_path: str | Path) -> list[MrtRecord]:
                     current_record[key.strip()] = val.strip()
 
             if current_record:
-                _process_text_record(current_record, unique_routes)
+                yield current_record
     except (OSError, ValueError) as e:
         raise MRTParseError(f"Failed to read MRT text file '{path}': {e}") from e
 
+
+def parse_mrt_text(file_path: str | Path) -> list[MrtRecord]:
+    path = Path(file_path)
+    if not path.is_file():
+        raise FileNotFoundError(f"MRT text file not found: {path}")
+
+    unique_routes: dict[str, MrtRecord] = {}
+    for record in iter_mrt_text_records(path):
+        _process_text_record(record, unique_routes)
     return list(unique_routes.values())
 
 
