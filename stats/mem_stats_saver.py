@@ -1,14 +1,13 @@
 from dataclasses import asdict, dataclass
-from pathlib import Path
 import pandas as pd
 
-from config import RESULTS_DIR
+from config import BUILD_DIR
 
 # =========================================================================
 # Output Configuration Constants
 # =========================================================================
 
-OUTPUT_DIR = Path(RESULTS_DIR) / "mem_estimation"
+OUTPUT_DIR = BUILD_DIR / "mem_estimation"
 LIMITS_OUTPUT_DIR = OUTPUT_DIR / "limits_out"
 
 SHORTED_OUT_COLUMNS = [
