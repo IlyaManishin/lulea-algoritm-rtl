@@ -1,8 +1,12 @@
 # Cache statistics
 
-The experiment chooses one fixed allocation for the nine Luleå cache banks
-on the FPGA. It uses routing tables sampled across 33 MRT snapshots to measure
-how many tables fit within a budget of 90 RAMB18 equivalents (202.5 KiB).
+The experiment targets the Basys 3 board, whose Artix-7 FPGA has 1,800 Kibit
+of block RAM (100 RAMB18 equivalents, or 225 KiB).
+[Basys 3 reference manual](https://digilent.com/reference/_media/reference/programmable-logic/basys-3/basys3_rm.pdf)
+
+The experiment chooses one fixed allocation for the nine Luleå cache banks.
+It uses routing tables sampled across 33 MRT snapshots to measure how many
+tables fit within a cache budget of 90 RAMB18 equivalents (202.5 KiB).
 A table fits when all nine banks have enough space for their own data.
 
 ## Input and reports
@@ -49,6 +53,6 @@ BRAM requirements are in RAMB18 equivalents. A RAMB36 counts as two.
 | 9,216 | 3,787 | 86–88 | 3,787 |
 | 9,728 | 3,589 | 89–93 | 2,206 |
 | 10,240 | 3,408 | 93–94 | 0 |
-| 16,384 (earlier run) | 2,122 | 125–129 | 0 |
+| 16,384 | 2,122 | 125–129 | 0 |
 
 The sampling step is 512 routes between 8,192 and 10,240. The full report includes the existing 16,384-route samples.
