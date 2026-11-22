@@ -1,62 +1,54 @@
 # Cache statistics
 
-From the repository root, run `python3 cache_stats/collect_stats.py` with
-[`lulea_builder` built](../cache_gen/README.md#quick-start).
-The collector lists the tables in `build/sampled` and writes four files under
-`cache_stats/build/`.
+The experiment chooses one fixed allocation for the nine Luleå cache banks
+on the FPGA. It uses routing tables sampled across 33 MRT snapshots to measure
+how many tables fit within a budget of 90 RAMB18 equivalents (202.5 KiB).
+A table fits when all nine banks have enough space for their own data.
 
-- `jobs.tsv` contains one `stats` job per sampled routing table.
-- `cache_sizes_packed.csv` records the nine packed bank sizes in bytes for every table.
-- `cache_sizes.csv` records the nine BRAM-aligned bank sizes in bytes for every table.
-- `cache_sizes_in_budget.csv` keeps the aligned rows whose nine sizes sum to
-  at most the BRAM budget.
+## Input and reports
 
-Each CSV includes the path relative to `build/sampled` and the route count from
-the size directory.
+`collect_stats.py` scans the sampled routing tables in `build/sampled/` and
+passes them to `lulea_builder` in stats mode. Each CSV row records a table's
+path, route count, and nine BRAM-aligned bank sizes in bytes. The reports are in
+`stats/cache_stats/build/`.
 
-## Allocation experiment
+| Report | Use |
+|---|---|
+| `cache_sizes.csv` | Measure the block capacity required by each bank. The allocation search uses this full report to count coverage across all samples. |
+| `cache_sizes_in_budget.csv` | Find tables whose nine aligned sizes sum to at most 90 RAMB18 equivalents. This gives an upper bound on how many tables any fixed allocation can fit. |
 
-The cache budget is 90 RAMB18 equivalents (202.5 KiB).
-Each RAMB36 counts as two RAMB18s.
-For each table size, divide the number of tables that fit by the total number
-sampled at that size. The configuration score is the sum of these fractions.
-Use the full aligned CSV for group totals so that tables over budget still count.
+The collector also saves its input job list as `jobs.tsv`.
+[Run the collector and search](../README.md#cache-measurements-and-allocation)
 
-### 8,192-route tables
+## Allocation
 
-All 4,262 sampled tables at this size have the same BRAM requirements. Their
-packed sizes vary, but rounding each bank up to a whole BRAM block yields the
-same allocation for every sample. The table lists RAMB18 equivalents.
+The 88-block allocation fits every sampled table through 9,216 routes, leaving
+two blocks. The search script tries where to place them and scores each
+allocation on the 9,728-route samples. [Search script](search_allocation.py)
 
-| Level | `pop` | `chunk` | `seq` | Total |
-| --- | ---: | ---: | ---: | ---: |
-| L1 | 16 | 4 | 14 | 34 |
-| L2 | 28 | 7 | 8 | 43 |
-| L3 | 2 | 1 | 1 | 4 |
-| **Total** | **46** | **12** | **23** | **81** |
+| Allocation | L1 | L2 | L3 | RAMB18 equivalents |
+|---|---|---|---|---:|
+| Through 9,216 routes | (16, 4, 15) | (32, 8, 9) | (2, 1, 1) | 88 |
+| Best at 9,728 routes | (16, 4, 16) | (32, 8, 10) | (2, 1, 1) | 90 |
 
-Sizing the banks to these requirements uses **81 of 90 RAMB18 equivalents**
-(182.25 KiB), leaving **9 RAMB18 equivalents (20.25 KiB)** free.
+Each triple lists the `(pop, chunk, seq)` banks. The best allocation adds one
+block to `l1_seq` and one to `l2_seq`, covering **2,206 of 3,589 tables (61.47%)**
+at 9,728 routes.
 
-The allocation also leaves unused payload bits inside the banks. The ranges
-below are the minimum and maximum across the 4,262 samples.
+## Coverage by table size
 
-| Level | Unused `pop` bits | Unused `chunk` bits | Unused `seq` bits |
-| --- | ---: | ---: | ---: |
-| L1 | 0 | 0 | 9,396–17,784 |
-| L2 | 1,728–16,192 | 486–4,554 | 5,958–8,181 |
-| L3 | 9,216–28,928 | 11,808–17,352 | 16,695–18,216 |
+BRAM requirements are in RAMB18 equivalents. A RAMB36 counts as two.
 
-Each sample leaves **65,960–105,882 payload bits** unused across its nine
-banks. The 64-bit bitmap layout also leaves 94,208 physical bits outside the
-configured data width. When allocating the nine free blocks, use each bank's
-minimum spare capacity to see how much that bank can grow before it needs
-another block. Spare capacity belongs to the bank that holds it.
+| Routes | Tables | BRAM required per table | Tables that fit |
+|---:|---:|---:|---:|
+| 1,024 | 34,234 | 32 | 34,234 |
+| 2,048 | 17,107 | 40 | 17,107 |
+| 4,096 | 8,544 | 56 | 8,544 |
+| 8,192 | 4,262 | 81 | 4,262 |
+| 8,704 | 4,013 | 85–86 | 4,013 |
+| 9,216 | 3,787 | 86–88 | 3,787 |
+| 9,728 | 3,589 | 89–93 | 2,206 |
+| 10,240 | 3,408 | 93–94 | 0 |
+| 16,384 (earlier run) | 2,122 | 125–129 | 0 |
 
-### 90-block configuration
-
-The trial allocation is `(16, 4, 16, 32, 8, 10, 2, 1, 1)` in RAMB18
-equivalents, ordered by level and then by `pop`, `chunk`, and `seq`. The
-extra block goes to `l2_seq` and adds 2,048 entries. On the intermediate-size
-samples from 33 MRT snapshots, this allocation fits 165 of 165 tables at
-9,216 routes, 105 of 165 at 9,728, and 0 of 165 at 10,240.
+The sampling step is 512 routes between 8,192 and 10,240. The full report includes the existing 16,384-route samples.

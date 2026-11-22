@@ -12,23 +12,20 @@ CACHE_STATS_DIR = Path(__file__).resolve().parent
 ROOT = CACHE_STATS_DIR.parents[1]
 RAMB18_BYTES = 2304
 BRAM_BUDGET_BYTES = 90 * RAMB18_BYTES
-PACKED_CSV = "cache_sizes_packed.csv"
 ALIGNED_CSV = "cache_sizes.csv"
 IN_BUDGET_CSV = "cache_sizes_in_budget.csv"
-PACKED_COLUMNS = tuple(
-    f"l{level}_{bank}"
+ALIGNED_COLUMNS = tuple(
+    f"l{level}_{bank}_aligned"
     for level in (1, 2, 3)
     for bank in ("pop", "chunk", "seq")
 )
-ALIGNED_COLUMNS = tuple(f"{column}_aligned" for column in PACKED_COLUMNS)
 
 
 class TableStats(NamedTuple):
-    """One sampled table and its nine bank sizes in bytes."""
+    """One sampled table and its nine BRAM-aligned bank sizes in bytes."""
 
     path: Path
     route_count: int
-    packed: tuple[int, ...]
     aligned: tuple[int, ...]
 
 
@@ -50,11 +47,11 @@ def write_jobs(sampled: Path, jobs: Path) -> list[Path]:
 
 
 def read_builder_stats(raw: Path, sampled: Path, tables: list[Path]) -> Iterator[TableStats]:
-    """Read the packed and aligned bank sizes in the same order as the jobs."""
+    """Read the aligned bank sizes in the same order as the jobs."""
     with raw.open(encoding="utf-8", newline="") as source:
         reader = csv.DictReader(source)
-        if not {"file", *PACKED_COLUMNS, *ALIGNED_COLUMNS}.issubset(reader.fieldnames or ()):
-            raise ValueError(f"Missing cache statistics in {raw}")
+        if not {"file", *ALIGNED_COLUMNS}.issubset(reader.fieldnames or ()):
+            raise ValueError(f"Missing aligned cache statistics in {raw}")
         for table, row in zip(tables, reader, strict=True):
             if row["file"] != str(table):
                 raise ValueError(f"Expected statistics for {table}, got {row['file']}")
@@ -62,29 +59,24 @@ def read_builder_stats(raw: Path, sampled: Path, tables: list[Path]) -> Iterator
             yield TableStats(
                 path=relative,
                 route_count=int(relative.parts[0]),
-                packed=tuple(int(row[column]) for column in PACKED_COLUMNS),
                 aligned=tuple(int(row[column]) for column in ALIGNED_COLUMNS),
             )
 
 
 def write_cache_csvs(output_dir: Path, stats: Iterator[TableStats]) -> int:
-    """Write packed, aligned, and budget-filtered sizes. Return the number that fit."""
+    """Write aligned and budget-filtered sizes. Return the number that fit."""
     in_budget = 0
     with (
-        (output_dir / PACKED_CSV).open("w", encoding="utf-8", newline="") as packed_file,
         (output_dir / ALIGNED_CSV).open("w", encoding="utf-8", newline="") as aligned_file,
         (output_dir / IN_BUDGET_CSV).open("w", encoding="utf-8", newline="") as in_budget_file,
     ):
-        packed = csv.writer(packed_file)
         aligned = csv.writer(aligned_file)
         filtered = csv.writer(in_budget_file)
-        packed.writerow(("file", "table_size", *PACKED_COLUMNS))
         aligned.writerow(("file", "table_size", *ALIGNED_COLUMNS))
         filtered.writerow(("file", "table_size", *ALIGNED_COLUMNS))
 
         for table in stats:
             metadata = (table.path, table.route_count)
-            packed.writerow((*metadata, *table.packed))
             aligned.writerow((*metadata, *table.aligned))
             if sum(table.aligned) <= BRAM_BUDGET_BYTES:
                 filtered.writerow((*metadata, *table.aligned))
@@ -93,7 +85,7 @@ def write_cache_csvs(output_dir: Path, stats: Iterator[TableStats]) -> int:
 
 
 def collect(sampled: Path, builder: Path, output_dir: Path) -> None:
-    """Run the builder once and publish the job list and three CSVs."""
+    """Run the builder once and publish the job list and two CSVs."""
     sampled = sampled.resolve(strict=True)
     builder = builder.resolve(strict=True)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -105,7 +97,7 @@ def collect(sampled: Path, builder: Path, output_dir: Path) -> None:
         raw = work / "builder.csv"
         subprocess.run([builder, jobs, "--out-csv", raw], check=True)
         in_budget = write_cache_csvs(work, read_builder_stats(raw, sampled, tables))
-        for name in (jobs.name, PACKED_CSV, ALIGNED_CSV, IN_BUDGET_CSV):
+        for name in (jobs.name, ALIGNED_CSV, IN_BUDGET_CSV):
             (work / name).replace(output_dir / name)
     print(f"Wrote statistics for {len(tables)} tables to {output_dir}")
     print(f"{in_budget} tables fit the BRAM budget of {BRAM_BUDGET_BYTES} bytes")
