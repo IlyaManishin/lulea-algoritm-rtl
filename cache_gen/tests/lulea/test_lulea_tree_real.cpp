@@ -22,15 +22,6 @@ TEST(LuleaTreeRealTableTest, VerifyTreeWithReference)
     {
         const gen::MaskEntries bin_entries = gen::Reader::read(table.bin_path.string());
         const gen::MaskEntries txt_entries = tests::LinearLookup::parse_routes_txt(table.txt_path.string());
-        ASSERT_EQ(txt_entries.size(), bin_entries.size()) << table.name;
-
-        // Verify binary and text entries are identical
-        for (size_t idx = 0; idx < txt_entries.size(); ++idx)
-        {
-            EXPECT_EQ(bin_entries[idx].ip, txt_entries[idx].ip);
-            EXPECT_EQ(bin_entries[idx].mask, txt_entries[idx].mask);
-            EXPECT_EQ(bin_entries[idx].port, txt_entries[idx].port);
-        }
 
         const gen::LuleaTree tree(bin_entries);
         const engine::LuleaTreeLookup tree_lookup(tree);

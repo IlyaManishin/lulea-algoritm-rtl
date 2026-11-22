@@ -15,24 +15,11 @@ namespace fs = std::filesystem;
 
 namespace
 {
-    void expect_same_routes(const gen::MaskEntries &bin_entries, const gen::MaskEntries &txt_entries)
-    {
-        for (size_t idx = 0; idx < txt_entries.size(); ++idx)
-        {
-            EXPECT_EQ(bin_entries[idx].ip, txt_entries[idx].ip);
-            EXPECT_EQ(bin_entries[idx].mask, txt_entries[idx].mask);
-            EXPECT_EQ(bin_entries[idx].port, txt_entries[idx].port);
-        }
-    }
-
     void verify_table_caches(const tests::TableTestFiles &table, const fs::path &test_dir, uint32_t seed)
     {
         SCOPED_TRACE(table.name);
         const gen::MaskEntries bin_entries = gen::Reader::read(table.bin_path.string());
         const gen::MaskEntries txt_entries = tests::LinearLookup::parse_routes_txt(table.txt_path.string());
-        ASSERT_EQ(txt_entries.size(), bin_entries.size());
-
-        expect_same_routes(bin_entries, txt_entries);
 
         const fs::path dump_dir = test_dir / table.name;
         const gen::Config config{

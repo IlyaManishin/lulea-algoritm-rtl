@@ -76,6 +76,7 @@ test_sources = files(
   'tests/lulea/secondary/test_linear_lookup.cpp',
   'tests/lulea/test_lulea_tree_real.cpp',
   'tests/lulea/test_lulea_cache_real.cpp',
+  'tests/lulea/test_route_table_read.cpp',
 ) + core_sources
 
 test_exe = executable(
