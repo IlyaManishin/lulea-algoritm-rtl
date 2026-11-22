@@ -8,7 +8,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import NamedTuple
 
-ROOT = Path(__file__).resolve().parents[1]
+CACHE_STATS_DIR = Path(__file__).resolve().parent
+ROOT = CACHE_STATS_DIR.parents[1]
 BRAM_BUDGET_BYTES = 90 * 2304
 PACKED_CSV = "cache_sizes_packed.csv"
 ALIGNED_CSV = "cache_sizes.csv"
@@ -114,7 +115,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sampled", type=Path, default=ROOT / "build/sampled")
     parser.add_argument("--builder", type=Path, default=ROOT / "cache_gen/build/lulea_builder")
-    parser.add_argument("--output-dir", type=Path, default=ROOT / "cache_stats/build")
+    parser.add_argument("--output-dir", type=Path, default=CACHE_STATS_DIR / "build")
     args = parser.parse_args()
     try:
         collect(args.sampled, args.builder, args.output_dir)
