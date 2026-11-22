@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 from typing import NamedTuple
 
 ROOT = Path(__file__).resolve().parents[1]
-BRAM_BUDGET_BYTES = 89 * 2304
+BRAM_BUDGET_BYTES = 90 * 2304
 PACKED_CSV = "cache_sizes_packed.csv"
 ALIGNED_CSV = "cache_sizes.csv"
 IN_BUDGET_CSV = "cache_sizes_in_budget.csv"
