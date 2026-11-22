@@ -1,6 +1,6 @@
-#include "engine/lulea_cache_lookup.hpp"
+#include "lulea_cache_lookup.hpp"
 
-#include "config.hpp"
+#include "lookup_engine.hpp"
 #include "lulea_config.hpp"
 
 #include <algorithm>
@@ -19,6 +19,8 @@
 
 namespace engine
 {
+    using namespace gen;
+
     namespace
     {
         using seq_cell_t = uint32_t;
