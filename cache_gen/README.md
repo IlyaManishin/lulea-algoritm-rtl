@@ -29,6 +29,8 @@ printf 'dump\t%s\t%s\n' routes.bin out/cache > jobs.tsv
 
 Each row contains a mode, an input path, and an output directory for `dump`. Use `stats` with just the input path to measure a table without writing cache files. Paths are relative to the working directory. Omit `--out-csv` to print the sizes to stdout.
 
+Add `--progress` to show the number of processed jobs on stderr.
+
 ## Cache layout
 
 Each level has three files, with `lN` standing for `l1`, `l2`, or `l3`.

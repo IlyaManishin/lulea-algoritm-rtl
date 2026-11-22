@@ -1,6 +1,7 @@
 #include "gen/gen.hpp"
 #include "io/cli.hpp"
 #include "io/config_parser.hpp"
+#include "io/progress_bar.hpp"
 #include "io/stats_writer.hpp"
 
 #include <cstddef>
@@ -20,7 +21,8 @@ namespace
         Fatal
     };
 
-    EntryResult process_config_entry(const gen::Config &config, const StatsWriter &writer)
+    EntryResult process_config_entry(const gen::Config &config, const StatsWriter &writer,
+                                     ProgressBar &progress)
     {
         try
         {
@@ -30,18 +32,21 @@ namespace
         }
         catch (const gen::FatalGenException &ex)
         {
+            progress.end_line();
             std::cerr << "Fatal build error for " << config.input_path
                       << ": " << ex.what() << "\n";
             return EntryResult::Fatal;
         }
         catch (const gen::GenException &ex)
         {
+            progress.end_line();
             std::cerr << "Build error for " << config.input_path
                       << ": " << ex.what() << "\n";
             return EntryResult::Failed;
         }
         catch (const std::exception &ex)
         {
+            progress.end_line();
             std::cerr << "Unexpected error for " << config.input_path
                       << ": " << ex.what() << "\n";
             return EntryResult::Fatal;
@@ -51,18 +56,20 @@ namespace
     int process_config(const CliOptions &opt)
     {
         ConfigParser parser(opt.config_file);
+        ProgressBar progress(opt.progress ? parser.count_remaining() : 0, !opt.out_csv.empty());
         const StatsWriter writer(opt.out_csv);
 
         gen::Config config;
         int status = 0;
         while (parser.next(config))
         {
-            const EntryResult result = process_config_entry(config, writer);
+            const EntryResult result = process_config_entry(config, writer, progress);
             if (result == EntryResult::Fatal)
             {
                 std::cerr << "Fatal error encountered. Aborting further processing.\n";
                 return 1;
             }
+            progress.advance();
             if (result == EntryResult::Failed)
             {
                 status = 1;
@@ -87,7 +94,7 @@ namespace
         }
         catch (const std::exception &e)
         {
-            std::cerr << "Error: " << e.what() << "\n";
+            std::cerr << "Unexpected error: " << e.what() << "\n";
             return 1;
         }
     }

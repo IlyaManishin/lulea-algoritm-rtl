@@ -11,6 +11,7 @@ namespace io
     {
         std::string config_file;
         std::string out_csv;
+        bool progress = false;
     };
 
     void print_usage(const char *prog_name);

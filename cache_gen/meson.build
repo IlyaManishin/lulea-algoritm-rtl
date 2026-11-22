@@ -52,7 +52,7 @@ core_sources = files(
 
 executable(
   'lulea_builder',
-  files('src/main.cpp') + core_sources,
+  files('src/main.cpp', 'src/io/progress_bar.cpp') + core_sources,
   include_directories: inc_dirs,
   install: true,
 )

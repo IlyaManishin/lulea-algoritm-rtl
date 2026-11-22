@@ -1,6 +1,7 @@
 #include "config_parser.hpp"
 #include "gen/gen.hpp"
 
+#include <cstddef>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -15,6 +16,36 @@ ConfigParser::ConfigParser(const std::string &filepath)
     }
 }
 
+std::size_t ConfigParser::count_remaining()
+{
+    const auto position = this->file_.tellg();
+    if (position < 0)
+    {
+        throw std::runtime_error("Cannot seek in config file: " + this->filepath_);
+    }
+
+    std::size_t count = 0;
+    std::string line;
+    while (std::getline(this->file_, line))
+    {
+        if (!line.empty() && line.front() != '#')
+        {
+            ++count;
+        }
+    }
+    if (this->file_.bad() || !this->file_.eof())
+    {
+        throw std::runtime_error("Cannot count jobs in config file: " + this->filepath_);
+    }
+    this->file_.clear();
+    this->file_.seekg(position);
+    if (!this->file_)
+    {
+        throw std::runtime_error("Cannot seek in config file: " + this->filepath_);
+    }
+    return count;
+}
+
 bool ConfigParser::next(gen::Config &config_out)
 {
     std::string line;
@@ -24,7 +55,7 @@ bool ConfigParser::next(gen::Config &config_out)
         this->current_line_++;
 
         // Ignore empty lines and comment lines
-        if (line.empty() || line[0] == '#')
+        if (line.empty() || line.front() == '#')
         {
             continue;
         }
