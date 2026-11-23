@@ -1,6 +1,10 @@
 #pragma once
 
 #include "config.hpp"
+#include "io/reader.hpp"
+
+#include <filesystem>
+#include <memory>
 
 namespace engine
 {
@@ -21,16 +25,18 @@ namespace engine
         virtual port_t lookup(ipv4_t ip) const = 0;
     };
 
-    using LookupEngine = ILookupEngine; // delete this
-
     class ILookupEngineFactory
     {
-
     public:
         ILookupEngineFactory() = default;
-        virtual std::unique_ptr<engine::ILookupEngine> get_lookup_engine(const fs::path &dump_dir) = delete;
+        virtual ~ILookupEngineFactory() = default;
+        ILookupEngineFactory(const ILookupEngineFactory &) = delete;
+        ILookupEngineFactory &operator=(const ILookupEngineFactory &) = delete;
+        ILookupEngineFactory(ILookupEngineFactory &&) = delete;
+        ILookupEngineFactory &operator=(ILookupEngineFactory &&) = delete;
+
+        virtual std::unique_ptr<ILookupEngine> get_lookup_engine(
+            const std::filesystem::path &routes_path, const gen::MaskEntries &entries) = 0;
     };
-
-
 
 } // namespace engine
