@@ -21,6 +21,16 @@ namespace engine
         virtual port_t lookup(ipv4_t ip) const = 0;
     };
 
-    using LookupEngine = ILookupEngine;
+    using LookupEngine = ILookupEngine; // delete this
+
+    class ILookupEngineFactory
+    {
+
+    public:
+        ILookupEngineFactory() = default;
+        virtual std::unique_ptr<engine::ILookupEngine> get_lookup_engine(const fs::path &dump_dir) = delete;
+    };
+
+
 
 } // namespace engine

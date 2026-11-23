@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <filesystem>
 
+#include "engine/lookup_engine.hpp"
 #include "engine/lulea_cache_lookup.hpp"
 #include "gen.hpp"
 #include "io/reader.hpp"
@@ -15,7 +16,10 @@ namespace fs = std::filesystem;
 
 namespace
 {
-    void verify_table_caches(const tests::TableTestFiles &table, const fs::path &test_dir, uint32_t seed)
+    void verify_engine_with_table(const engine::ILookupEngine &engine,
+                                  const tests::TableTestFiles &table,
+                                  const fs::path &test_dir,
+                                  uint32_t seed)
     {
         SCOPED_TRACE(table.name);
         const gen::MaskEntries bin_entries = gen::Reader::read(table.bin_path.string());
@@ -49,23 +53,33 @@ namespace
         EXPECT_TRUE(step_res.is_success())
             << "Step verification failed (" << step_res.mismatched << "/" << step_res.total << " mismatches)";
     }
+
+    void verify_lookup_engine(engine::ILookupEngineFactory &engine_factory, const fs::path &test_dir)
+    {
+        const auto tables = tests::get_test_tables();
+        ASSERT_FALSE(tables.empty()) << "No routing tables found";
+
+        size_t tables_tested = 0;
+
+        for (const auto &table : tables)
+        {
+            const auto seed = static_cast<uint32_t>(1000 + tables_tested);
+            ASSERT_NO_FATAL_FAILURE(verify_engine_with_table(table, test_dir, seed));
+            tables_tested++;
+        }
+
+        fs::remove_all(test_dir);
+        EXPECT_EQ(tables_tested, tables.size());
+    }
+
 } // namespace
+
+class CacheEngineFactory : public ILookupEngineFactory
+{
+    CacheEngineFactory(/* args */);
+};
 
 TEST(LuleaCacheRealTableTest, VerifyCachesWithReference)
 {
-    const auto tables = tests::get_test_tables();
-    ASSERT_FALSE(tables.empty()) << "No routing tables found";
-
     const fs::path test_dir = fs::temp_directory_path() / "lulea_cache_real_tests";
-    size_t tables_tested = 0;
-
-    for (const auto &table : tables)
-    {
-        const auto seed = static_cast<uint32_t>(1000 + tables_tested);
-        ASSERT_NO_FATAL_FAILURE(verify_table_caches(table, test_dir, seed));
-        tables_tested++;
-    }
-
-    fs::remove_all(test_dir);
-    EXPECT_EQ(tables_tested, tables.size());
 }
