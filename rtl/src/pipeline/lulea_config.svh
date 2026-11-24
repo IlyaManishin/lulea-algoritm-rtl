@@ -19,8 +19,6 @@ package lulea_config;
     localparam int unsigned BIT_POS_WIDTH = $clog2(POP_WORD_WIDTH);
     localparam int unsigned POPCOUNT_WIDTH = $clog2(POP_WORD_WIDTH + 1);
 
-    localparam POP_RAM_DECOMP = "power";
-
     // =========================================================================
     //  L1 level  (18 bits: /1 -> /18)
     // =========================================================================

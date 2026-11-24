@@ -7,7 +7,7 @@ set part xc7a35tcpg236-1
 create_project -force pipeline $prj_dir -part $part
 
 add_files -fileset sources_1 -norecurse \
-    $src_dir/lib/sp_rom.sv              \
+    $src_dir/lib/lulea_cache_rom.sv     \
     $pipeline_dir/lulea_config.svh      \
     $pipeline_dir/l1.sv                 \
     $pipeline_dir/l2.sv                 \

@@ -18,28 +18,36 @@ module l1
     input  logic [L1_SEQ_ADDR_WIDTH-1:0]  seq_addr,
     output logic [L1_SEQ_WORD_WIDTH-1:0]  seq_cell
 );
-    sp_rom #(
+    lulea_cache_rom #(
         .WORD_WIDTH(POP_WORD_WIDTH),
         .SIZE_BITS(L1_POP_SIZE_BITS),
-        .INIT_FILE(POP_INIT_FILE),
-        .RAM_DECOMP(POP_RAM_DECOMP)
+        .INIT_FILE(POP_INIT_FILE)
     ) u_pop (
-        .clk(clk), .en(word_en), .addr(word_addr), .dout(pop_word)
+        .clk(clk),
+        .en(word_en),
+        .addr(word_addr),
+        .dout(pop_word)
     );
 
-    sp_rom #(
+    lulea_cache_rom #(
         .WORD_WIDTH(CHUNK_WORD_WIDTH),
         .SIZE_BITS(L1_CHUNK_SIZE_BITS),
         .INIT_FILE(CHUNK_INIT_FILE)
     ) u_chunk (
-        .clk(clk), .en(word_en), .addr(word_addr), .dout(chunk_sum)
+        .clk(clk),
+        .en(word_en),
+        .addr(word_addr),
+        .dout(chunk_sum)
     );
 
-    sp_rom #(
+    lulea_cache_rom #(
         .WORD_WIDTH(L1_SEQ_WORD_WIDTH),
         .SIZE_BITS(L1_SEQ_SIZE_BITS),
         .INIT_FILE(SEQ_INIT_FILE)
     ) u_seq (
-        .clk(clk), .en(seq_en), .addr(seq_addr), .dout(seq_cell)
+        .clk(clk),
+        .en(seq_en),
+        .addr(seq_addr),
+        .dout(seq_cell)
     );
 endmodule
