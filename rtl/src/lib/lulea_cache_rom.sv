@@ -19,12 +19,11 @@ module lulea_cache_rom #(
 
     (* ram_style = "block", ram_decomp = "area" *) logic [WORD_WIDTH-1:0] rom [0:DEPTH-1];
 
-    // INIT_FILE contains one binary word per line, starting at address zero.
     initial begin
         if (INIT_FILE != "") begin
             $readmemb(INIT_FILE, rom, 0, DEPTH-1);
-            
         end else begin
+            $warning("%m: INIT_FILE is empty. ROM contents are initialized to zero.");
             for (int i = 0; i < DEPTH; i++)
                 rom[i] = '0;
         end
