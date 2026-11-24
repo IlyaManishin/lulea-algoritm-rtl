@@ -4,6 +4,7 @@ module sp_rom #(
     parameter int unsigned WORD_WIDTH = 64,
     parameter int unsigned SIZE_BITS = 1024,
     parameter string INIT_FILE = "",
+    parameter RAM_DECOMP = "area",
 
     localparam int unsigned DEPTH = SIZE_BITS / WORD_WIDTH,
     localparam int unsigned ADDR_WIDTH = (DEPTH > 1) ? $clog2(DEPTH) : 1
@@ -17,12 +18,16 @@ module sp_rom #(
         initial $fatal(1, "sp_rom: SIZE_BITS must hold a positive whole number of words");
     end
 
-    (* rom_style = "block" *) logic [WORD_WIDTH-1:0] rom [0:DEPTH-1];
+    (* rom_style = "block", ram_decomp = RAM_DECOMP *) logic [WORD_WIDTH-1:0] rom [0:DEPTH-1];
 
     // INIT_FILE contains one binary word per line, starting at address zero.
     initial begin
-        if (INIT_FILE != "")
+        if (INIT_FILE != "") begin
             $readmemb(INIT_FILE, rom, 0, DEPTH-1);
+        end else begin
+            for (int i = 0; i < DEPTH; i++)
+                rom[i] = '0;
+        end
     end
 
     always_ff @(posedge clk) begin
