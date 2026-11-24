@@ -18,12 +18,13 @@ module sp_rom #(
         initial $fatal(1, "sp_rom: SIZE_BITS must hold a positive whole number of words");
     end
 
-    (* rom_style = "block", ram_decomp = RAM_DECOMP *) logic [WORD_WIDTH-1:0] rom [0:DEPTH-1];
+    (* ram_style = "block", ram_decomp = "area" *) logic [WORD_WIDTH-1:0] rom [0:DEPTH-1];
 
     // INIT_FILE contains one binary word per line, starting at address zero.
     initial begin
         if (INIT_FILE != "") begin
             $readmemb(INIT_FILE, rom, 0, DEPTH-1);
+            
         end else begin
             for (int i = 0; i < DEPTH; i++)
                 rom[i] = '0;
