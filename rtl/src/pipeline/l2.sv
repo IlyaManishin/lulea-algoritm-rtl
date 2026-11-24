@@ -11,6 +11,7 @@ module l2
 ) (
     input  logic           clk,
     input  logic           en,
+    
     input  l2_word_addr_t  word_addr,
     output l2_pop_t        pop_word,
     output l2_chunk_t      chunk_sum,
