@@ -33,6 +33,8 @@ cfg/*
 **/rtl_check/results/
 **/rtl_check/popcount_timing_test/results/
 
+rtl/mem
+
 
 # ==============================================================================
 # Simulation
