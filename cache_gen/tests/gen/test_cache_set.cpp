@@ -7,11 +7,11 @@
 #include <stdexcept>
 #include <vector>
 
-#include "gen/config.hpp"
 #include "gen/gen.hpp"
 #include "gen/lulea_algo/lulea_algo.hpp"
 #include "gen/lulea_algo/lulea_tree.hpp"
 #include "gen/lulea_data/cache_set.hpp"
+#include <lulea_common/config.hpp>
 
 namespace fs = std::filesystem;
 

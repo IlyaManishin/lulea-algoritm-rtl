@@ -1,7 +1,7 @@
 #include "route.hpp"
 
-#include "config.hpp"
 #include "lulea_algo/errors.hpp"
+#include <lulea_common/config.hpp>
 
 #include <cstddef>
 #include <cstdint>

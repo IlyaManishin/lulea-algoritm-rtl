@@ -1,39 +1,4 @@
-project(
-  'cache_gen',
-  'cpp',
-  version: '0.1.0',
-  meson_version: '>=1.1.0',
-  default_options: [
-    'cpp_std=c++20',
-    'warning_level=3',
-    'optimization=3',
-  ],
-)
-
-cpp = meson.get_compiler('cpp')
-
-gcc_strict_flags = [
-  '-fanalyzer',
-  '-Wall',
-  '-Wextra',
-  '-Wpedantic',
-  '-Werror',
-  '-Wshadow',
-  '-Wconversion',
-  '-Wsign-conversion',
-  '-Wnull-dereference',
-  '-Wdouble-promotion',
-  '-Wformat=2',
-  '-Wimplicit-fallthrough',
-  '-Wcast-align',
-  '-Wstrict-overflow=5',
-]
-
-if get_option('strict_flags') and cpp.get_id() == 'gcc'
-  add_project_arguments(gcc_strict_flags, language: 'cpp')
-endif
-
-inc_dirs = include_directories('src', 'src/gen', 'tests/lulea', 'tests/lulea/utils')
+inc_dirs = include_directories('src', 'src/gen')
 
 core_sources = files(
   'src/gen/gen.cpp',
@@ -41,23 +6,47 @@ core_sources = files(
   'src/gen/lulea_data/cache_set.cpp',
   'src/gen/lulea_algo/lulea_tree.cpp',
   'src/gen/lulea_algo/lulea_algo.cpp',
-  'src/gen/engine/lulea_tree_lookup.cpp',
-  'src/gen/engine/lulea_cache_lookup.cpp',
-  'src/gen/io/reader.cpp',
   'src/gen/io/bit_file_writer.cpp',
-  'src/io/config_parser.cpp',
-  'src/io/cli.cpp',
-  'src/io/stats_writer.cpp',
 )
 
-executable(
-  'lulea_builder',
-  files('src/main.cpp', 'src/io/progress_bar.cpp') + core_sources,
+cache_gen_core = static_library(
+  'cache_gen_core',
+  core_sources,
   include_directories: inc_dirs,
+  dependencies: lulea_common_dep,
+  cpp_args: strict_cpp_args,
+)
+
+cache_gen_dep = declare_dependency(
+  link_with: cache_gen_core,
+  include_directories: include_directories('src/gen'),
+  dependencies: lulea_common_dep,
+)
+
+io_sources = files('src/io/config_parser.cpp', 'src/io/cli.cpp', 'src/io/stats_writer.cpp')
+
+cache_gen_io = static_library(
+  'cache_gen_io',
+  io_sources,
+  include_directories: inc_dirs,
+  dependencies: cache_gen_dep,
+  cpp_args: strict_cpp_args,
+)
+
+cache_gen_io_dep = declare_dependency(
+  link_with: cache_gen_io,
+  include_directories: include_directories('src'),
+  dependencies: cache_gen_dep,
+)
+
+cache_gen_exe = executable(
+  'lulea_builder',
+  files('src/main.cpp', 'src/io/progress_bar.cpp'),
+  include_directories: inc_dirs,
+  dependencies: cache_gen_io_dep,
+  cpp_args: strict_cpp_args,
   install: true,
 )
-
-gtest_dep = dependency('gtest_main')
 
 test_sources = files(
   'tests/test_config.cpp',
@@ -69,39 +58,20 @@ test_sources = files(
   'tests/gen/test_reader.cpp',
   'tests/gen/test_bit_file_writer.cpp',
   'tests/gen/test_gen.cpp',
-  'tests/lulea/utils/ip_gen.cpp',
-  'tests/lulea/utils/linear_lookup.cpp',
-  'tests/lulea/utils/lookup_verification.cpp',
-  'tests/lulea/utils/utils.cpp',
-  'tests/lulea/secondary/test_ip_gen.cpp',
-  'tests/lulea/secondary/test_linear_lookup.cpp',
   'tests/lulea/test_lulea_tree_real.cpp',
   'tests/lulea/test_lulea_cache_real.cpp',
-  'tests/lulea/test_route_table_read.cpp',
-) + core_sources
+  'tests/lulea/lulea_engine/lulea_cache_lookup.cpp',
+  'tests/lulea/lulea_engine/lulea_tree_lookup.cpp',
+)
 
 test_exe = executable(
   'test_gen',
   test_sources,
-  include_directories: inc_dirs,
-  dependencies: gtest_dep,
+  include_directories: [inc_dirs, include_directories('tests/lulea')],
+  dependencies: [cache_gen_io_dep, lulea_verify_dep, gtest_main_dep],
+  cpp_args: strict_cpp_args,
 )
 
-test('cache_gen_tests', test_exe, timeout: 300)
+test('cache_gen_tests', test_exe, suite: 'cache_gen', workdir: verify_workdir, depends: verify_tables, timeout: 300)
 
-lint_script = files('scripts/run_linters.sh')
-
-run_target(
-  'lint',
-  command: [lint_script],
-)
-
-run_target(
-  'lint-cppcheck',
-  command: [lint_script, '--cppcheck-only'],
-)
-
-run_target(
-  'lint-clang-tidy',
-  command: [lint_script, '--clang-tidy-only'],
-)
+alias_target('cache_gen', cache_gen_exe, test_exe)

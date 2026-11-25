@@ -1,11 +1,11 @@
 #pragma once
 
-#include "config.hpp"
 #include "gen.hpp"
-#include "io/reader.hpp"
 #include "lulea_config.hpp"
 #include "lulea_data/cache_set.hpp"
 #include "lulea_tree.hpp"
+#include <lulea_common/config.hpp>
+#include <lulea_common/reader.hpp>
 
 namespace gen
 {

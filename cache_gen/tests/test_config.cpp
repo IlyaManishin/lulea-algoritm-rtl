@@ -44,7 +44,7 @@ TEST_F(ConfigParserTest, ReadsValidTsvStream)
         "dump\tdata/table_2.lrb1\tfirmware/dir/\n";
 
     fs::path manifest = create_manifest_file("jobs.tsv", tsv_content);
-    ConfigParser parser(manifest.string());
+    io::ConfigParser parser(manifest.string());
 
     gen::Config cfg1;
     ASSERT_TRUE(parser.next(cfg1));
@@ -66,7 +66,7 @@ TEST_F(ConfigParserTest, ThrowsOnMalformedEntry)
 {
     const std::string bad_content = "invalid_line_without_tabs\n";
     fs::path manifest = create_manifest_file("bad_jobs.tsv", bad_content);
-    ConfigParser parser(manifest.string());
+    io::ConfigParser parser(manifest.string());
 
     gen::Config cfg;
     EXPECT_THROW(parser.next(cfg), std::runtime_error);

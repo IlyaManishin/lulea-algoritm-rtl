@@ -6,12 +6,13 @@ nine packed files from `cache_gen` into fixed-size banks using the
 
 ## Build
 
-From the repository root, build with a C11 compiler, Meson, and Ninja.
-The pipeline test uses Python 3.10 or newer and `ctypes`.
+Use the [shared Meson project](../libs_cpp/lulea_verify/README.md) from the repository
+root. The C++ lookup test uses the same route fixtures and linear reference
+as `cache_gen`.
 
 ```sh
-meson setup golden_model/build golden_model
-meson test -C golden_model/build --print-errorlogs
+meson setup build
+meson test -C build popcount pipeline golden_model_lookup --print-errorlogs
 ```
 
 Include `lulea_model.h` and link `liblulea_model.so` from a C or C++ testbench,
