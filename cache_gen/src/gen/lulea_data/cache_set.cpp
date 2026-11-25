@@ -38,13 +38,11 @@ namespace gen
                 const size_t blocks = (packed_bytes + ramb36_data_bytes - 1) / ramb36_data_bytes;
                 return static_cast<uint32_t>(blocks * ramb36_bytes);
             }
-            else
-            {
-                // Chunk and seq use all 9 bits in each group.
-                const size_t groups = (bits + 8) / 9;
-                const size_t blocks = (groups + ramb18_groups - 1) / ramb18_groups;
-                return static_cast<uint32_t>(blocks * ramb18_bytes);
-            }
+
+            // Chunk and seq use all 9 bits in each group.
+            const size_t groups = (bits + 8) / 9;
+            const size_t blocks = (groups + ramb18_groups - 1) / ramb18_groups;
+            return static_cast<uint32_t>(blocks * ramb18_bytes);
         }
 
         CacheByteSizes collect_sizes(const std::array<LevelCaches, 3> &levels, bool aligned)
