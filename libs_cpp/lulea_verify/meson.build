@@ -55,7 +55,6 @@ lulea_verify_library = static_library(
   include_directories: verify_include,
   dependencies: [lulea_common_dep, gtest_dep],
   cpp_args: strict_cpp_args,
-  link_depends: verify_tables,
 )
 
 lulea_verify_dep = declare_dependency(

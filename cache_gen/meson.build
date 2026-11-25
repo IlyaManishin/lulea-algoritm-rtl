@@ -25,11 +25,25 @@ cache_gen_dep = declare_dependency(
 
 io_sources = files('src/io/config_parser.cpp', 'src/io/cli.cpp', 'src/io/stats_writer.cpp')
 
-cache_gen_exe = executable(
-  'lulea_builder',
-  files('src/main.cpp', 'src/io/progress_bar.cpp') + io_sources,
+cache_gen_io = static_library(
+  'cache_gen_io',
+  io_sources,
   include_directories: inc_dirs,
   dependencies: cache_gen_dep,
+  cpp_args: strict_cpp_args,
+)
+
+cache_gen_io_dep = declare_dependency(
+  link_with: cache_gen_io,
+  include_directories: include_directories('src'),
+  dependencies: cache_gen_dep,
+)
+
+cache_gen_exe = executable(
+  'lulea_builder',
+  files('src/main.cpp', 'src/io/progress_bar.cpp'),
+  include_directories: inc_dirs,
+  dependencies: cache_gen_io_dep,
   cpp_args: strict_cpp_args,
   install: true,
 )
@@ -48,27 +62,16 @@ test_sources = files(
   'tests/lulea/test_lulea_cache_real.cpp',
   'tests/lulea/lulea_engine/lulea_cache_lookup.cpp',
   'tests/lulea/lulea_engine/lulea_tree_lookup.cpp',
-) + io_sources
+)
 
 test_exe = executable(
   'test_gen',
   test_sources,
   include_directories: [inc_dirs, include_directories('tests/lulea')],
-  dependencies: [cache_gen_dep, lulea_verify_dep, gtest_main_dep],
+  dependencies: [cache_gen_io_dep, lulea_verify_dep, gtest_main_dep],
   cpp_args: strict_cpp_args,
 )
 
 test('cache_gen_tests', test_exe, suite: 'cache_gen', workdir: verify_workdir, depends: verify_tables, timeout: 300)
 
 alias_target('cache_gen', cache_gen_exe, test_exe)
-
-cache_gen_lint_targets = []
-foreach tool : lint_tools
-  cache_gen_lint_targets += [
-    run_target(
-      'lint-cache-gen-' + tool,
-      command: lint_command + ['--scope', meson.current_source_dir(), '--tool', tool],
-    ),
-  ]
-endforeach
-cache_gen_lint = alias_target('lint-cache-gen', cache_gen_lint_targets)
