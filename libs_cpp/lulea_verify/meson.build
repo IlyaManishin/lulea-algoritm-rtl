@@ -76,4 +76,4 @@ verify_test = executable(
   cpp_args: strict_cpp_args,
 )
 
-test('lulea_verify_tests', verify_test, workdir: verify_workdir, depends: verify_tables)
+test('lulea_verify_tests', verify_test, suite: 'libs_cpp', workdir: verify_workdir, depends: verify_tables)

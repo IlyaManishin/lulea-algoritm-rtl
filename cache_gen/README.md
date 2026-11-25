@@ -14,8 +14,8 @@
 Build from the repository root with the [shared Meson project](../libs_cpp/lulea_verify/README.md).
 
 ```bash
-meson setup cache_gen/build .
-meson compile -C cache_gen/build
+meson setup build
+meson compile -C build cache_gen
 ```
 
 With an LRB1 file named `routes.bin`, write a tab-separated job file and run the builder.
@@ -23,7 +23,7 @@ With an LRB1 file named `routes.bin`, write a tab-separated job file and run the
 ```bash
 mkdir -p out
 printf 'dump\t%s\t%s\n' routes.bin out/cache > jobs.tsv
-./cache_gen/build/cache_gen/lulea_builder jobs.tsv --out-csv out/sizes.csv
+./build/cache_gen/lulea_builder jobs.tsv --out-csv out/sizes.csv
 ```
 
 Each row contains a mode, an input path, and an output directory for `dump`. Use `stats` with just the input path to measure a table without writing cache files. Paths are relative to the working directory. Omit `--out-csv` to print the sizes to stdout.
@@ -61,11 +61,11 @@ also compares every BIN record with its TXT counterpart.
 [Fixture configuration](../libs_cpp/lulea_verify/README.md)
 
 ```bash
-meson test -C cache_gen/build cache_gen_tests --print-errorlogs
-meson compile -C cache_gen/build lint
+meson test -C build --suite cache_gen --print-errorlogs
+meson compile -C build lint-cache-gen
 ```
 
-The `lint` target runs `cppcheck` and `clang-tidy`.
+The `lint-cache-gen` target runs `cppcheck` and `clang-tidy` for this component.
 
 ## Project layout
 

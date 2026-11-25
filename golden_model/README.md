@@ -11,8 +11,8 @@ root. The C++ lookup test uses the same route fixtures and linear reference
 as `cache_gen`.
 
 ```sh
-meson setup cache_gen/build .
-meson test -C cache_gen/build popcount pipeline golden_model_lookup --print-errorlogs
+meson setup build
+meson test -C build popcount pipeline golden_model_lookup --print-errorlogs
 ```
 
 Include `lulea_model.h` and link `liblulea_model.so` from a C or C++ testbench,

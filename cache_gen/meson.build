@@ -10,7 +10,7 @@ core_sources = files(
 )
 
 cache_gen_core = static_library(
-  'cache_gen',
+  'cache_gen_core',
   core_sources,
   include_directories: inc_dirs,
   dependencies: lulea_common_dep,
@@ -24,13 +24,13 @@ cache_gen_dep = declare_dependency(
 )
 
 cache_gen_test_support_dep = declare_dependency(
-  include_directories: include_directories('tests/lulea/lulea_engines'),
+  include_directories: include_directories('tests/lulea/lulea_engine'),
   dependencies: cache_gen_dep,
 )
 
 io_sources = files('src/io/config_parser.cpp', 'src/io/cli.cpp', 'src/io/stats_writer.cpp')
 
-executable(
+cache_gen_exe = executable(
   'lulea_builder',
   files('src/main.cpp', 'src/io/progress_bar.cpp') + io_sources,
   include_directories: inc_dirs,
@@ -51,8 +51,8 @@ test_sources = files(
   'tests/gen/test_gen.cpp',
   'tests/lulea/test_lulea_tree_real.cpp',
   'tests/lulea/test_lulea_cache_real.cpp',
-  'tests/lulea/lulea_engines/lulea_cache_lookup.cpp',
-  'tests/lulea/lulea_engines/lulea_tree_lookup.cpp',
+  'tests/lulea/lulea_engine/lulea_cache_lookup.cpp',
+  'tests/lulea/lulea_engine/lulea_tree_lookup.cpp',
 ) + io_sources
 
 test_exe = executable(
@@ -63,21 +63,17 @@ test_exe = executable(
   cpp_args: strict_cpp_args,
 )
 
-test('cache_gen_tests', test_exe, workdir: verify_workdir, depends: verify_tables, timeout: 300)
+test('cache_gen_tests', test_exe, suite: 'cache_gen', workdir: verify_workdir, depends: verify_tables, timeout: 300)
 
-lint_script = files('scripts/run_linters.sh')
+alias_target('cache_gen', cache_gen_exe, test_exe)
 
-run_target(
-  'lint',
-  command: [lint_script, '--build-dir', meson.project_build_root()],
-)
-
-run_target(
-  'lint-cppcheck',
-  command: [lint_script, '--build-dir', meson.project_build_root(), '--cppcheck-only'],
-)
-
-run_target(
-  'lint-clang-tidy',
-  command: [lint_script, '--build-dir', meson.project_build_root(), '--clang-tidy-only'],
-)
+cache_gen_lint_targets = []
+foreach tool : lint_tools
+  cache_gen_lint_targets += [
+    run_target(
+      'lint-cache-gen-' + tool,
+      command: lint_command + ['--scope', meson.current_source_dir(), '--tool', tool],
+    ),
+  ]
+endforeach
+cache_gen_lint = alias_target('lint-cache-gen', cache_gen_lint_targets)

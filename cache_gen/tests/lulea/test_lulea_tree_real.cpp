@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "lulea_algo/lulea_tree.hpp"
-#include "lulea_engines/lulea_tree_lookup.hpp"
+#include "lulea_engine/lulea_tree_lookup.hpp"
 #include <lulea_common/config.hpp>
 #include <lulea_common/reader.hpp>
 #include <lulea_verify/lookup_engine.hpp>

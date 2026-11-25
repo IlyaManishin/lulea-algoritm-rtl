@@ -6,7 +6,7 @@
 #include "gen.hpp"
 #include "lulea_algo/lulea_algo.hpp"
 #include "lulea_algo/lulea_tree.hpp"
-#include "lulea_engines/lulea_cache_lookup.hpp"
+#include "lulea_engine/lulea_cache_lookup.hpp"
 #include <lulea_common/reader.hpp>
 
 namespace fs = std::filesystem;

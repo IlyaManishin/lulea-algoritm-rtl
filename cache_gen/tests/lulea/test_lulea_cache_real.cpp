@@ -2,8 +2,8 @@
 
 #include <lulea_verify/lookup_verification.hpp>
 
-#include "lulea_engines/cache_engine_factory.hpp"
-#include "lulea_engines/lulea_cache_lookup.hpp"
+#include "lulea_engine/cache_engine_factory.hpp"
+#include "lulea_engine/lulea_cache_lookup.hpp"
 
 TEST(LuleaCacheRealTableTest, VerifyCachesWithReference)
 {

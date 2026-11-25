@@ -12,14 +12,14 @@ newer, Ninja, GoogleTest, and Python 3.12 or newer with `python-dotenv`.
 Meson uses `venv/bin/python` when available and `python3` from PATH otherwise.
 
 ```sh
-meson setup cache_gen/build .
-meson compile -C cache_gen/build
-meson test -C cache_gen/build --print-errorlogs
+meson setup build
+meson compile -C build
+meson test -C build --print-errorlogs
 ```
 
 Building the static library generates two shared tables of 9,216 routes
-under `cache_gen/build/libs_cpp/lulea_verify/tables/`. Meson runs the C++ verification tests
-from `cache_gen/build/libs_cpp/lulea_verify/`. Each table directory contains `routes.txt` and
+under `build/libs_cpp/lulea_verify/tables/`. Meson runs the C++ verification tests
+from `build/libs_cpp/lulea_verify/`. Each table directory contains `routes.txt` and
 `routes.bin`.
 
 The build samples the default converted MRT snapshot under `build/converted/`
