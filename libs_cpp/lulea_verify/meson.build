@@ -30,7 +30,7 @@ if routes_option != ''
     error('Verification route table does not exist: ' + verify_routes)
   endif
 else
-  verify_routes = meson.project_source_root() / 'build/converted/ris_ripe_net/rrc00_bview_20250601_0000/routes.txt'
+  verify_routes = meson.project_source_root() / 'tables_build/converted/ris_ripe_net/rrc00_bview_20250601_0000/routes.txt'
 endif
 if fs.is_file(verify_routes)
   fixture_args += ['--input', verify_routes]

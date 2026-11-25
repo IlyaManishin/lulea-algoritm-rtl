@@ -51,6 +51,6 @@ python3 stats/cache_stats/collect_stats.py
 python3 stats/cache_stats/search_allocation.py
 ```
 
-The collector reads `build/sampled/` and writes its reports to
+The collector reads `tables_build/sampled/` and writes its reports to
 `stats/cache_stats/build/`. The search uses the full aligned CSV.
 [CSV formats and allocation results](cache_stats/README.md)

@@ -22,7 +22,7 @@ under `build/libs_cpp/lulea_verify/tables/`. Meson runs the C++ verification tes
 from `build/libs_cpp/lulea_verify/`. Each table directory contains `routes.txt` and
 `routes.bin`.
 
-The build samples the default converted MRT snapshot under `build/converted/`
+The build samples the default converted MRT snapshot under `tables_build/converted/`
 when available and uses deterministic synthetic fixtures otherwise. Use
 `-Dverify_routes=/path/to/routes.txt` to select a converted table,
 `-Dverify_route_count` to set the size, and `-Dverify_table_count` to set
