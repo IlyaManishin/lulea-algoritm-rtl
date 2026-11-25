@@ -43,7 +43,6 @@ namespace tests
     void verify_lookup_engine(engine::ILookupEngineFactory &engine_factory)
     {
         const auto tables = get_test_tables();
-        ASSERT_FALSE(tables.empty()) << "No routing tables found";
 
         uint32_t seed = 1000;
         for (const auto &table : tables)

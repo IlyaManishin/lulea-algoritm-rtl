@@ -9,10 +9,11 @@ else
   fixture_python = python_module.find_installation('python3', modules: ['dotenv'])
 endif
 
+verify_table_count = get_option('verify_table_count').to_string()
 fixture_args = [
   '--output-dir', verify_workdir / 'tables',
   '--count', get_option('verify_route_count').to_string(),
-  '--num-tables', get_option('verify_table_count').to_string(),
+  '--num-tables', verify_table_count,
   '--stamp', '@OUTPUT@',
   '--depfile', '@DEPFILE@',
 ]
@@ -54,7 +55,7 @@ lulea_verify_library = static_library(
   ],
   include_directories: verify_include,
   dependencies: [lulea_common_dep, gtest_dep],
-  cpp_args: strict_cpp_args,
+  cpp_args: strict_cpp_args + ['-DLULEA_VERIFY_TABLE_COUNT=' + verify_table_count],
 )
 
 lulea_verify_dep = declare_dependency(
