@@ -3,12 +3,12 @@
 #include <filesystem>
 #include <memory>
 
-#include "config.hpp"
-#include "engine/lookup_engine.hpp"
-#include "engine/lulea_tree_lookup.hpp"
-#include "io/reader.hpp"
 #include "lulea_algo/lulea_tree.hpp"
-#include "utils/lookup_verification.hpp"
+#include "lulea_engines/lulea_tree_lookup.hpp"
+#include <lulea_common/config.hpp>
+#include <lulea_common/reader.hpp>
+#include <lulea_verify/lookup_engine.hpp>
+#include <lulea_verify/lookup_verification.hpp>
 
 namespace
 {

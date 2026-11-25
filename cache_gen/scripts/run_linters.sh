@@ -3,6 +3,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_DIR="$(cd "${PROJECT_DIR}/.." && pwd)"
 BUILD_DIR="${PROJECT_DIR}/build"
 
 RUN_CPPCHECK=1
@@ -51,7 +52,7 @@ done
 if [[ ! -f "${BUILD_DIR}/compile_commands.json" ]]; then
     echo "Error: ${BUILD_DIR}/compile_commands.json not found!"
     echo "Please configure the build directory first, e.g.:"
-    echo "  cd ${PROJECT_DIR} && meson setup build"
+    echo "  cd ${REPO_DIR} && meson setup cache_gen/build ."
     exit 1
 fi
 
@@ -98,12 +99,14 @@ if [[ "${RUN_CLANG_TIDY}" -eq 1 ]]; then
             CLEANUP_CDB_DIR="${TMP_CDB_DIR}"
         fi
 
-        mapfile -t SOURCES < <(find "${PROJECT_DIR}/src" -type f -name '*.cpp' | sort)
+        mapfile -t SOURCES < <(find "${PROJECT_DIR}/src" "${PROJECT_DIR}/tests/lulea/lulea_engines" \
+            -type f -name '*.cpp' | sort)
+        SOURCES+=("${REPO_DIR}/libs_cpp/lulea_common/src/reader.cpp")
 
         if [[ ${#SOURCES[@]} -eq 0 ]]; then
             echo "No source files found in ${PROJECT_DIR}/src."
         else
-            if clang-tidy -p "${CDB_DIR}" "${SOURCES[@]}"; then
+            if clang-tidy -p "${CDB_DIR}" --config-file="${PROJECT_DIR}/.clang-tidy" "${SOURCES[@]}"; then
                 echo "[OK] clang-tidy passed with no errors."
             else
                 echo "[FAIL] clang-tidy reported issues."

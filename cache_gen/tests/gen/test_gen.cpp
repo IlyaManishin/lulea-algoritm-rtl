@@ -8,9 +8,9 @@
 #include <string_view>
 #include <vector>
 
-#include "gen/config.hpp"
 #include "gen/gen.hpp"
-#include "gen/io/reader.hpp"
+#include <lulea_common/config.hpp>
+#include <lulea_common/reader.hpp>
 
 namespace fs = std::filesystem;
 using namespace gen;

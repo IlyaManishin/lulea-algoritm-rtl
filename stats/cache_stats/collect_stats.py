@@ -107,7 +107,7 @@ def main() -> None:
     """Run the collector with repository defaults or explicit paths."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sampled", type=Path, default=ROOT / "build/sampled")
-    parser.add_argument("--builder", type=Path, default=ROOT / "cache_gen/build/lulea_builder")
+    parser.add_argument("--builder", type=Path, default=ROOT / "cache_gen/build/cache_gen/lulea_builder")
     parser.add_argument("--output-dir", type=Path, default=CACHE_STATS_DIR / "build")
     args = parser.parse_args()
     try:

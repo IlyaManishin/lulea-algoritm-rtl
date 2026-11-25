@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "config.hpp"
-#include "io/reader.hpp"
-#include "utils/linear_lookup.hpp"
+#include "linear_lookup.hpp"
+#include <lulea_common/config.hpp>
+#include <lulea_common/reader.hpp>
 
 TEST(LinearLookupTest, LongestPrefixMatch)
 {

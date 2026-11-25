@@ -1,8 +1,8 @@
-#include "utils/linear_lookup.hpp"
+#include "linear_lookup.hpp"
 
-#include "config.hpp"
-#include "engine/lookup_engine.hpp"
-#include "io/reader.hpp"
+#include <lulea_common/config.hpp>
+#include <lulea_common/reader.hpp>
+#include <lulea_verify/lookup_engine.hpp>
 
 #include <arpa/inet.h>
 #include <cstddef>

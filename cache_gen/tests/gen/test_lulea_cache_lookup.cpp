@@ -3,11 +3,11 @@
 #include <cstddef>
 #include <filesystem>
 
-#include "engine/lulea_cache_lookup.hpp"
 #include "gen.hpp"
-#include "io/reader.hpp"
 #include "lulea_algo/lulea_algo.hpp"
 #include "lulea_algo/lulea_tree.hpp"
+#include "lulea_engines/lulea_cache_lookup.hpp"
+#include <lulea_common/reader.hpp>
 
 namespace fs = std::filesystem;
 

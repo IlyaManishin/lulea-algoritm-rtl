@@ -1,6 +1,4 @@
-#include "utils/utils.hpp"
-
-#include "utils/test_env.hpp"
+#include "utils.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -30,7 +28,8 @@ namespace tests
 
     std::vector<TableTestFiles> get_test_tables()
     {
-        const fs::path tables_root = get_tables_root_dir();
+        // Meson runs the verification tests next to the generated tables directory.
+        const fs::path tables_root = "tables";
         if (!fs::is_directory(tables_root))
         {
             return {};

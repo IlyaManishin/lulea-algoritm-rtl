@@ -1,6 +1,9 @@
 #pragma once
 
-#include "engine/lookup_engine.hpp"
+namespace engine
+{
+    class ILookupEngineFactory;
+}
 
 namespace tests
 {

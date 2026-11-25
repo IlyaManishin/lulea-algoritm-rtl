@@ -1,8 +1,8 @@
 #pragma once
 
-#include "config.hpp"
-#include "lookup_engine.hpp"
 #include "lulea_algo/lulea_tree.hpp"
+#include <lulea_common/config.hpp>
+#include <lulea_verify/lookup_engine.hpp>
 
 namespace engine
 {

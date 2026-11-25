@@ -1,10 +1,10 @@
-#include "lookup_verification.hpp"
+#include <lulea_verify/lookup_verification.hpp>
 
-#include "engine/lookup_engine.hpp"
-#include "io/reader.hpp"
 #include "ip_gen.hpp"
 #include "linear_lookup.hpp"
 #include "utils.hpp"
+#include <lulea_common/reader.hpp>
+#include <lulea_verify/lookup_engine.hpp>
 
 #include <gtest/gtest.h>
 

@@ -1,9 +1,9 @@
 #include "gen.hpp"
 
-#include "io/reader.hpp"
 #include "lulea_algo/errors.hpp"
 #include "lulea_algo/lulea_algo.hpp"
 #include "lulea_algo/lulea_tree.hpp"
+#include <lulea_common/reader.hpp>
 
 #include <stdexcept>
 #include <string>

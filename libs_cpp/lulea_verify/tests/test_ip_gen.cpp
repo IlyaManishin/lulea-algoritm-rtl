@@ -4,9 +4,9 @@
 #include <cstdint>
 #include <vector>
 
-#include "config.hpp"
-#include "io/reader.hpp"
-#include "utils/ip_gen.hpp"
+#include "ip_gen.hpp"
+#include <lulea_common/config.hpp>
+#include <lulea_common/reader.hpp>
 
 TEST(IpGenTest, RandomIps)
 {

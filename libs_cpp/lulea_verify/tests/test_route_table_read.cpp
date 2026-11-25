@@ -2,9 +2,9 @@
 
 #include <cstddef>
 
-#include "io/reader.hpp"
-#include "utils/linear_lookup.hpp"
-#include "utils/utils.hpp"
+#include "linear_lookup.hpp"
+#include "utils.hpp"
+#include <lulea_common/reader.hpp>
 
 TEST(RouteTableReadTest, BinaryAndTextRoutesMatch)
 {

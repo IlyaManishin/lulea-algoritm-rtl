@@ -1,6 +1,6 @@
-#include "reader.hpp"
+#include <lulea_common/reader.hpp>
 
-#include "config.hpp"
+#include <lulea_common/config.hpp>
 
 #include <algorithm>
 #include <cstddef>
