@@ -29,7 +29,7 @@ test(
 model_lookup_test = executable(
   'test_golden_model_real',
   ['tests/test_golden_model_real.cpp', 'tests/golden_model_lookup.cpp'],
-  dependencies: [golden_model_dep, cache_gen_test_support_dep, lulea_verify_dep, gtest_main_dep],
+  dependencies: [golden_model_dep, cache_gen_dep, lulea_verify_dep, gtest_main_dep],
 )
 
 test(

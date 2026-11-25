@@ -18,16 +18,13 @@ from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parents[2]
-TABLE_GEN_DIR = REPO_ROOT / "table_gen"
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
-for p in (REPO_ROOT, TABLE_GEN_DIR):
-    if str(p) not in sys.path:
-        sys.path.insert(0, str(p))
-
-from engine.core.gen_types import PortMapping, RouteRecord  # noqa: E402
-from engine.core.mrt_filter import filter_mrt_routes  # noqa: E402
-from engine.utils.route_reader import read_port_map, read_routes  # noqa: E402
-from engine.utils.route_writer import FileFormat, save_port_map, save_routes  # noqa: E402
+from table_gen.engine.core.gen_types import PortMapping, RouteRecord  # noqa: E402
+from table_gen.engine.core.mrt_filter import filter_mrt_routes  # noqa: E402
+from table_gen.engine.utils.route_reader import read_port_map, read_routes  # noqa: E402
+from table_gen.engine.utils.route_writer import FileFormat, save_port_map, save_routes  # noqa: E402
 
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "build/libs_cpp/lulea_verify/tables"
 

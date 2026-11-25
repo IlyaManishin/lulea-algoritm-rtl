@@ -1,12 +1,66 @@
 #include <gtest/gtest.h>
 
+#include <cerrno>
+#include <filesystem>
+#include <memory>
+#include <stdlib.h>
+#include <string>
+#include <system_error>
+#include <utility>
+
+#include "gen.hpp"
+#include "golden_model_lookup.hpp"
+#include <lulea_common/reader.hpp>
+#include <lulea_verify/lookup_engine.hpp>
 #include <lulea_verify/lookup_verification.hpp>
 
-#include "cache_engine_factory.hpp"
-#include "golden_model_lookup.hpp"
-
-TEST(GoldenModelRealTableTest, VerifyCachesWithReference)
+namespace
 {
-    tests::CacheEngineFactory<tests::GoldenModelLookup> factory;
+    class GoldenModelEngineFactory final : public engine::ILookupEngineFactory
+    {
+    public:
+        GoldenModelEngineFactory()
+        {
+            std::string path = (std::filesystem::temp_directory_path() / "lulea_golden_model_real_tests.XXXXXX").string();
+            if (::mkdtemp(path.data()) == nullptr)
+            {
+                throw std::system_error(errno, std::generic_category(), "Failed to create cache dump directory");
+            }
+            dump_dir_ = std::move(path);
+        }
+
+        ~GoldenModelEngineFactory() override
+        {
+            std::error_code error;
+            std::filesystem::remove_all(dump_dir_, error);
+        }
+
+        GoldenModelEngineFactory(const GoldenModelEngineFactory &) = delete;
+        GoldenModelEngineFactory &operator=(const GoldenModelEngineFactory &) = delete;
+        GoldenModelEngineFactory(GoldenModelEngineFactory &&) = delete;
+        GoldenModelEngineFactory &operator=(GoldenModelEngineFactory &&) = delete;
+
+        std::unique_ptr<engine::ILookupEngine> get_lookup_engine(
+            const std::filesystem::path &routes_path, [[maybe_unused]] const gen::MaskEntries &entries) override
+        {
+            const std::filesystem::path table_dump = dump_dir_ / routes_path.parent_path().filename();
+            const gen::Config config{
+                .mode = gen::Mode::Dump,
+                .input_path = routes_path.string(),
+                .dest_dir = table_dump.string(),
+            };
+
+            gen::build_lulea_cache(config);
+            return std::make_unique<tests::GoldenModelLookup>(table_dump);
+        }
+
+    private:
+        std::filesystem::path dump_dir_;
+    };
+} // namespace
+
+TEST(GoldenModelRealTableTest, VerifyModelWithReference)
+{
+    GoldenModelEngineFactory factory;
     tests::verify_lookup_engine(factory);
 }

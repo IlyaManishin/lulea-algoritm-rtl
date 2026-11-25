@@ -23,11 +23,6 @@ cache_gen_dep = declare_dependency(
   dependencies: lulea_common_dep,
 )
 
-cache_gen_test_support_dep = declare_dependency(
-  include_directories: include_directories('tests/lulea/lulea_engine'),
-  dependencies: cache_gen_dep,
-)
-
 io_sources = files('src/io/config_parser.cpp', 'src/io/cli.cpp', 'src/io/stats_writer.cpp')
 
 cache_gen_exe = executable(
