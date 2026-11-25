@@ -42,7 +42,7 @@ cppcheck_prog = find_program('cppcheck', required: false)
 run_clang_tidy_prog = find_program('run-clang-tidy', required: false)
 
 lint_scopes = {
-  'libs-cpp': 'libs_cpp',
+  'libs-cpp': 'libs_cpp/lulea_common',
   'cache-gen': 'cache_gen',
 }
 
