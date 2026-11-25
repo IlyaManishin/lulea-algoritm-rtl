@@ -65,7 +65,8 @@ meson test -C build --suite cache_gen --print-errorlogs
 meson compile -C build lint-cache-gen
 ```
 
-The `lint-cache-gen` target runs `cppcheck` and `clang-tidy` for this component.
+The `lint-cache-gen` target runs `cppcheck` across `cache_gen/` and `clang-tidy`
+on `cache_gen/src/`.
 
 ## Project layout
 

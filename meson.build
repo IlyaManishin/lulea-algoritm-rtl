@@ -42,8 +42,14 @@ cppcheck_prog = find_program('cppcheck', required: false)
 run_clang_tidy_prog = find_program('run-clang-tidy', required: false)
 
 lint_scopes = {
-  'libs-cpp': 'libs_cpp/lulea_common',
-  'cache-gen': 'cache_gen',
+  'libs-cpp': {
+    'cppcheck': 'libs_cpp',
+    'clang-tidy': 'libs_cpp/lulea_common',
+  },
+  'cache-gen': {
+    'cppcheck': 'cache_gen',
+    'clang-tidy': 'cache_gen/src',
+  },
 }
 
 cppcheck_base_args = [
@@ -70,21 +76,23 @@ all_lint_targets = []
 cppcheck_lint_targets = []
 clang_tidy_lint_targets = []
 
-foreach scope_name, scope_dir : lint_scopes
+foreach scope_name, scope : lint_scopes
   scope_targets = []
   if cppcheck_prog.found()
+    cppcheck_filter = '--file-filter=*/' + scope['cppcheck'] + '/*'
     t_cppcheck = run_target(
       'lint-' + scope_name + '-cppcheck',
-      command: [cppcheck_prog, cppcheck_base_args, '--file-filter=*/' + scope_dir + '/*'],
+      command: [cppcheck_prog, cppcheck_base_args, cppcheck_filter],
     )
     scope_targets += t_cppcheck
     cppcheck_lint_targets += t_cppcheck
   endif
 
   if run_clang_tidy_prog.found()
+    clang_tidy_filter = '^' + (meson.project_source_root() / scope['clang-tidy']) + '/.*'
     t_tidy = run_target(
       'lint-' + scope_name + '-clang-tidy',
-      command: [run_clang_tidy_prog, clang_tidy_base_args, '^' + (meson.project_source_root() / scope_dir) + '/.*'],
+      command: [run_clang_tidy_prog, clang_tidy_base_args, clang_tidy_filter],
     )
     scope_targets += t_tidy
     clang_tidy_lint_targets += t_tidy

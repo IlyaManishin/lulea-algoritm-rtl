@@ -25,5 +25,5 @@ meson compile -C build lint --ninja-args=-k,0
 
 The last command runs both lint targets and keeps checking if one fails.
 `lint-cppcheck` and `lint-clang-tidy` each run one tool across both components.
-`lint-libs-cpp` checks `lulea_common`.
+`lint-libs-cpp` runs `cppcheck` across `libs_cpp/` and `clang-tidy` on `lulea_common`.
 Use `lulea_builder` or `lulea_model` to build just the CLI or the C library.
