@@ -46,19 +46,19 @@ TEST_F(ConfigParserTest, ReadsValidTsvStream)
     fs::path manifest = create_manifest_file("jobs.tsv", tsv_content);
     io::ConfigParser parser(manifest.string());
 
-    gen::Config cfg1;
+    io::ConfigEntry cfg1;
     ASSERT_TRUE(parser.next(cfg1));
     EXPECT_EQ(cfg1.mode, gen::Mode::Stats);
     EXPECT_EQ(cfg1.input_path, "data/table_1.lrb1");
     EXPECT_EQ(cfg1.dest_dir, "");
 
-    gen::Config cfg2;
+    io::ConfigEntry cfg2;
     ASSERT_TRUE(parser.next(cfg2));
     EXPECT_EQ(cfg2.mode, gen::Mode::Dump);
     EXPECT_EQ(cfg2.input_path, "data/table_2.lrb1");
     EXPECT_EQ(cfg2.dest_dir, "firmware/dir/");
 
-    gen::Config cfg3;
+    io::ConfigEntry cfg3;
     EXPECT_FALSE(parser.next(cfg3));
 }
 
@@ -68,6 +68,6 @@ TEST_F(ConfigParserTest, ThrowsOnMalformedEntry)
     fs::path manifest = create_manifest_file("bad_jobs.tsv", bad_content);
     io::ConfigParser parser(manifest.string());
 
-    gen::Config cfg;
+    io::ConfigEntry cfg;
     EXPECT_THROW(parser.next(cfg), std::runtime_error);
 }

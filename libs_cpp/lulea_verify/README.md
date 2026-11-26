@@ -17,7 +17,7 @@ meson compile -C build
 meson test -C build --print-errorlogs
 ```
 
-Building the static library generates two shared tables of 9,216 routes
+Running the tests generates two shared tables of 9,216 routes
 under `build/libs_cpp/lulea_verify/tables/`. Meson runs the C++ verification tests
 from `build/libs_cpp/lulea_verify/`. Each table directory contains `routes.txt` and
 `routes.bin`.

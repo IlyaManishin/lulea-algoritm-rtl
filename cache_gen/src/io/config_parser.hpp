@@ -8,6 +8,13 @@
 
 namespace io
 {
+    struct ConfigEntry
+    {
+        gen::Mode mode = gen::Mode::Stats;
+        std::string input_path;
+        std::string dest_dir;
+    };
+
     class ConfigParser
     {
     public:
@@ -22,9 +29,9 @@ namespace io
 
         std::size_t count_remaining();
 
-        // Reads the next record and converts it to a gen::Config instance.
+        // Reads the next record and converts it to a ConfigEntry instance.
         // Returns true if a record was successfully read, false on EOF.
-        bool next(gen::Config &config_out);
+        bool next(ConfigEntry &config_out);
 
         size_t get_line_number() const { return this->current_line_; }
         const std::string &get_filepath() const { return this->filepath_; }

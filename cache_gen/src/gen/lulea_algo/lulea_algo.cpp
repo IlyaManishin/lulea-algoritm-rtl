@@ -10,6 +10,7 @@
 #include <lulea_common/reader.hpp>
 
 #include <cstddef>
+#include <filesystem>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -215,31 +216,29 @@ namespace gen
         }
     } // namespace
 
-    LuleaAlgo::LuleaAlgo(LuleaTree routing_tree, Config config)
-        : app_config_(std::move(config)), tree_(std::move(routing_tree)), initialized_(true) {}
+    LuleaAlgo::LuleaAlgo(LuleaTree routing_tree)
+        : tree_(std::move(routing_tree)) {}
 
     void LuleaAlgo::init(LuleaTree routing_tree)
     {
         this->tree_ = std::move(routing_tree);
-        this->initialized_ = true;
         this->caches_generated_ = false;
     }
 
     void LuleaAlgo::init(const MaskEntries &entries)
     {
         this->tree_.build(entries);
-        this->initialized_ = true;
         this->caches_generated_ = false;
     }
 
-    CacheStats LuleaAlgo::generate_caches(bool write_files)
+    CacheStats LuleaAlgo::generate_caches(const std::filesystem::path &dest_dir)
     {
-        if (!this->initialized_)
+        if (!this->tree_.is_built())
         {
-            throw std::logic_error("LuleaAlgo is not initialized with a routing tree");
+            throw std::logic_error("LuleaAlgo requires a built routing tree");
         }
 
-        CacheSet caches(this->app_config_.dest_dir, write_files);
+        CacheSet caches(dest_dir, !dest_dir.empty());
 
         generate_l1(this->tree_, caches);
         generate_l2(this->tree_, caches);

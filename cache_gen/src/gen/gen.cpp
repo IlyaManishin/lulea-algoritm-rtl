@@ -5,6 +5,7 @@
 #include "lulea_algo/lulea_tree.hpp"
 #include <lulea_common/reader.hpp>
 
+#include <filesystem>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -13,38 +14,20 @@ namespace gen
 {
     namespace
     {
-        void validate_config(const Config &config)
+        void validate_dest_dir(Mode mode, const std::filesystem::path &dest_dir)
         {
-            if (config.input_path.empty())
-            {
-                throw FatalGenException("Input path cannot be empty");
-            }
-
-            if (config.mode == Mode::Dump && config.dest_dir.empty())
+            if (mode == Mode::Dump && dest_dir.empty())
             {
                 throw FatalGenException("Destination directory is required for Dump mode");
             }
         }
     } // namespace
 
-    BuildResult build_lulea_cache(const Config &config)
+    CacheStats build_lulea_cache(const MaskEntries &entries,
+                                 Mode mode,
+                                 const std::filesystem::path &dest_dir)
     {
-        validate_config(config);
-
-        MaskEntries entries;
-        try
-        {
-            Reader reader(config.input_path);
-            entries = reader.read();
-        }
-        catch (const PortOverflowError &ex)
-        {
-            throw GenException("Port overflow in route table: " + std::string(ex.what()));
-        }
-        catch (const std::runtime_error &ex)
-        {
-            throw GenException("Failed to read route table: " + std::string(ex.what()));
-        }
+        validate_dest_dir(mode, dest_dir);
 
         LuleaTree tree;
         try
@@ -66,10 +49,12 @@ namespace gen
 
         try
         {
-            LuleaAlgo algo(std::move(tree), config);
-            const CacheStats stats = algo.generate_caches(config.mode == Mode::Dump);
-
-            return BuildResult{.stats = stats};
+            LuleaAlgo algo(std::move(tree));
+            if (mode == Mode::Dump)
+            {
+                return algo.generate_caches(dest_dir);
+            }
+            return algo.generate_caches();
         }
         catch (const LuleaOverflow &ex)
         {
@@ -79,6 +64,33 @@ namespace gen
         {
             throw GenException("Failed to generate caches: " + std::string(ex.what()));
         }
+    }
+
+    CacheStats build_lulea_cache(const std::filesystem::path &input_path,
+                                 Mode mode,
+                                 const std::filesystem::path &dest_dir)
+    {
+        if (input_path.empty())
+        {
+            throw FatalGenException("Input path cannot be empty");
+        }
+        validate_dest_dir(mode, dest_dir);
+
+        MaskEntries entries;
+        try
+        {
+            entries = Reader::read(input_path.string());
+        }
+        catch (const PortOverflowError &ex)
+        {
+            throw GenException("Port overflow in route table: " + std::string(ex.what()));
+        }
+        catch (const std::runtime_error &ex)
+        {
+            throw GenException("Failed to read route table: " + std::string(ex.what()));
+        }
+
+        return build_lulea_cache(entries, mode, dest_dir);
     }
 
 } // namespace gen

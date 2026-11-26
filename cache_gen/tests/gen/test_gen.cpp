@@ -84,37 +84,19 @@ protected:
 
 TEST_F(GenTest, EmptyInputPath)
 {
-    const Config config{
-        .mode = Mode::Stats,
-        .input_path = "",
-        .dest_dir = ""
-    };
-
-    EXPECT_THROW(build_lulea_cache(config), FatalGenException);
+    EXPECT_THROW(build_lulea_cache(fs::path{}), FatalGenException);
 }
 
 TEST_F(GenTest, DumpWithoutDestDir)
 {
-    const Config config{
-        .mode = Mode::Dump,
-        .input_path = "valid_path.bin",
-        .dest_dir = ""
-    };
-
-    EXPECT_THROW(build_lulea_cache(config), FatalGenException);
+    EXPECT_THROW(build_lulea_cache("valid_path.bin", Mode::Dump), FatalGenException);
 }
 
 TEST_F(GenTest, NonExistentFile)
 {
-    const Config config{
-        .mode = Mode::Stats,
-        .input_path = (test_dir / "does_not_exist.bin").string(),
-        .dest_dir = ""
-    };
-
     try
     {
-        build_lulea_cache(config);
+        build_lulea_cache(test_dir / "does_not_exist.bin");
         FAIL() << "Expected GenException";
     }
     catch (const FatalGenException &)
@@ -136,15 +118,9 @@ TEST_F(GenTest, PortOverflow)
         300
     );
 
-    const Config config{
-        .mode = Mode::Stats,
-        .input_path = overflow_file.string(),
-        .dest_dir = ""
-    };
-
     try
     {
-        build_lulea_cache(config);
+        build_lulea_cache(overflow_file);
         FAIL() << "Expected GenException";
     }
     catch (const FatalGenException &)
@@ -166,13 +142,7 @@ TEST_F(GenTest, BuildSuccess)
     };
 
     const fs::path file_path = create_binary_map_file("valid_routes.bin", entries);
-    const Config config{
-        .mode = Mode::Stats,
-        .input_path = file_path.string(),
-        .dest_dir = ""
-    };
-
-    BuildResult result;
-    EXPECT_NO_THROW({ result = build_lulea_cache(config); });
+    CacheStats result;
+    EXPECT_NO_THROW({ result = build_lulea_cache(file_path); });
     (void)result;
 }
