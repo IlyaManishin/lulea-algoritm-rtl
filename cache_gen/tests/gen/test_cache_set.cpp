@@ -7,11 +7,11 @@
 #include <stdexcept>
 #include <vector>
 
-#include "gen/config.hpp"
 #include "gen/gen.hpp"
 #include "gen/lulea_algo/lulea_algo.hpp"
 #include "gen/lulea_algo/lulea_tree.hpp"
 #include "gen/lulea_data/cache_set.hpp"
+#include <lulea_common/config.hpp>
 
 namespace fs = std::filesystem;
 
@@ -172,6 +172,17 @@ TEST_F(CacheSetTest, LevelAccessorThrowsOnInvalidIndex)
     EXPECT_EQ(&caches.level(3), &caches.l3());
 }
 
+TEST_F(CacheSetTest, LuleaAlgoRequiresBuiltTree)
+{
+    gen::LuleaAlgo algo{gen::LuleaTree{}};
+    const fs::path dump_dir = test_dir / "unbuilt_algo_dump";
+    EXPECT_THROW(algo.generate_caches(dump_dir), std::logic_error);
+    EXPECT_FALSE(fs::exists(dump_dir));
+
+    algo.init(gen::MaskEntries{});
+    EXPECT_NO_THROW(algo.generate_caches());
+}
+
 TEST_F(CacheSetTest, LuleaAlgoMatchesStatsBetweenModes)
 {
     const gen::MaskEntries entries = {
@@ -181,11 +192,10 @@ TEST_F(CacheSetTest, LuleaAlgoMatchesStatsBetweenModes)
 
     gen::LuleaTree tree(entries);
     const fs::path dump_dir = test_dir / "algo_dump";
-    const gen::Config config{gen::Mode::Dump, "sample.bin", dump_dir.string()};
 
-    gen::LuleaAlgo algo(tree, config);
-    const gen::CacheStats stats_only = algo.generate_caches(false);
-    const gen::CacheStats write_files = algo.generate_caches();
+    gen::LuleaAlgo algo(tree);
+    const gen::CacheStats stats_only = algo.generate_caches();
+    const gen::CacheStats write_files = algo.generate_caches(dump_dir);
 
     EXPECT_EQ(stats_only.cache_sizes.l1_pop, write_files.cache_sizes.l1_pop);
     EXPECT_EQ(stats_only.cache_sizes.l1_chunk, write_files.cache_sizes.l1_chunk);

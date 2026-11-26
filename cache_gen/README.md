@@ -11,12 +11,11 @@
 
 ## Quick start
 
-Build with a C++20 compiler, Meson 1.1 or newer, Ninja, and GoogleTest (`gtest_main`).
+Build from the repository root with the [shared Meson project](../libs_cpp/lulea_verify/README.md).
 
 ```bash
-cd cache_gen
 meson setup build
-meson compile -C build
+meson compile -C build cache_gen
 ```
 
 With an LRB1 file named `routes.bin`, write a tab-separated job file and run the builder.
@@ -24,7 +23,7 @@ With an LRB1 file named `routes.bin`, write a tab-separated job file and run the
 ```bash
 mkdir -p out
 printf 'dump\t%s\t%s\n' routes.bin out/cache > jobs.tsv
-./build/lulea_builder jobs.tsv --out-csv out/sizes.csv
+./build/cache_gen/lulea_builder jobs.tsv --out-csv out/sizes.csv
 ```
 
 Each row contains a mode, an input path, and an output directory for `dump`. Use `stats` with just the input path to measure a table without writing cache files. Paths are relative to the working directory. Omit `--out-csv` to print the sizes to stdout.
@@ -56,16 +55,18 @@ The 4,096-route sample uses 56% of the Basys 3's 225 KiB BRAM budget. The two 16
 
 ## Verification
 
-The real-table tests compare every BIN record with its TXT counterpart, then check both lookups against a linear scan using prefix boundaries, random addresses, and a sweep across IPv4 space. Generate the test fixtures from a [converted MRT table](../table_gen/readme.md#stage-1-batch-convert-batch_convertpy) with Python 3.12 or newer and `python-dotenv`.
+The two lookup tests compare against a linear scan using prefix boundaries,
+random addresses, and a sweep across IPv4 space. The shared verification suite
+also compares every BIN record with its TXT counterpart.
+[Fixture configuration](../libs_cpp/lulea_verify/README.md)
 
 ```bash
-python3 tests/lulea/generate_tables.py --input /path/to/converted/routes.txt \
-  --count 16384 --num-tables 2
-meson test -C build --print-errorlogs
-meson compile -C build lint
+meson test -C build --suite cache_gen --print-errorlogs
+meson compile -C build lint-cache-gen
 ```
 
-The script writes paired fixtures under `tests/lulea/tables/`. This directory is generated locally and ignored by Git. The `lint` target runs `cppcheck` and `clang-tidy`.
+The `lint-cache-gen` target runs `cppcheck` across `cache_gen/` and `clang-tidy`
+on `cache_gen/src/`.
 
 ## Project layout
 
@@ -76,8 +77,7 @@ cache_gen/
 ├── src/gen/
 │   ├── lulea_algo/    Tree construction and cache generation
 │   ├── lulea_data/    Route cells, caches, and BRAM accounting
-│   ├── engine/        Software lookup over the tree and cache images
-│   └── io/            LRB1 reader and packed binary writer
+│   └── io/            Packed binary writer
 ├── tests/gen/         Unit tests and synthetic lookups
-└── tests/lulea/       Fixture generator and real-table verification
+└── tests/lulea/       Verification and software lookup engines
 ```

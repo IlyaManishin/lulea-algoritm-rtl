@@ -3,11 +3,11 @@
 #include <cstddef>
 #include <filesystem>
 
-#include "engine/lulea_cache_lookup.hpp"
-#include "gen.hpp"
-#include "io/reader.hpp"
-#include "lulea_algo/lulea_algo.hpp"
-#include "lulea_algo/lulea_tree.hpp"
+#include "gen/gen.hpp"
+#include "gen/lulea_algo/lulea_algo.hpp"
+#include "gen/lulea_algo/lulea_tree.hpp"
+#include "lulea_engine/lulea_cache_lookup.hpp"
+#include <lulea_common/reader.hpp>
 
 namespace fs = std::filesystem;
 
@@ -45,9 +45,8 @@ TEST_F(LuleaCacheLookupTest, WalkAcrossSecondLeafBlock)
         {0x00004000, std::byte{24}, std::byte{22}},
         {0x00004040, std::byte{26}, std::byte{255}},
     };
-    const gen::Config config{gen::Mode::Dump, "", test_dir().string()};
-    gen::LuleaAlgo algo(gen::LuleaTree(entries), config);
-    algo.generate_caches(true);
+    gen::LuleaAlgo algo{gen::LuleaTree(entries)};
+    algo.generate_caches(test_dir());
     const engine::LuleaCacheLookup cache(test_dir());
     EXPECT_EQ(cache.lookup(0), std::byte{11});
     EXPECT_EQ(cache.lookup(1), std::byte{7});

@@ -1,8 +1,8 @@
 #include "lulea_tree.hpp"
 
-#include "config.hpp"
-#include "io/reader.hpp"
 #include "lulea_data/route.hpp"
+#include <lulea_common/config.hpp>
+#include <lulea_common/reader.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -261,6 +261,7 @@ namespace gen
         this->l1_ = std::move(state.l1);
         this->l2_ = std::move(state.l2);
         this->l3_ = std::move(state.l3);
+        this->built_ = true;
     }
 
 } // namespace gen

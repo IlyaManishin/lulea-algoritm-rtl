@@ -1,0 +1,29 @@
+option(
+  'strict_flags',
+  type: 'boolean',
+  value: false,
+  description: 'Enable extra strict GCC warning flags (-Wshadow, -Wconversion, etc.)'
+)
+
+option(
+  'verify_routes',
+  type: 'string',
+  value: '',
+  description: 'Converted route table for verification fixtures',
+)
+
+option(
+  'verify_route_count',
+  type: 'integer',
+  min: 1,
+  value: 9216,
+  description: 'Routes per verification table',
+)
+
+option(
+  'verify_table_count',
+  type: 'integer',
+  min: 1,
+  value: 2,
+  description: 'Number of shared verification tables',
+)

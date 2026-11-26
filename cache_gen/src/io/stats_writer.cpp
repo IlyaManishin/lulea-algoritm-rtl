@@ -35,7 +35,7 @@ namespace io
                 throw std::runtime_error("cannot open output CSV: " + csv_filepath);
             }
             this->file_.exceptions(std::ios::badbit | std::ios::failbit);
-            this->file_ << CSV_HEADER << std::flush;
+            this->file_ << CSV_HEADER;
         }
     }
 
@@ -65,7 +65,7 @@ namespace io
         write_sizes(out, stats.cache_sizes, sep);
         out << (csv ? ',' : '\t');
         write_sizes(out, stats.cache_sizes_aligned, sep);
-        if (!(out << '\n' << std::flush))
+        if (!(out << '\n'))
         {
             throw std::runtime_error("Failed to write cache statistics");
         }

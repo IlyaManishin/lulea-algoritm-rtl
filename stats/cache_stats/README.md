@@ -11,7 +11,7 @@ A table fits when all nine banks have enough space for their own data.
 
 ## Input and reports
 
-`collect_stats.py` scans the sampled routing tables in `build/sampled/` and
+`collect_stats.py` scans the sampled routing tables in `tables_build/sampled/` and
 passes them to `lulea_builder` in stats mode. Each CSV row records a table's
 path, route count, and nine BRAM-aligned bank sizes in bytes. The reports are in
 `stats/cache_stats/build/`.

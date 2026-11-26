@@ -6,29 +6,39 @@
 #include <fstream>
 #include <string>
 
-class ConfigParser
+namespace io
 {
-public:
-    explicit ConfigParser(const std::string &filepath);
-    ~ConfigParser() = default;
+    struct ConfigEntry
+    {
+        gen::Mode mode = gen::Mode::Stats;
+        std::string input_path;
+        std::string dest_dir;
+    };
 
-    ConfigParser(const ConfigParser &) = delete;
-    ConfigParser &operator=(const ConfigParser &) = delete;
+    class ConfigParser
+    {
+    public:
+        explicit ConfigParser(const std::string &filepath);
+        ~ConfigParser() = default;
 
-    ConfigParser(ConfigParser &&) = delete;
-    ConfigParser &operator=(ConfigParser &&) = delete;
+        ConfigParser(const ConfigParser &) = delete;
+        ConfigParser &operator=(const ConfigParser &) = delete;
 
-    std::size_t count_remaining();
+        ConfigParser(ConfigParser &&) = delete;
+        ConfigParser &operator=(ConfigParser &&) = delete;
 
-    // Reads the next record and converts it to a gen::Config instance.
-    // Returns true if a record was successfully read, false on EOF.
-    bool next(gen::Config &config_out);
+        std::size_t count_remaining();
 
-    size_t get_line_number() const { return this->current_line_; }
-    const std::string &get_filepath() const { return this->filepath_; }
+        // Reads the next record and converts it to a ConfigEntry instance.
+        // Returns true if a record was successfully read, false on EOF.
+        bool next(ConfigEntry &config_out);
 
-private:
-    std::string filepath_;
-    std::ifstream file_;
-    size_t current_line_ = 0;
-};
+        size_t get_line_number() const { return this->current_line_; }
+        const std::string &get_filepath() const { return this->filepath_; }
+
+    private:
+        std::string filepath_;
+        std::ifstream file_;
+        size_t current_line_ = 0;
+    };
+} // namespace io

@@ -2,6 +2,10 @@
 
 Utilities for generating and batch-processing routing tables used in Luleå trie hardware verification and memory footprint analysis.
 
+Generated routing tables live in `tables_build/` at the repository root. To reuse
+outputs from an earlier checkout, move `converted/` and `sampled/` from the Meson
+build directory into `tables_build/`.
+
 ---
 
 ## Architecture Overview
@@ -12,13 +16,13 @@ The toolchain employs a two-stage pipeline to convert large binary BGP routing t
 [ Binary MRT Archives ] (.bz2 / .gz / uncompressed)
         │
         ▼  Stage 1: batch_convert.py (engine/pipeline/convert.py)
-[ build/converted/<source>/<stem>/ ]
+[ tables_build/converted/<source>/<stem>/ ]
   ├── routes.txt      (Full table: count header + "prefix port_id")
   ├── routes.ports    (Full port mapping: count header + "port_id next_hop")
   └── info.txt        (Conversion statistics and IPv6 filter counts)
         │
         ▼  Stage 2: batch_sample.py (engine/pipeline/sample.py)
-[ build/sampled/<size>/<source>/<stem>/seed_<N>/ ]
+[ tables_build/sampled/<size>/<source>/<stem>/seed_<N>/ ]
   ├── routes.txt      (Sampled table: compact binary LRB1)
   └── routes.ports    (Sampled port mapping: compact binary LPB1)
 ```
@@ -39,7 +43,7 @@ Parses raw binary MRT dumps (RouteViews `.bz2`, RIPE RIS `.gz`, or plain MRT) in
 - **Idempotent**: Skips archives whose output directory already contains non-empty results unless `--force` is specified.
 - **Output Hierarchy**:
   ```
-  build/converted/
+  tables_build/converted/
   └── <source>/
       └── <mrt_stem>/
           ├── routes.txt
@@ -64,7 +68,7 @@ Samples converted full-tables into multiple fixed-size sub-tables (`1024`, `2048
 - **Progress Monitoring**: Powered by `rich` with live ETA, elapsed time, and task counters. Exits with status code `1` if any errors occur.
 - **Output Hierarchy**:
   ```
-  build/sampled/
+  tables_build/sampled/
   └── <size>/
       └── <source>/
           └── <mrt_stem>/
@@ -178,7 +182,7 @@ from table_gen.engine.core.gen_types import RouteRecord, PortMapping
 from table_gen.engine.config import PORTS_COUNT_MAX
 
 # Read existing binary or text table:
-routes: list[RouteRecord] = read_routes("build/sampled/1024/.../seed_42/routes.txt")
+routes: list[RouteRecord] = read_routes("tables_build/sampled/1024/.../seed_42/routes.txt")
 print(f"Loaded {len(routes)} routes; first route: {routes[0].prefix} -> port {routes[0].port_id}")
 
 # Save in binary format:
@@ -199,7 +203,7 @@ python batch_convert.py
 python table_gen/batch_convert.py
 
 # Specify explicit source and output directories
-python table_gen/batch_convert.py --source /path/to/mrt_dumps --output build/converted
+python table_gen/batch_convert.py --source /path/to/mrt_dumps --output tables_build/converted
 
 # Force re-conversion of existing outputs
 python table_gen/batch_convert.py --force
@@ -224,8 +228,8 @@ python table_gen/batch_sample.py --force
 ### 3. Standalone Table Generation
 ```bash
 # Generate 4096 random routes with port mapping:
-python table_gen/main.py -t random -c 4096 -o build/routes.txt
+python table_gen/main.py -t random -c 4096 -o tables_build/routes.txt
 
 # Extract 1024 routes from a single binary MRT dump:
-python table_gen/main.py -t mrt -i /path/to/dump.mrt -c 1024 -o build/routes.txt
+python table_gen/main.py -t mrt -i /path/to/dump.mrt -c 1024 -o tables_build/routes.txt
 ```
