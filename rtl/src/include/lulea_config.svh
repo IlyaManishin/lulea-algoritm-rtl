@@ -20,7 +20,7 @@ package lulea_config;
     localparam int unsigned CHUNK_WORD_WIDTH = 18;
 
     // ------------------- BIT POSITION AND POPCOUNT -------------------
-    localparam int unsigned BIT_POS_WIDTH = $clog2(POP_WORD_WIDTH);
+    localparam int unsigned PC_BIT_POS_WIDTH = $clog2(POP_WORD_WIDTH);
     localparam int unsigned POPCOUNT_WIDTH = $clog2(POP_WORD_WIDTH + 1);
 
     // =========================================================================
@@ -87,7 +87,7 @@ package lulea_config;
 
     // ------------------- RAM ADDR -------------------
     localparam int unsigned L3_WORD_ADDR_WIDTH = $clog2(L3_POP_DEPTH);
-    localparam int unsigned L3_PC_IDX_WIDTH = L3_WORD_ADDR_WIDTH - (L3_IP_WIDTH - BIT_POS_WIDTH);
+    localparam int unsigned L3_PC_IDX_WIDTH = L3_WORD_ADDR_WIDTH - (L3_IP_WIDTH - PC_BIT_POS_WIDTH);
     localparam int unsigned L3_CHUNK_ADDR_WIDTH = $clog2(L3_CHUNK_DEPTH);
     localparam int unsigned L3_SEQ_ADDR_WIDTH = $clog2(L3_SEQ_DEPTH);
 endpackage

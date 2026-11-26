@@ -7,12 +7,22 @@ package lulea_types;
     import lulea_config::*;
 
     // =========================================================================
+    //  COMMON DATAPATH TYPES
+    // =========================================================================
+
+    typedef logic [IP_WIDTH-1:0]          ipv4_t;
+    typedef logic [PORT_WIDTH-1:0]        port_t;
+    typedef logic [PC_BIT_POS_WIDTH-1:0]  pc_bit_pos_t;
+    typedef logic [POPCOUNT_WIDTH-1:0]    popcount_t;
+
+    // =========================================================================
     //  L1 CACHE TYPES
     // =========================================================================
 
     typedef logic [POP_WORD_WIDTH-1:0]    l1_pop_t;
     typedef logic [CHUNK_WORD_WIDTH-1:0]  l1_chunk_t;
     typedef logic [L1_SEQ_WORD_WIDTH-1:0] l1_seq_t;
+    typedef logic [L1_PAYLOAD_WIDTH-1:0]  l1_payload_t;
 
     typedef logic [L1_WORD_ADDR_WIDTH-1:0] l1_word_addr_t;
     typedef logic [L1_SEQ_ADDR_WIDTH-1:0]  l1_seq_addr_t;
@@ -24,6 +34,7 @@ package lulea_types;
     typedef logic [POP_WORD_WIDTH-1:0]    l2_pop_t;
     typedef logic [CHUNK_WORD_WIDTH-1:0]  l2_chunk_t;
     typedef logic [L2_SEQ_WORD_WIDTH-1:0] l2_seq_t;
+    typedef logic [L2_PAYLOAD_WIDTH-1:0]  l2_payload_t;
 
     typedef logic [L2_WORD_ADDR_WIDTH-1:0] l2_word_addr_t;
     typedef logic [L2_SEQ_ADDR_WIDTH-1:0]  l2_seq_addr_t;
@@ -36,9 +47,10 @@ package lulea_types;
     typedef logic [CHUNK_WORD_WIDTH-1:0]  l3_chunk_t;
     typedef logic [L3_SEQ_WORD_WIDTH-1:0] l3_seq_t;
 
-    typedef logic [L3_WORD_ADDR_WIDTH-1:0] l3_word_addr_t;
-    typedef logic [L3_SEQ_ADDR_WIDTH-1:0]  l3_seq_addr_t;
+    typedef logic [L3_WORD_ADDR_WIDTH-1:0]  l3_word_addr_t;
+    typedef logic [L3_SEQ_ADDR_WIDTH-1:0]   l3_seq_addr_t;
     typedef logic [L3_CHUNK_ADDR_WIDTH-1:0] l3_chunk_addr_t;
+    typedef logic [L3_PC_IDX_WIDTH-1:0]     l3_pc_idx_t;
 endpackage
 
 `endif
