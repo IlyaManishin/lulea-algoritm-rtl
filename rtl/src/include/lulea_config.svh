@@ -21,6 +21,7 @@ package lulea_config;
 
     // ------------------- BIT POSITION AND POPCOUNT -------------------
     localparam int unsigned PC_BIT_POS_WIDTH = $clog2(POP_WORD_WIDTH);
+    localparam int unsigned PC_BIT_POS_MAX = POP_WORD_WIDTH - 1;
     localparam int unsigned POPCOUNT_WIDTH = $clog2(POP_WORD_WIDTH + 1);
 
     // =========================================================================

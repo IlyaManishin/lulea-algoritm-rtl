@@ -9,6 +9,7 @@ create_project -force pipeline $prj_dir -part $part
 
 add_files -fileset sources_1 -norecurse \
     $src_dir/lib/lulea_cache_rom.sv     \
+    $src_dir/lib/popcount.sv            \
     $include_dir/lulea_config.svh       \
     $include_dir/lulea_types.svh        \
     $pipeline_dir/l1.sv                 \
