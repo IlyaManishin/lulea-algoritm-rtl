@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-`include "lulea_types.svh"
+`include "lulea_cache.svh"
 
 module pipeline
     import lulea_types::*;
@@ -12,7 +12,9 @@ module pipeline
     output logic  valid,
     output ipv4_t ip_out,
     output logic  is_ptr,
-    output port_t payload
+    output port_t payload,
+
+    lulea_cache_if.lookup cache
 );
     ipv4_parts_t  ip_parts;
     ipv4_parts_t  l3_ip;
@@ -30,31 +32,27 @@ module pipeline
     assign ip_parts = ipv4_parts_t'(ip);
     assign ip_out = ipv4_t'(l3_ip);
 
+    assign cache.en = !rst;
+
     (* DONT_TOUCH = "TRUE" *)
-    l1 #(
-        .POP_INIT_FILE("l1_pop.mem"),
-        .CHUNK_INIT_FILE("l1_chunk.mem"),
-        .SEQ_INIT_FILE("l1_seq.mem")
-    ) u_l1 (
+    l1 u_l1 (
         .clk(ref_clk),
         .rst(rst),
-        .en(en),
+        .valid_in(en),
         .ip(ip_parts),
         .valid(l1_valid),
         .ip_out(l1_ip),
         .is_ptr(l1_is_ptr),
-        .payload(l1_payload)
+        .payload(l1_payload),
+        .cache_req(cache.l1_req),
+        .cache_rsp(cache.l1_rsp)
     );
 
     (* DONT_TOUCH = "TRUE" *)
-    l2 #(
-        .POP_INIT_FILE("l2_pop.mem"),
-        .CHUNK_INIT_FILE("l2_chunk.mem"),
-        .SEQ_INIT_FILE("l2_seq.mem")
-    ) u_l2 (
+    l2 u_l2 (
         .clk(ref_clk),
         .rst(rst),
-        .en(l1_valid),
+        .valid_in(l1_valid),
         .ip(l1_ip),
         .is_ptr_in(l1_is_ptr),
         .ptr(l2_word_addr_t'(l1_payload)),
@@ -62,18 +60,16 @@ module pipeline
         .valid(l2_valid),
         .ip_out(l2_ip),
         .is_ptr(l2_is_ptr),
-        .payload(l2_payload)
+        .payload(l2_payload),
+        .cache_req(cache.l2_req),
+        .cache_rsp(cache.l2_rsp)
     );
 
     (* DONT_TOUCH = "TRUE" *)
-    l3 #(
-        .POP_INIT_FILE("l3_pop.mem"),
-        .CHUNK_INIT_FILE("l3_chunk.mem"),
-        .SEQ_INIT_FILE("l3_seq.mem")
-    ) u_l3 (
+    l3 u_l3 (
         .clk(ref_clk),
         .rst(rst),
-        .en(l2_valid),
+        .valid_in(l2_valid),
         .ip(l2_ip),
         .is_ptr_in(l2_is_ptr),
         .ptr(l3_pc_idx_t'(l2_payload)),
@@ -81,6 +77,8 @@ module pipeline
         .valid(valid),
         .ip_out(l3_ip),
         .is_ptr(is_ptr),
-        .payload(payload)
+        .payload(payload),
+        .cache_req(cache.l3_req),
+        .cache_rsp(cache.l3_rsp)
     );
 endmodule

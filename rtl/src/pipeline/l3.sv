@@ -1,17 +1,14 @@
 `timescale 1ns/1ps
-`include "lulea_types.svh"
+`include "lulea_cache.svh"
 
 module l3
     import lulea_config::*;
     import lulea_types::*;
-#(
-    parameter string POP_INIT_FILE = "",
-    parameter string CHUNK_INIT_FILE = "",
-    parameter string SEQ_INIT_FILE = ""
-) (
+    import lulea_cache_types::*;
+(
     input  logic        clk,
     input  logic        rst,
-    input  logic        en,
+    input  logic        valid_in,
     input  ipv4_parts_t ip,
     input  logic        is_ptr_in,
     input  l3_pc_idx_t  ptr,
@@ -20,16 +17,12 @@ module l3
     output logic        valid,
     output ipv4_parts_t ip_out,
     output logic        is_ptr,
-    output port_t       payload
-);
-    logic          lookup_en;
-    l3_word_addr_t word_addr;
-    l3_pop_t       pop_word;
-    l3_chunk_t     chunk_sum;
+    output port_t       payload,
 
-    logic          seq_en;
-    l3_seq_addr_t  seq_addr;
-    l3_seq_t       seq_cell;
+    output l3_cache_req_t cache_req,
+    input  l3_cache_rsp_t cache_rsp
+);
+    l3_word_addr_t word_addr;
 
     logic          valid_pop;
     ipv4_parts_t   ip_pop;
@@ -39,22 +32,22 @@ module l3
     l3_pop_t       mask;
     popcount_t     offset;
 
-    assign lookup_en = en && is_ptr_in;
     assign word_addr = {ptr, ip.l3.chunk_idx};
     assign bit_pos = ip_pop.l3.bit_pos;
     assign mask = '1 >> (PC_BIT_POS_MAX - int'(bit_pos));
-    assign seq_en = valid_pop && is_ptr_pop;
-    assign seq_addr = l3_seq_addr_t'(chunk_sum) + l3_seq_addr_t'(offset);
+    assign cache_req.pop_addr = word_addr;
+    assign cache_req.chunk_addr = l3_chunk_addr_t'(word_addr);
+    assign cache_req.seq_addr = l3_seq_addr_t'(cache_rsp.chunk_dout) + l3_seq_addr_t'(offset);
 
     assign is_ptr = 1'b0;
-    assign payload = is_ptr_seq ? port_t'(seq_cell) : port_seq;
+    assign payload = is_ptr_seq ? port_t'(cache_rsp.seq_dout) : port_seq;
 
     always_ff @(posedge clk) begin
         if (rst) begin
             valid_pop <= 1'b0;
             valid     <= 1'b0;
         end else begin
-            valid_pop <= en;
+            valid_pop <= valid_in;
             valid     <= valid_pop;
         end
 
@@ -69,40 +62,7 @@ module l3
     popcount #(
         .W(POP_WORD_WIDTH)
     ) u_popcount (
-        .x(pop_word & mask),
+        .x(cache_rsp.pop_dout & mask),
         .cnt(offset)
-    );
-
-    lulea_cache_rom #(
-        .WORD_WIDTH(POP_WORD_WIDTH),
-        .SIZE_BITS(L3_POP_SIZE_BITS),
-        .INIT_FILE(POP_INIT_FILE)
-    ) u_pop (
-        .clk(clk),
-        .en(lookup_en),
-        .addr(word_addr),
-        .dout(pop_word)
-    );
-
-    lulea_cache_rom #(
-        .WORD_WIDTH(CHUNK_WORD_WIDTH),
-        .SIZE_BITS(L3_CHUNK_SIZE_BITS),
-        .INIT_FILE(CHUNK_INIT_FILE)
-    ) u_chunk (
-        .clk(clk),
-        .en(lookup_en),
-        .addr(l3_chunk_addr_t'(word_addr)),
-        .dout(chunk_sum)
-    );
-
-    lulea_cache_rom #(
-        .WORD_WIDTH(L3_SEQ_WORD_WIDTH),
-        .SIZE_BITS(L3_SEQ_SIZE_BITS),
-        .INIT_FILE(SEQ_INIT_FILE)
-    ) u_seq (
-        .clk(clk),
-        .en(seq_en),
-        .addr(seq_addr),
-        .dout(seq_cell)
     );
 endmodule
