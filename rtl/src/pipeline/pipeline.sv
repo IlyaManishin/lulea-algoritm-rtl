@@ -34,7 +34,6 @@ module pipeline
 
     assign cache.en = !rst;
 
-    (* DONT_TOUCH = "TRUE" *)
     l1 u_l1 (
         .clk(ref_clk),
         .rst(rst),
@@ -48,7 +47,6 @@ module pipeline
         .cache_rsp(cache.l1_rsp)
     );
 
-    (* DONT_TOUCH = "TRUE" *)
     l2 u_l2 (
         .clk(ref_clk),
         .rst(rst),
@@ -65,7 +63,6 @@ module pipeline
         .cache_rsp(cache.l2_rsp)
     );
 
-    (* DONT_TOUCH = "TRUE" *)
     l3 u_l3 (
         .clk(ref_clk),
         .rst(rst),
