@@ -261,6 +261,7 @@ namespace gen
         this->l1_ = std::move(state.l1);
         this->l2_ = std::move(state.l2);
         this->l3_ = std::move(state.l3);
+        this->built_ = true;
     }
 
 } // namespace gen

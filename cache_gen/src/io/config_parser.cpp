@@ -48,7 +48,7 @@ namespace io
         return count;
     }
 
-    bool ConfigParser::next(gen::Config &config_out)
+    bool ConfigParser::next(ConfigEntry &config_out)
     {
         std::string line;
 
@@ -95,7 +95,7 @@ namespace io
                 dest_dir.clear();
             }
 
-            config_out = gen::Config{mode, std::move(in_path), std::move(dest_dir)};
+            config_out = ConfigEntry{mode, std::move(in_path), std::move(dest_dir)};
             return true;
         }
 

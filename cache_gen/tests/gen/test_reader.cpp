@@ -45,7 +45,7 @@ protected:
         std::ofstream ofs(file_path, std::ios::binary);
 
         // Header: 4 bytes magic signature + 4 bytes entry count
-        ofs.write(magic.data(), magic.size());
+        ofs.write(magic.data(), static_cast<std::streamsize>(magic.size()));
         bin_entry_count_t count = static_cast<bin_entry_count_t>(entries.size());
         ofs.write(reinterpret_cast<const char *>(&count), sizeof(count));
 

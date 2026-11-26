@@ -10,6 +10,7 @@
 #include <lulea_common/reader.hpp>
 
 #include <cstddef>
+#include <filesystem>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -25,8 +26,6 @@ namespace gen
         {
             std::string_view level_name;
 
-            size_t ip_size = 0;
-            size_t pc_cell = 0;
             size_t ch_sum_cell = 0;
             size_t seq_cell = 0;
             size_t chunks_per_block = 0;
@@ -184,8 +183,6 @@ namespace gen
         {
             const CacheLevelConfig l1_conf{
                 .level_name = "L1",
-                .ip_size = L1_IP_SIZE,
-                .pc_cell = L1_PC_CELL,
                 .ch_sum_cell = L1_CH_SUM_CELL,
                 .seq_cell = L1_DEFAULT_SEQ_CELL,
                 .chunks_per_block = L1_CHUNKS_PER_BLOCK,
@@ -198,8 +195,6 @@ namespace gen
         {
             const CacheLevelConfig l2_conf{
                 .level_name = "L2",
-                .ip_size = L2_IP_SIZE,
-                .pc_cell = L2_PC_CELL,
                 .ch_sum_cell = L2_CH_SUM_CELL,
                 .seq_cell = L2_DEFAULT_SEQ_CELL,
                 .chunks_per_block = L2_CHUNKS_PER_BLOCK,
@@ -212,8 +207,6 @@ namespace gen
         {
             const CacheLevelConfig l3_conf{
                 .level_name = "L3",
-                .ip_size = L3_IP_SIZE,
-                .pc_cell = L3_PC_CELL,
                 .ch_sum_cell = L3_CH_SUM_CELL,
                 .seq_cell = L3_DEFAULT_SEQ_CELL,
                 .chunks_per_block = L3_CHUNKS_PER_BLOCK,
@@ -223,38 +216,29 @@ namespace gen
         }
     } // namespace
 
-    LuleaAlgo::LuleaAlgo(LuleaTree routing_tree, Config config)
-        : config_(routing_tree.config()), app_config_(std::move(config)), tree_(std::move(routing_tree)), initialized_(true) {}
-
-    LuleaAlgo::LuleaAlgo(const LuleaTreeConfig &tree_config)
-        : config_(tree_config), tree_(tree_config) {}
-
-    LuleaAlgo::LuleaAlgo() : LuleaAlgo(LuleaTreeConfig{}) {}
+    LuleaAlgo::LuleaAlgo(LuleaTree routing_tree)
+        : tree_(std::move(routing_tree)) {}
 
     void LuleaAlgo::init(LuleaTree routing_tree)
     {
-        this->config_ = routing_tree.config();
         this->tree_ = std::move(routing_tree);
-        this->initialized_ = true;
         this->caches_generated_ = false;
     }
 
     void LuleaAlgo::init(const MaskEntries &entries)
     {
         this->tree_.build(entries);
-        this->config_ = this->tree_.config();
-        this->initialized_ = true;
         this->caches_generated_ = false;
     }
 
-    CacheStats LuleaAlgo::generate_caches(bool write_files)
+    CacheStats LuleaAlgo::generate_caches(const std::filesystem::path &dest_dir)
     {
-        if (!this->initialized_)
+        if (!this->tree_.is_built())
         {
-            throw std::logic_error("LuleaAlgo is not initialized with a routing tree");
+            throw std::logic_error("LuleaAlgo requires a built routing tree");
         }
 
-        CacheSet caches(this->app_config_.dest_dir, write_files);
+        CacheSet caches(dest_dir, !dest_dir.empty());
 
         generate_l1(this->tree_, caches);
         generate_l2(this->tree_, caches);

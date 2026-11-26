@@ -21,13 +21,13 @@ namespace
         Fatal
     };
 
-    EntryResult process_config_entry(const gen::Config &config, const StatsWriter &writer,
+    EntryResult process_config_entry(const ConfigEntry &config, const StatsWriter &writer,
                                      ProgressBar &progress)
     {
         try
         {
-            const gen::BuildResult result = gen::build_lulea_cache(config);
-            writer.write(config.input_path, result.stats);
+            const gen::CacheStats stats = gen::build_lulea_cache(config.input_path, config.mode, config.dest_dir);
+            writer.write(config.input_path, stats);
             return EntryResult::Success;
         }
         catch (const gen::FatalGenException &ex)
@@ -66,7 +66,7 @@ namespace
         ProgressBar progress(total_jobs, redraw_progress);
         
         const StatsWriter writer(opt.out_csv);
-        gen::Config config;
+        ConfigEntry config;
         int status = 0;
         while (parser.next(config))
         {

@@ -1,6 +1,9 @@
 #pragma once
 
+#include <lulea_common/reader.hpp>
+
 #include <cstdint>
+#include <filesystem>
 #include <stdexcept>
 #include <string>
 
@@ -33,13 +36,6 @@ namespace gen
         Dump
     };
 
-    struct Config
-    {
-        Mode mode = Mode::Stats;
-        std::string input_path;
-        std::string dest_dir;
-    };
-
     struct CacheByteSizes
     {
         uint32_t l1_pop = 0;
@@ -61,11 +57,11 @@ namespace gen
         CacheByteSizes cache_sizes_aligned{};
     };
 
-    struct BuildResult
-    {
-        CacheStats stats;
-    };
-
-    BuildResult build_lulea_cache(const Config &config);
+    CacheStats build_lulea_cache(const std::filesystem::path &input_path,
+                                 Mode mode = Mode::Stats,
+                                 const std::filesystem::path &dest_dir = {});
+    CacheStats build_lulea_cache(const MaskEntries &entries,
+                                 Mode mode = Mode::Stats,
+                                 const std::filesystem::path &dest_dir = {});
 
 } // namespace gen
