@@ -16,6 +16,30 @@ package lulea_types;
     typedef logic [POPCOUNT_WIDTH-1:0]    popcount_t;
 
     // =========================================================================
+    //  IPv4 ADDRESS FIELDS
+    // =========================================================================
+
+    typedef struct packed {
+        logic [L1_IP_CHUNK_IDX_WIDTH-1:0] chunk_idx;
+        pc_bit_pos_t                      bit_pos;
+    } l1_ip_t;
+
+    typedef struct packed {
+        logic [L2_IP_BIT_POS_WIDTH-1:0] bit_pos;
+    } l2_ip_t;
+
+    typedef struct packed {
+        logic [L3_IP_CHUNK_IDX_WIDTH-1:0] chunk_idx;
+        pc_bit_pos_t                      bit_pos;
+    } l3_ip_t;
+
+    typedef struct packed {
+        l1_ip_t l1;
+        l2_ip_t l2;
+        l3_ip_t l3;
+    } ipv4_parts_t;
+
+    // =========================================================================
     //  L1 CACHE TYPES
     // =========================================================================
 
