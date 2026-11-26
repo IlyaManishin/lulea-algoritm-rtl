@@ -1,6 +1,6 @@
 #include "lulea_cache_lookup.hpp"
 
-#include "lulea_config.hpp"
+#include "gen/lulea_config.hpp"
 #include <lulea_verify/lookup_engine.hpp>
 
 #include <algorithm>

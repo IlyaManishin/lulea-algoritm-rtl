@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <memory>
 
-#include "lulea_algo/lulea_tree.hpp"
+#include "gen/lulea_algo/lulea_tree.hpp"
 #include "lulea_engine/lulea_tree_lookup.hpp"
 #include <lulea_common/config.hpp>
 #include <lulea_common/reader.hpp>

@@ -8,7 +8,7 @@
 #include <system_error>
 #include <utility>
 
-#include "gen.hpp"
+#include "gen/gen.hpp"
 #include "lulea_engine/lulea_cache_lookup.hpp"
 #include <lulea_common/reader.hpp>
 #include <lulea_verify/lookup_engine.hpp>

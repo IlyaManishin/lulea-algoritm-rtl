@@ -3,9 +3,9 @@
 #include <cstddef>
 #include <filesystem>
 
-#include "gen.hpp"
-#include "lulea_algo/lulea_algo.hpp"
-#include "lulea_algo/lulea_tree.hpp"
+#include "gen/gen.hpp"
+#include "gen/lulea_algo/lulea_algo.hpp"
+#include "gen/lulea_algo/lulea_tree.hpp"
 #include "lulea_engine/lulea_cache_lookup.hpp"
 #include <lulea_common/reader.hpp>
 
