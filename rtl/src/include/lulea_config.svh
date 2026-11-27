@@ -17,6 +17,7 @@ package lulea_config;
 
     // ------------------- RAM WIDTH -------------------
     localparam int unsigned POP_WORD_WIDTH = 64;
+    localparam int unsigned POP_WORD_HALF_WIDTH = 32;
     localparam int unsigned CHUNK_WORD_WIDTH = 18;
 
     // ------------------- BIT POSITION AND POPCOUNT -------------------

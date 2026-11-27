@@ -14,6 +14,7 @@ package lulea_types;
     typedef logic [PORT_WIDTH-1:0]        port_t;
     typedef logic [PC_BIT_POS_WIDTH-1:0]  pc_bit_pos_t;
     typedef logic [POPCOUNT_WIDTH-1:0]    popcount_t;
+    typedef logic [POPCOUNT_WIDTH-2:0]    popcount_half_t;
 
     // =========================================================================
     //  IPv4 ADDRESS FIELDS
