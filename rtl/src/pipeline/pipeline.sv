@@ -11,7 +11,6 @@ module pipeline
 
     output logic  valid,
     output ipv4_t ip_out,
-    output logic  is_ptr,
     output port_t payload,
 
     lulea_cache_if.lookup cache
@@ -78,7 +77,6 @@ module pipeline
 
     ipv4_parts_t l3_ip;
     logic        l3_valid;
-    logic        l3_is_ptr;
     port_t       l3_payload;
 
     l3 u_l3 (
@@ -90,7 +88,6 @@ module pipeline
         .ptr(l2_ptr),
         .valid(l3_valid),
         .ip_out(l3_ip),
-        .is_ptr(l3_is_ptr),
         .payload(l3_payload),
 
         .cache_req(cache.l3_req),
@@ -140,7 +137,6 @@ module pipeline
 
     assign valid = early_result_st2.valid || l3_valid;
     assign ip_out = ipv4_t'(early_result_st2.valid ? early_result_st2.ip : l3_ip);
-    assign is_ptr = l3_is_ptr;
     assign payload = early_result_st2.valid ? early_result_st2.payload : l3_payload;
 
 endmodule

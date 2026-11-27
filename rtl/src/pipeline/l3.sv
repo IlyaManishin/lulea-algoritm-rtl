@@ -15,7 +15,6 @@ module l3
     // -----Pipeline result-----------
     output logic        valid,
     output ipv4_parts_t ip_out,
-    output logic        is_ptr,
     output port_t       payload,
 
     // -----Lulea cache---------------
@@ -60,7 +59,6 @@ module l3
     //  Output
     // =========================================================================
 
-    assign is_ptr = 1'b0;
     assign payload = port_t'(cache_rsp.seq_dout);
 
     assign valid = valid_seq;

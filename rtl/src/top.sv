@@ -11,7 +11,6 @@ module top
 
     output logic  valid,
     output ipv4_t ip_out,
-    output logic  is_ptr,
     output port_t payload
 );
     lulea_cache_if cache();
@@ -30,7 +29,6 @@ module top
         .ip(ip),
         .valid(valid),
         .ip_out(ip_out),
-        .is_ptr(is_ptr),
         .payload(payload),
         .cache(cache.lookup)
     );
