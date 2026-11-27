@@ -104,30 +104,34 @@ module pipeline
         port_t       payload;
     } result_t;
 
-    result_t l1_result_st1, l1_result_st2;
-    result_t early_result_st1, early_result_st2;
+    result_t l2_bypass_st1, l2_bypass_st2, l2_bypass_st3;
+    result_t l3_bypass_st1, l3_bypass_st2, l3_bypass_st3;
 
     // Keep result ip-port pair until it reach end of pipeline
     always_ff @(posedge ref_clk) begin
         if (rst) begin
-            l1_result_st1.valid    <= 1'b0;
-            l1_result_st2.valid    <= 1'b0;
-            early_result_st1.valid <= 1'b0;
-            early_result_st2.valid <= 1'b0;
+            l2_bypass_st1.valid <= 1'b0;
+            l2_bypass_st2.valid <= 1'b0;
+            l2_bypass_st3.valid <= 1'b0;
+            l3_bypass_st1.valid <= 1'b0;
+            l3_bypass_st2.valid <= 1'b0;
+            l3_bypass_st3.valid <= 1'b0;
         end else begin
-            l1_result_st1 <= '{
+            l2_bypass_st1 <= '{
                 valid: l1_port_valid,
                 ip: l1_ip,
                 payload: l1_port
             };
-            l1_result_st2 <= l1_result_st1;
+            l2_bypass_st2 <= l2_bypass_st1;
+            l2_bypass_st3 <= l2_bypass_st2;
 
-            early_result_st1 <= l1_result_st2.valid ? l1_result_st2 : '{
+            l3_bypass_st1 <= l2_bypass_st3.valid ? l2_bypass_st3 : '{
                 valid: l2_port_valid,
                 ip: l2_ip,
                 payload: l2_port
             };
-            early_result_st2 <= early_result_st1;
+            l3_bypass_st2 <= l3_bypass_st1;
+            l3_bypass_st3 <= l3_bypass_st2;
         end
     end
 
@@ -135,8 +139,8 @@ module pipeline
     //  OUTPUT
     // =========================================================================
 
-    assign valid = early_result_st2.valid || l3_valid;
-    assign ip_out = ipv4_t'(early_result_st2.valid ? early_result_st2.ip : l3_ip);
-    assign payload = early_result_st2.valid ? early_result_st2.payload : l3_payload;
+    assign valid = l3_bypass_st3.valid || l3_valid;
+    assign ip_out = ipv4_t'(l3_bypass_st3.valid ? l3_bypass_st3.ip : l3_ip);
+    assign payload = l3_bypass_st3.valid ? l3_bypass_st3.payload : l3_payload;
 
 endmodule

@@ -15,6 +15,7 @@ add_files -fileset sources_1 -norecurse \
     $include_dir/lulea_types.svh        \
     $cache_dir/lulea_cache.svh          \
     $cache_dir/lulea_cache.sv           \
+    $pipeline_dir/lulea_seq_addr.sv     \
     $pipeline_dir/l1.sv                 \
     $pipeline_dir/l2.sv                 \
     $pipeline_dir/l3.sv                 \

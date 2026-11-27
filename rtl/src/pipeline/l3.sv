@@ -23,8 +23,10 @@ module l3
 );
 
     logic          valid_pop;
+    logic          valid_addr;
     logic          valid_seq;
     ipv4_parts_t   ip_pop;
+    ipv4_parts_t   ip_addr;
     ipv4_parts_t   ip_seq;
 
     // =========================================================================
@@ -32,9 +34,7 @@ module l3
     // =========================================================================
 
     l3_word_addr_t word_addr;
-    l3_pop_t       mask;
-    popcount_t     offset;
-    pc_bit_pos_t   bit_pos;
+    l3_seq_addr_t  seq_addr;
 
     // ---- Stage pop ----
     assign word_addr = {ptr, ip.l3.chunk_idx};
@@ -42,18 +42,22 @@ module l3
     assign cache_req.pop_addr = word_addr;
     assign cache_req.chunk_addr = l3_chunk_addr_t'(word_addr);
 
-    // ---- Stage seq ----
-    assign bit_pos = ip_pop.l3.bit_pos;
-    assign mask = '1 >> (PC_BIT_POS_MAX - int'(bit_pos));
-
-    assign cache_req.seq_addr = l3_seq_addr_t'(cache_rsp.chunk_dout) + l3_seq_addr_t'(offset);
-
-    popcount #(
-        .W(POP_WORD_WIDTH)
-    ) u_popcount (
-        .x(cache_rsp.pop_dout & mask),
-        .cnt(offset)
+    lulea_seq_addr #(
+        .SEQ_ADDR_WIDTH(L3_SEQ_ADDR_WIDTH)
+    ) u_seq_addr (
+        .clk(clk),
+        .rst(rst),
+        .valid_in(valid_pop),
+        .ip(ip_pop),
+        .bit_pos(ip_pop.l3.bit_pos),
+        .pop_word(cache_rsp.pop_dout),
+        .chunk_sum(cache_rsp.chunk_dout),
+        .valid(valid_addr),
+        .ip_out(ip_addr),
+        .seq_addr(seq_addr)
     );
+    // ---- Stage seq ----
+    assign cache_req.seq_addr = seq_addr;
 
     // =========================================================================
     //  Output
@@ -74,14 +78,14 @@ module l3
             valid_seq <= 1'b0;
         end else begin
             valid_pop <= valid_in;
-            valid_seq <= valid_pop;
+            valid_seq <= valid_addr;
         end
 
         ip_pop <= ip;
-        ip_seq <= ip_pop;
+        ip_seq <= ip_addr;
     end
 
     assign cache_req.pop_en   = valid_in;
     assign cache_req.chunk_en = valid_in;
-    assign cache_req.seq_en   = valid_pop;
+    assign cache_req.seq_en   = valid_addr;
 endmodule
