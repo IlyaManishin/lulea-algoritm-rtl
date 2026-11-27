@@ -6,22 +6,29 @@ module l1
     import lulea_types::*;
     import lulea_cache_types::*;
 (
-    input  logic        clk,
-    input  logic        rst,
-    input  logic        valid_in,
-    input  ipv4_parts_t ip,
+    input  logic          clk,
+    input  logic          rst,
+    input  logic          valid_in,
+    input  ipv4_parts_t   ip,
 
-    output logic        valid,
-    output ipv4_parts_t ip_out,
-    output logic        is_ptr,
-    output l1_payload_t payload,
+    // -----Next level data-----------
+    output logic          valid,
+    output ipv4_parts_t   ip_out,
+    output l2_word_addr_t ptr_out,
 
+    // -----Pipeline early data-------
+    output logic          port_valid,
+    output port_t         port_out,
+
+    // -----Lulea cache---------------
     output l1_cache_req_t cache_req,
     input  l1_cache_rsp_t cache_rsp
 );
     l1_word_addr_t word_addr;
 
     logic          valid_pop;
+    logic          valid_seq;
+    logic          seq_is_ptr;
     ipv4_parts_t   ip_pop;
     pc_bit_pos_t   bit_pos;
     l1_pop_t       mask;
@@ -38,15 +45,19 @@ module l1
     assign cache_req.chunk_en = valid_in;
     assign cache_req.seq_en   = valid_pop;
 
-    assign {is_ptr, payload} = cache_rsp.seq_dout;
+    assign seq_is_ptr = cache_rsp.seq_dout[L1_PAYLOAD_WIDTH];
+    assign valid = valid_seq && seq_is_ptr;
+    assign ptr_out = l2_word_addr_t'(cache_rsp.seq_dout);
+    assign port_valid = valid_seq && !seq_is_ptr;
+    assign port_out = port_t'(cache_rsp.seq_dout);
 
     always_ff @(posedge clk) begin
         if (rst) begin
             valid_pop <= 1'b0;
-            valid     <= 1'b0;
+            valid_seq <= 1'b0;
         end else begin
             valid_pop <= valid_in;
-            valid     <= valid_pop;
+            valid_seq <= valid_pop;
         end
 
         ip_pop <= ip;

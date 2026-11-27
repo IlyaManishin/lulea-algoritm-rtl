@@ -10,25 +10,24 @@ module l2
     input  logic          rst,
     input  logic          valid_in,
     input  ipv4_parts_t   ip,
-    input  logic          is_ptr_in,
     input  l2_word_addr_t ptr,
-    input  port_t         port_in,
 
     output logic          valid,
     output ipv4_parts_t   ip_out,
-    output logic          is_ptr,
-    output l2_payload_t   payload,
+    output l3_pc_idx_t    ptr_out,
+
+    output logic          port_valid,
+    output port_t         port_out,
 
     output l2_cache_req_t cache_req,
     input  l2_cache_rsp_t cache_rsp
 );
     l2_word_addr_t word_addr;
-    logic          lookup_en;
 
     logic          valid_pop;
+    logic          valid_seq;
+    logic          seq_is_ptr;
     ipv4_parts_t   ip_pop;
-    logic          is_ptr_pop, is_ptr_seq;
-    port_t         port_pop, port_seq;
     pc_bit_pos_t   bit_pos;
     l2_pop_t       mask;
     popcount_t     offset;
@@ -40,28 +39,27 @@ module l2
     assign cache_req.chunk_addr = word_addr;
     assign cache_req.seq_addr = l2_seq_addr_t'(cache_rsp.chunk_dout) + l2_seq_addr_t'(offset);
 
-    assign lookup_en          = valid_in && is_ptr_in;
-    assign cache_req.pop_en   = lookup_en;
-    assign cache_req.chunk_en = lookup_en;
-    assign cache_req.seq_en   = valid_pop && is_ptr_pop;
+    assign cache_req.pop_en   = valid_in;
+    assign cache_req.chunk_en = valid_in;
+    assign cache_req.seq_en   = valid_pop;
 
-    assign {is_ptr, payload} = is_ptr_seq ? cache_rsp.seq_dout : {1'b0, port_seq};
+    assign seq_is_ptr = cache_rsp.seq_dout[L2_PAYLOAD_WIDTH];
+    assign valid = valid_seq && seq_is_ptr;
+    assign ptr_out = l3_pc_idx_t'(cache_rsp.seq_dout);
+    assign port_valid = valid_seq && !seq_is_ptr;
+    assign port_out = port_t'(cache_rsp.seq_dout);
 
     always_ff @(posedge clk) begin
         if (rst) begin
             valid_pop <= 1'b0;
-            valid     <= 1'b0;
+            valid_seq <= 1'b0;
         end else begin
             valid_pop <= valid_in;
-            valid     <= valid_pop;
+            valid_seq <= valid_pop;
         end
 
-        ip_pop     <= ip;
-        ip_out     <= ip_pop;
-        is_ptr_pop <= is_ptr_in;
-        is_ptr_seq <= is_ptr_pop;
-        port_pop   <= port_in;
-        port_seq   <= port_pop;
+        ip_pop <= ip;
+        ip_out <= ip_pop;
     end
 
     popcount #(

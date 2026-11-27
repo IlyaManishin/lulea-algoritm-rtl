@@ -23,10 +23,11 @@ module pipeline
     //  L1
     // =========================================================================
 
-    logic        l1_valid;
-    ipv4_parts_t l1_ip;
-    logic        l1_is_ptr;
-    l1_payload_t l1_payload;
+    logic          l1_valid;
+    ipv4_parts_t   l1_ip;
+    l2_word_addr_t l1_ptr;
+    logic          l1_port_valid;
+    port_t         l1_port;
 
     l1 u_l1 (
         .clk(ref_clk),
@@ -36,8 +37,9 @@ module pipeline
         .ip(ip_parts),
         .valid(l1_valid),
         .ip_out(l1_ip),
-        .is_ptr(l1_is_ptr),
-        .payload(l1_payload),
+        .ptr_out(l1_ptr),
+        .port_valid(l1_port_valid),
+        .port_out(l1_port),
 
         .cache_req(cache.l1_req),
         .cache_rsp(cache.l1_rsp)
@@ -49,8 +51,9 @@ module pipeline
 
     logic        l2_valid;
     ipv4_parts_t l2_ip;
-    logic        l2_is_ptr;
-    l2_payload_t l2_payload;
+    l3_pc_idx_t  l2_ptr;
+    logic        l2_port_valid;
+    port_t       l2_port;
 
     l2 u_l2 (
         .clk(ref_clk),
@@ -58,13 +61,12 @@ module pipeline
 
         .valid_in(l1_valid),
         .ip(l1_ip),
-        .is_ptr_in(l1_is_ptr),
-        .ptr(l2_word_addr_t'(l1_payload)),
-        .port_in(port_t'(l1_payload)),
+        .ptr(l1_ptr),
         .valid(l2_valid),
         .ip_out(l2_ip),
-        .is_ptr(l2_is_ptr),
-        .payload(l2_payload),
+        .ptr_out(l2_ptr),
+        .port_valid(l2_port_valid),
+        .port_out(l2_port),
 
         .cache_req(cache.l2_req),
         .cache_rsp(cache.l2_rsp)
@@ -85,25 +87,60 @@ module pipeline
 
         .valid_in(l2_valid),
         .ip(l2_ip),
-        .is_ptr_in(l2_is_ptr),
-        .ptr(l3_pc_idx_t'(l2_payload)),
-        .port_in(port_t'(l2_payload)),
+        .ptr(l2_ptr),
         .valid(l3_valid),
         .ip_out(l3_ip),
         .is_ptr(l3_is_ptr),
         .payload(l3_payload),
-        
+
         .cache_req(cache.l3_req),
         .cache_rsp(cache.l3_rsp)
     );
 
     // =========================================================================
+    //  RESULT PORT PIPELINE
+    // =========================================================================
+
+    typedef struct packed {
+        logic        valid;
+        ipv4_parts_t ip;
+        port_t       payload;
+    } result_t;
+
+    result_t l1_result_st1, l1_result_st2;
+    result_t early_result_st1, early_result_st2;
+
+    // Keep result ip-port pair until it reach end of pipeline
+    always_ff @(posedge ref_clk) begin
+        if (rst) begin
+            l1_result_st1.valid    <= 1'b0;
+            l1_result_st2.valid    <= 1'b0;
+            early_result_st1.valid <= 1'b0;
+            early_result_st2.valid <= 1'b0;
+        end else begin
+            l1_result_st1 <= '{
+                valid: l1_port_valid,
+                ip: l1_ip,
+                payload: l1_port
+            };
+            l1_result_st2 <= l1_result_st1;
+
+            early_result_st1 <= l1_result_st2.valid ? l1_result_st2 : '{
+                valid: l2_port_valid,
+                ip: l2_ip,
+                payload: l2_port
+            };
+            early_result_st2 <= early_result_st1;
+        end
+    end
+
+    // =========================================================================
     //  OUTPUT
     // =========================================================================
 
-    assign valid = l3_valid;
-    assign ip_out = ipv4_t'(l3_ip);
+    assign valid = early_result_st2.valid || l3_valid;
+    assign ip_out = ipv4_t'(early_result_st2.valid ? early_result_st2.ip : l3_ip);
     assign is_ptr = l3_is_ptr;
-    assign payload = l3_payload;
+    assign payload = early_result_st2.valid ? early_result_st2.payload : l3_payload;
 
 endmodule

@@ -10,9 +10,7 @@ module l3
     input  logic        rst,
     input  logic        valid_in,
     input  ipv4_parts_t ip,
-    input  logic        is_ptr_in,
     input  l3_pc_idx_t  ptr,
-    input  port_t       port_in,
 
     output logic        valid,
     output ipv4_parts_t ip_out,
@@ -23,12 +21,9 @@ module l3
     input  l3_cache_rsp_t cache_rsp
 );
     l3_word_addr_t word_addr;
-    logic          lookup_en;
 
     logic          valid_pop;
     ipv4_parts_t   ip_pop;
-    logic          is_ptr_pop, is_ptr_seq;
-    port_t         port_pop, port_seq;
     pc_bit_pos_t   bit_pos;
     l3_pop_t       mask;
     popcount_t     offset;
@@ -40,13 +35,12 @@ module l3
     assign cache_req.chunk_addr = l3_chunk_addr_t'(word_addr);
     assign cache_req.seq_addr = l3_seq_addr_t'(cache_rsp.chunk_dout) + l3_seq_addr_t'(offset);
 
-    assign lookup_en          = valid_in && is_ptr_in;
-    assign cache_req.pop_en   = lookup_en;
-    assign cache_req.chunk_en = lookup_en;
-    assign cache_req.seq_en   = valid_pop && is_ptr_pop;
+    assign cache_req.pop_en   = valid_in;
+    assign cache_req.chunk_en = valid_in;
+    assign cache_req.seq_en   = valid_pop;
 
     assign is_ptr = 1'b0;
-    assign payload = is_ptr_seq ? port_t'(cache_rsp.seq_dout) : port_seq;
+    assign payload = port_t'(cache_rsp.seq_dout);
 
     always_ff @(posedge clk) begin
         if (rst) begin
@@ -57,12 +51,8 @@ module l3
             valid     <= valid_pop;
         end
 
-        ip_pop     <= ip;
-        ip_out     <= ip_pop;
-        is_ptr_pop <= is_ptr_in;
-        is_ptr_seq <= is_ptr_pop;
-        port_pop   <= port_in;
-        port_seq   <= port_pop;
+        ip_pop <= ip;
+        ip_out <= ip_pop;
     end
 
     popcount #(
