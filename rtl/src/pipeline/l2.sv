@@ -12,42 +12,70 @@ module l2
     input  ipv4_parts_t   ip,
     input  l2_word_addr_t ptr,
 
+    // -----Next level data-----------
     output logic          valid,
     output ipv4_parts_t   ip_out,
     output l3_pc_idx_t    ptr_out,
 
+    // -----Pipeline early data-------
     output logic          port_valid,
     output port_t         port_out,
 
+    // -----Lulea cache---------------
     output l2_cache_req_t cache_req,
     input  l2_cache_rsp_t cache_rsp
 );
-    l2_word_addr_t word_addr;
 
     logic          valid_pop;
     logic          valid_seq;
-    logic          seq_is_ptr;
     ipv4_parts_t   ip_pop;
-    pc_bit_pos_t   bit_pos;
+    ipv4_parts_t   ip_seq;
+
+    logic          seq_is_ptr;
+
+    // =========================================================================
+    //  Lulea Lookup
+    // =========================================================================
+
+    l2_word_addr_t word_addr;
     l2_pop_t       mask;
     popcount_t     offset;
+    pc_bit_pos_t   bit_pos;
 
+    // ---- Stage pop ----
     assign word_addr = ptr;
-    assign bit_pos = ip_pop.l2.bit_pos;
-    assign mask = '1 >> (PC_BIT_POS_MAX - int'(bit_pos));
+
     assign cache_req.pop_addr = word_addr;
     assign cache_req.chunk_addr = word_addr;
+
+    // ---- Stage seq ----
+    assign bit_pos = ip_pop.l2.bit_pos;
+    assign mask = '1 >> (PC_BIT_POS_MAX - int'(bit_pos));
+
     assign cache_req.seq_addr = l2_seq_addr_t'(cache_rsp.chunk_dout) + l2_seq_addr_t'(offset);
 
-    assign cache_req.pop_en   = valid_in;
-    assign cache_req.chunk_en = valid_in;
-    assign cache_req.seq_en   = valid_pop;
+    popcount #(
+        .W(POP_WORD_WIDTH)
+    ) u_popcount (
+        .x(cache_rsp.pop_dout & mask),
+        .cnt(offset)
+    );
+
+    // =========================================================================
+    //  Output
+    // =========================================================================
 
     assign seq_is_ptr = cache_rsp.seq_dout[L2_PAYLOAD_WIDTH];
-    assign valid = valid_seq && seq_is_ptr;
     assign ptr_out = l3_pc_idx_t'(cache_rsp.seq_dout);
     assign port_valid = valid_seq && !seq_is_ptr;
     assign port_out = port_t'(cache_rsp.seq_dout);
+
+    assign valid = valid_seq && seq_is_ptr;
+    assign ip_out = ip_seq;
+
+    // =========================================================================
+    //  Pipeline
+    // =========================================================================
 
     always_ff @(posedge clk) begin
         if (rst) begin
@@ -59,13 +87,10 @@ module l2
         end
 
         ip_pop <= ip;
-        ip_out <= ip_pop;
+        ip_seq <= ip_pop;
     end
 
-    popcount #(
-        .W(POP_WORD_WIDTH)
-    ) u_popcount (
-        .x(cache_rsp.pop_dout & mask),
-        .cnt(offset)
-    );
+    assign cache_req.pop_en   = valid_in;
+    assign cache_req.chunk_en = valid_in;
+    assign cache_req.seq_en   = valid_pop;
 endmodule

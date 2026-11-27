@@ -12,48 +12,42 @@ module l3
     input  ipv4_parts_t ip,
     input  l3_pc_idx_t  ptr,
 
+    // -----Pipeline result-----------
     output logic        valid,
     output ipv4_parts_t ip_out,
     output logic        is_ptr,
     output port_t       payload,
 
+    // -----Lulea cache---------------
     output l3_cache_req_t cache_req,
     input  l3_cache_rsp_t cache_rsp
 );
-    l3_word_addr_t word_addr;
 
     logic          valid_pop;
+    logic          valid_seq;
     ipv4_parts_t   ip_pop;
-    pc_bit_pos_t   bit_pos;
+    ipv4_parts_t   ip_seq;
+
+    // =========================================================================
+    //  Lulea Lookup
+    // =========================================================================
+
+    l3_word_addr_t word_addr;
     l3_pop_t       mask;
     popcount_t     offset;
+    pc_bit_pos_t   bit_pos;
 
+    // ---- Stage pop ----
     assign word_addr = {ptr, ip.l3.chunk_idx};
-    assign bit_pos = ip_pop.l3.bit_pos;
-    assign mask = '1 >> (PC_BIT_POS_MAX - int'(bit_pos));
+
     assign cache_req.pop_addr = word_addr;
     assign cache_req.chunk_addr = l3_chunk_addr_t'(word_addr);
+
+    // ---- Stage seq ----
+    assign bit_pos = ip_pop.l3.bit_pos;
+    assign mask = '1 >> (PC_BIT_POS_MAX - int'(bit_pos));
+
     assign cache_req.seq_addr = l3_seq_addr_t'(cache_rsp.chunk_dout) + l3_seq_addr_t'(offset);
-
-    assign cache_req.pop_en   = valid_in;
-    assign cache_req.chunk_en = valid_in;
-    assign cache_req.seq_en   = valid_pop;
-
-    assign is_ptr = 1'b0;
-    assign payload = port_t'(cache_rsp.seq_dout);
-
-    always_ff @(posedge clk) begin
-        if (rst) begin
-            valid_pop <= 1'b0;
-            valid     <= 1'b0;
-        end else begin
-            valid_pop <= valid_in;
-            valid     <= valid_pop;
-        end
-
-        ip_pop <= ip;
-        ip_out <= ip_pop;
-    end
 
     popcount #(
         .W(POP_WORD_WIDTH)
@@ -61,4 +55,35 @@ module l3
         .x(cache_rsp.pop_dout & mask),
         .cnt(offset)
     );
+
+    // =========================================================================
+    //  Output
+    // =========================================================================
+
+    assign is_ptr = 1'b0;
+    assign payload = port_t'(cache_rsp.seq_dout);
+
+    assign valid = valid_seq;
+    assign ip_out = ip_seq;
+
+    // =========================================================================
+    //  Pipeline
+    // =========================================================================
+
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            valid_pop <= 1'b0;
+            valid_seq <= 1'b0;
+        end else begin
+            valid_pop <= valid_in;
+            valid_seq <= valid_pop;
+        end
+
+        ip_pop <= ip;
+        ip_seq <= ip_pop;
+    end
+
+    assign cache_req.pop_en   = valid_in;
+    assign cache_req.chunk_en = valid_in;
+    assign cache_req.seq_en   = valid_pop;
 endmodule
