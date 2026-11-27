@@ -33,12 +33,14 @@ module pipeline
     l1 u_l1 (
         .clk(ref_clk),
         .rst(rst),
+
         .valid_in(en),
         .ip(ip_parts),
         .valid(l1_valid),
         .ip_out(l1_ip),
         .is_ptr(l1_is_ptr),
         .payload(l1_payload),
+
         .cache_req(cache.l1_req),
         .cache_rsp(cache.l1_rsp)
     );
@@ -55,6 +57,7 @@ module pipeline
     l2 u_l2 (
         .clk(ref_clk),
         .rst(rst),
+
         .valid_in(l1_valid),
         .ip(l1_ip),
         .is_ptr_in(l1_is_ptr),
@@ -64,6 +67,7 @@ module pipeline
         .ip_out(l2_ip),
         .is_ptr(l2_is_ptr),
         .payload(l2_payload),
+
         .cache_req(cache.l2_req),
         .cache_rsp(cache.l2_rsp)
     );
@@ -80,6 +84,7 @@ module pipeline
     l3 u_l3 (
         .clk(ref_clk),
         .rst(rst),
+
         .valid_in(l2_valid),
         .ip(l2_ip),
         .is_ptr_in(l2_is_ptr),
@@ -89,6 +94,7 @@ module pipeline
         .ip_out(l3_ip),
         .is_ptr(l3_is_ptr),
         .payload(l3_payload),
+        
         .cache_req(cache.l3_req),
         .cache_rsp(cache.l3_rsp)
     );
