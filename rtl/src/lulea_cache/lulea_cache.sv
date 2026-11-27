@@ -23,13 +23,21 @@ module lulea_cache
     //  L1 CACHE
     // =========================================================================
 
+    logic l1_pop_en;
+    logic l1_chunk_en;
+    logic l1_seq_en;
+
+    assign l1_pop_en   = cache.en & cache.l1_req.pop_en;
+    assign l1_chunk_en = cache.en & cache.l1_req.chunk_en;
+    assign l1_seq_en   = cache.en & cache.l1_req.seq_en;
+
     lulea_cache_rom #(
         .WORD_WIDTH(POP_WORD_WIDTH),
         .SIZE_BITS(L1_POP_SIZE_BITS),
         .INIT_FILE(L1_POP_INIT_FILE)
     ) u_l1_pop (
         .clk(clk),
-        .en(cache.en),
+        .en(l1_pop_en),
         .addr(cache.l1_req.pop_addr),
         .dout(cache.l1_rsp.pop_dout)
     );
@@ -40,7 +48,7 @@ module lulea_cache
         .INIT_FILE(L1_CHUNK_INIT_FILE)
     ) u_l1_chunk (
         .clk(clk),
-        .en(cache.en),
+        .en(l1_chunk_en),
         .addr(cache.l1_req.chunk_addr),
         .dout(cache.l1_rsp.chunk_dout)
     );
@@ -51,7 +59,7 @@ module lulea_cache
         .INIT_FILE(L1_SEQ_INIT_FILE)
     ) u_l1_seq (
         .clk(clk),
-        .en(cache.en),
+        .en(l1_seq_en),
         .addr(cache.l1_req.seq_addr),
         .dout(cache.l1_rsp.seq_dout)
     );
@@ -60,13 +68,21 @@ module lulea_cache
     //  L2 CACHE
     // =========================================================================
 
+    logic l2_pop_en;
+    logic l2_chunk_en;
+    logic l2_seq_en;
+
+    assign l2_pop_en   = cache.en & cache.l2_req.pop_en;
+    assign l2_chunk_en = cache.en & cache.l2_req.chunk_en;
+    assign l2_seq_en   = cache.en & cache.l2_req.seq_en;
+
     lulea_cache_rom #(
         .WORD_WIDTH(POP_WORD_WIDTH),
         .SIZE_BITS(L2_POP_SIZE_BITS),
         .INIT_FILE(L2_POP_INIT_FILE)
     ) u_l2_pop (
         .clk(clk),
-        .en(cache.en),
+        .en(l2_pop_en),
         .addr(cache.l2_req.pop_addr),
         .dout(cache.l2_rsp.pop_dout)
     );
@@ -77,7 +93,7 @@ module lulea_cache
         .INIT_FILE(L2_CHUNK_INIT_FILE)
     ) u_l2_chunk (
         .clk(clk),
-        .en(cache.en),
+        .en(l2_chunk_en),
         .addr(cache.l2_req.chunk_addr),
         .dout(cache.l2_rsp.chunk_dout)
     );
@@ -88,7 +104,7 @@ module lulea_cache
         .INIT_FILE(L2_SEQ_INIT_FILE)
     ) u_l2_seq (
         .clk(clk),
-        .en(cache.en),
+        .en(l2_seq_en),
         .addr(cache.l2_req.seq_addr),
         .dout(cache.l2_rsp.seq_dout)
     );
@@ -97,13 +113,21 @@ module lulea_cache
     //  L3 CACHE
     // =========================================================================
 
+    logic l3_pop_en;
+    logic l3_chunk_en;
+    logic l3_seq_en;
+
+    assign l3_pop_en   = cache.en & cache.l3_req.pop_en;
+    assign l3_chunk_en = cache.en & cache.l3_req.chunk_en;
+    assign l3_seq_en   = cache.en & cache.l3_req.seq_en;
+
     lulea_cache_rom #(
         .WORD_WIDTH(POP_WORD_WIDTH),
         .SIZE_BITS(L3_POP_SIZE_BITS),
         .INIT_FILE(L3_POP_INIT_FILE)
     ) u_l3_pop (
         .clk(clk),
-        .en(cache.en),
+        .en(l3_pop_en),
         .addr(cache.l3_req.pop_addr),
         .dout(cache.l3_rsp.pop_dout)
     );
@@ -114,7 +138,7 @@ module lulea_cache
         .INIT_FILE(L3_CHUNK_INIT_FILE)
     ) u_l3_chunk (
         .clk(clk),
-        .en(cache.en),
+        .en(l3_chunk_en),
         .addr(cache.l3_req.chunk_addr),
         .dout(cache.l3_rsp.chunk_dout)
     );
@@ -125,7 +149,7 @@ module lulea_cache
         .INIT_FILE(L3_SEQ_INIT_FILE)
     ) u_l3_seq (
         .clk(clk),
-        .en(cache.en),
+        .en(l3_seq_en),
         .addr(cache.l3_req.seq_addr),
         .dout(cache.l3_rsp.seq_dout)
     );

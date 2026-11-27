@@ -34,6 +34,10 @@ module l1
     assign cache_req.chunk_addr = word_addr;
     assign cache_req.seq_addr = l1_seq_addr_t'(cache_rsp.chunk_dout) + l1_seq_addr_t'(offset);
 
+    assign cache_req.pop_en   = valid_in;
+    assign cache_req.chunk_en = valid_in;
+    assign cache_req.seq_en   = valid_pop;
+
     assign {is_ptr, payload} = cache_rsp.seq_dout;
 
     always_ff @(posedge clk) begin

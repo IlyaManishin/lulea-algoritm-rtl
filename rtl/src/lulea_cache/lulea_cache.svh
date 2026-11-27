@@ -11,20 +11,29 @@ package lulea_cache_types;
     // =========================================================================
 
     typedef struct packed {
+        logic          pop_en;
         l1_word_addr_t pop_addr;
+        logic          chunk_en;
         l1_word_addr_t chunk_addr;
+        logic          seq_en;
         l1_seq_addr_t  seq_addr;
     } l1_cache_req_t;
 
     typedef struct packed {
+        logic          pop_en;
         l2_word_addr_t pop_addr;
+        logic          chunk_en;
         l2_word_addr_t chunk_addr;
+        logic          seq_en;
         l2_seq_addr_t  seq_addr;
     } l2_cache_req_t;
 
     typedef struct packed {
+        logic           pop_en;
         l3_word_addr_t  pop_addr;
+        logic           chunk_en;
         l3_chunk_addr_t chunk_addr;
+        logic           seq_en;
         l3_seq_addr_t   seq_addr;
     } l3_cache_req_t;
 
@@ -59,7 +68,7 @@ interface lulea_cache_if;
     l3_cache_rsp_t l3_rsp;
 
     modport lookup (
-        output en, l1_req, l2_req, l3_req,
+        output l1_req, l2_req, l3_req,
         input  l1_rsp, l2_rsp, l3_rsp
     );
 

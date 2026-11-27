@@ -23,6 +23,7 @@ module l2
     input  l2_cache_rsp_t cache_rsp
 );
     l2_word_addr_t word_addr;
+    logic          lookup_en;
 
     logic          valid_pop;
     ipv4_parts_t   ip_pop;
@@ -38,6 +39,11 @@ module l2
     assign cache_req.pop_addr = word_addr;
     assign cache_req.chunk_addr = word_addr;
     assign cache_req.seq_addr = l2_seq_addr_t'(cache_rsp.chunk_dout) + l2_seq_addr_t'(offset);
+
+    assign lookup_en          = valid_in && is_ptr_in;
+    assign cache_req.pop_en   = lookup_en;
+    assign cache_req.chunk_en = lookup_en;
+    assign cache_req.seq_en   = valid_pop && is_ptr_pop;
 
     assign {is_ptr, payload} = is_ptr_seq ? cache_rsp.seq_dout : {1'b0, port_seq};
 

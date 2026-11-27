@@ -16,6 +16,8 @@ module top
 );
     lulea_cache_if cache();
 
+    assign cache.en = !rst;
+
     lulea_cache u_cache (
         .clk(ref_clk),
         .cache(cache.memory)

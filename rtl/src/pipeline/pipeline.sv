@@ -16,8 +16,6 @@ module pipeline
 
     lulea_cache_if.lookup cache
 );
-    assign cache.en = !rst;
-
     ipv4_parts_t ip_parts;
     assign ip_parts = ipv4_parts_t'(ip);
 
