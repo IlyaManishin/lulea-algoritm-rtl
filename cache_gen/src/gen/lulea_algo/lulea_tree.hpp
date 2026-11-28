@@ -1,9 +1,9 @@
 #pragma once
 
-#include "config.hpp"
-#include "io/reader.hpp"
 #include "lulea_config.hpp"
 #include "lulea_data/route.hpp"
+#include <lulea_common/config.hpp>
+#include <lulea_common/reader.hpp>
 
 #include <cstddef>
 #include <vector>
@@ -29,6 +29,7 @@ namespace gen
 
         void build(const MaskEntries &entries);
 
+        bool is_built() const noexcept { return this->built_; }
         const LuleaTreeConfig &config() const noexcept { return this->config_; }
         const LuleaRoute &l1() const noexcept { return this->l1_; }
         const std::vector<LuleaRoute> &l2() const noexcept { return this->l2_; }
@@ -39,6 +40,7 @@ namespace gen
         LuleaRoute l1_;
         std::vector<LuleaRoute> l2_;
         std::vector<LuleaRoute> l3_;
+        bool built_ = false;
     };
 
 } // namespace gen

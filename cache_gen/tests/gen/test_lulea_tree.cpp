@@ -9,13 +9,13 @@
 #include <utility>
 #include <vector>
 
-#include "gen/config.hpp"
-#include "gen/engine/lulea_tree_lookup.hpp"
-#include "gen/io/reader.hpp"
 #include "gen/lulea_algo/errors.hpp"
 #include "gen/lulea_algo/lulea_tree.hpp"
 #include "gen/lulea_config.hpp"
 #include "gen/lulea_data/route.hpp"
+#include "lulea_engine/lulea_tree_lookup.hpp"
+#include <lulea_common/config.hpp>
+#include <lulea_common/reader.hpp>
 
 namespace
 {
@@ -479,8 +479,8 @@ TEST(LuleaTreeTest, PseudoRandomPrefixes)
         const uint8_t mask = static_cast<uint8_t>((rng() % 32u) + 1u);
         // Concentrate half the prefixes inside 192.168.0.0/16 to stress multi-level overlaps
         const uint32_t ip = (i % 2 == 0)
-            ? (0xC0A80000u | (rng() & 0xFFFFu))
-            : rng();
+            ? (0xC0A80000u | (static_cast<uint32_t>(rng()) & 0xFFFFu))
+            : static_cast<uint32_t>(rng());
         const uint8_t port = static_cast<uint8_t>(rng() % 256u);
         entries.push_back(make_entry(ip, mask, port));
     }
@@ -499,8 +499,8 @@ TEST(LuleaTreeTest, PseudoRandomPrefixes)
         for (size_t q = 0; q < 2000; ++q)
         {
             const uint32_t ip = (q % 2 == 0)
-                ? (0xC0A80000u | (rng() & 0xFFFFu))
-                : rng();
+                ? (0xC0A80000u | (static_cast<uint32_t>(rng()) & 0xFFFFu))
+                : static_cast<uint32_t>(rng());
             EXPECT_EQ(tree_lookup(tree, ip), reference_lpm(entries, ip));
         }
     }

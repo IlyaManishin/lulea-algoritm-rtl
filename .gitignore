@@ -76,6 +76,7 @@ venv/
 env/
 .python-version
 build/
+/tables_build/
 dist/
 *.egg-info/
 .pytest_cache/

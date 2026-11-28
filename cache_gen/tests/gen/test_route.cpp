@@ -6,9 +6,9 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "gen/config.hpp"
 #include "gen/lulea_algo/errors.hpp"
 #include "gen/lulea_data/route.hpp"
+#include <lulea_common/config.hpp>
 
 TEST(BaseCellTest, DefaultsToZeroAndComputesCapacity)
 {
