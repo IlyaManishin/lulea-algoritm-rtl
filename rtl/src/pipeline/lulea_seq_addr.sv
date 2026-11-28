@@ -23,21 +23,21 @@ module lulea_seq_addr
 );
     typedef logic [SEQ_ADDR_WIDTH-1:0] seq_addr_t;
 
-    logic [POP_WORD_WIDTH-1:0]   mask;
-    logic [POP_WORD_WIDTH-1:0]   masked_word;
     popcount_half_t              offset_left, offset_left_r;
     popcount_half_t              offset_right, offset_right_r;
     popcount_t                   offset;
-    logic [CHUNK_WORD_WIDTH-1:0] chunk_sum_r;
-    logic                        valid_r;
-    ipv4_parts_t                 ip_r;
+    logic [CHUNK_WORD_WIDTH-1:0] chunk_sum_s1, chunk_sum_r;
+    logic                        valid_s1, valid_r;
+    ipv4_parts_t                 ip_s1, ip_r;
+
+    logic [POP_WORD_WIDTH-1:0] mask;
+    logic [POP_WORD_WIDTH-1:0] masked_word;
 
     // =========================================================================
     //  POPCOUNT
     // =========================================================================
 
     assign mask = '1 >> (PC_BIT_POS_MAX - int'(bit_pos));
-    assign masked_word = pop_word & mask;
 
     popcount #(
         .W(POP_WORD_HALF_WIDTH)
@@ -58,15 +58,22 @@ module lulea_seq_addr
     // =========================================================================
 
     always_ff @(posedge clk) begin
-        if (rst)
-            valid_r <= 1'b0;
-        else
-            valid_r <= valid_in;
+        if (rst) begin
+            valid_s1 <= 1'b0;
+            valid_r  <= 1'b0;
+        end else begin
+            valid_s1 <= valid_in;
+            valid_r  <= valid_s1;
+        end
 
-        ip_r           <= ip;
+        masked_word   <= pop_word & mask;
+        ip_s1        <= ip;
+        chunk_sum_s1 <= chunk_sum;
+
+        ip_r           <= ip_s1;
         offset_left_r  <= offset_left;
         offset_right_r <= offset_right;
-        chunk_sum_r    <= chunk_sum;
+        chunk_sum_r    <= chunk_sum_s1;
     end
 
     assign offset = popcount_t'(offset_left_r) + popcount_t'(offset_right_r);

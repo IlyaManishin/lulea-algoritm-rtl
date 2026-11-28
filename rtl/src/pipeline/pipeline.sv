@@ -104,8 +104,8 @@ module pipeline
         port_t       payload;
     } result_t;
 
-    result_t l2_bypass_st1, l2_bypass_st2, l2_bypass_st3;
-    result_t l3_bypass_st1, l3_bypass_st2, l3_bypass_st3;
+    result_t l2_bypass_st1, l2_bypass_st2, l2_bypass_st3, l2_bypass_st4;
+    result_t l3_bypass_st1, l3_bypass_st2, l3_bypass_st3, l3_bypass_st4;
 
     // Keep result ip-port pair until it reach end of pipeline
     always_ff @(posedge ref_clk) begin
@@ -113,9 +113,11 @@ module pipeline
             l2_bypass_st1.valid <= 1'b0;
             l2_bypass_st2.valid <= 1'b0;
             l2_bypass_st3.valid <= 1'b0;
+            l2_bypass_st4.valid <= 1'b0;
             l3_bypass_st1.valid <= 1'b0;
             l3_bypass_st2.valid <= 1'b0;
             l3_bypass_st3.valid <= 1'b0;
+            l3_bypass_st4.valid <= 1'b0;
         end else begin
             l2_bypass_st1 <= '{
                 valid: l1_port_valid,
@@ -124,14 +126,16 @@ module pipeline
             };
             l2_bypass_st2 <= l2_bypass_st1;
             l2_bypass_st3 <= l2_bypass_st2;
+            l2_bypass_st4 <= l2_bypass_st3;
 
-            l3_bypass_st1 <= l2_bypass_st3.valid ? l2_bypass_st3 : '{
+            l3_bypass_st1 <= l2_bypass_st4.valid ? l2_bypass_st4 : '{
                 valid: l2_port_valid,
                 ip: l2_ip,
                 payload: l2_port
             };
             l3_bypass_st2 <= l3_bypass_st1;
             l3_bypass_st3 <= l3_bypass_st2;
+            l3_bypass_st4 <= l3_bypass_st3;
         end
     end
 
@@ -139,8 +143,8 @@ module pipeline
     //  OUTPUT
     // =========================================================================
 
-    assign valid = l3_bypass_st3.valid || l3_valid;
-    assign ip_out = ipv4_t'(l3_bypass_st3.valid ? l3_bypass_st3.ip : l3_ip);
-    assign payload = l3_bypass_st3.valid ? l3_bypass_st3.payload : l3_payload;
+    assign valid = l3_bypass_st4.valid || l3_valid;
+    assign ip_out = ipv4_t'(l3_bypass_st4.valid ? l3_bypass_st4.ip : l3_ip);
+    assign payload = l3_bypass_st4.valid ? l3_bypass_st4.payload : l3_payload;
 
 endmodule
