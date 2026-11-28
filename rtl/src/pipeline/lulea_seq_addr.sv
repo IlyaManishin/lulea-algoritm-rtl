@@ -66,7 +66,7 @@ module lulea_seq_addr
             valid_r  <= valid_s1;
         end
 
-        masked_word   <= pop_word & mask;
+        masked_word  <= pop_word & mask;
         ip_s1        <= ip;
         chunk_sum_s1 <= chunk_sum;
 
