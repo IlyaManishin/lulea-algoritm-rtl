@@ -23,33 +23,38 @@ module lulea_seq_addr
 );
     typedef logic [SEQ_ADDR_WIDTH-1:0] seq_addr_t;
 
-    logic [POP_WORD_WIDTH-1:0]   mask;
-    logic [POP_WORD_WIDTH-1:0]   masked_word;
     popcount_half_t              offset_left, offset_left_r;
     popcount_half_t              offset_right, offset_right_r;
     popcount_t                   offset;
-    logic [CHUNK_WORD_WIDTH-1:0] chunk_sum_r;
-    logic                        valid_r;
-    ipv4_parts_t                 ip_r;
+    logic [CHUNK_WORD_WIDTH-1:0] chunk_sum_s1, chunk_sum_s2;
+    logic                        valid_s1, valid_s2;
+    ipv4_parts_t                 ip_s1, ip_s2;
+
+    popcount_mask_t mask;
+    popcount_mask_t masked_word_r;
 
     // =========================================================================
     //  POPCOUNT
     // =========================================================================
 
     assign mask = '1 >> (PC_BIT_POS_MAX - int'(bit_pos));
-    assign masked_word = pop_word & mask;
+
+    logic [POP_WORD_HALF_WIDTH-1:0] masked_left, masked_right;
+    
+    assign masked_left  = masked_word_r[POP_WORD_WIDTH-1:POP_WORD_HALF_WIDTH];
+    assign masked_right = masked_word_r[POP_WORD_HALF_WIDTH-1:0];
 
     popcount #(
         .W(POP_WORD_HALF_WIDTH)
     ) u_popcount_left (
-        .x(masked_word[POP_WORD_WIDTH-1:POP_WORD_HALF_WIDTH]),
+        .x(masked_left),
         .cnt(offset_left)
     );
 
     popcount #(
         .W(POP_WORD_HALF_WIDTH)
     ) u_popcount_right (
-        .x(masked_word[POP_WORD_HALF_WIDTH-1:0]),
+        .x(masked_right),
         .cnt(offset_right)
     );
 
@@ -58,19 +63,26 @@ module lulea_seq_addr
     // =========================================================================
 
     always_ff @(posedge clk) begin
-        if (rst)
-            valid_r <= 1'b0;
-        else
-            valid_r <= valid_in;
+        if (rst) begin
+            valid_s1 <= 1'b0;
+            valid_s2 <= 1'b0;
+        end else begin
+            valid_s1 <= valid_in;
+            valid_s2 <= valid_s1;
+        end
 
-        ip_r           <= ip;
+        masked_word_r <= pop_word & mask;
+        ip_s1         <= ip;
+        chunk_sum_s1  <= chunk_sum;
+
+        ip_s2          <= ip_s1;
         offset_left_r  <= offset_left;
         offset_right_r <= offset_right;
-        chunk_sum_r    <= chunk_sum;
+        chunk_sum_s2   <= chunk_sum_s1;
     end
 
     assign offset = popcount_t'(offset_left_r) + popcount_t'(offset_right_r);
-    assign seq_addr = seq_addr_t'(chunk_sum_r) + seq_addr_t'(offset);
-    assign valid = valid_r;
-    assign ip_out = ip_r;
+    assign seq_addr = seq_addr_t'(chunk_sum_s2) + seq_addr_t'(offset);
+    assign valid = valid_s2;
+    assign ip_out = ip_s2;
 endmodule
