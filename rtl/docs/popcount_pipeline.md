@@ -35,8 +35,8 @@ smaller popcounts before that register and reduce them in the next cycle.
 | Edge | Result captured |
 | --- | --- |
 | `n` | POP and CHUNK ROM outputs, `ip_pop`, and `valid_pop`. |
-| `n+1` | `masked_word_r <= pop_word & mask`, with `chunk_sum_s1`, `ip_s1`, and `valid_s1`. |
-| `n+2` | The two 32-bit popcounts in `offset_left_r` and `offset_right_r`, with `chunk_sum_s2`, `ip_s2`, and `valid_s2`. |
+| `n+1` | `masked_word <= pop_word & mask`, with `chunk_sum_s1`, `ip_s1`, and `valid_s1`. |
+| `n+2` | The two 32-bit popcounts in `offset_left_r` and `offset_right_r`, with `chunk_sum_r`, `ip_r`, and `valid_r`. |
 | `n+3` | SEQ ROM output at `seq_addr`. |
 
 `mask` includes bits zero through `bit_pos`. The added register captures the
@@ -85,9 +85,8 @@ including continuous requests, bubbles, and reset with requests in flight.
 
 For each stage, the table shows the data path delay of the path with the
 worst setup slack in that part of the design. The setup slack is in
-parentheses. The first register holds `masked_word_r` in `mask-register`
-and `group_rank_r` in the grouped variants. The timing reports use the
-original synthesized register names.
+parentheses. The first register holds `masked_word` in `mask-register` and
+`group_rank_r` in the grouped variants.
 
 | Variant | `u_l1_pop` → first register (ns) | First register → `offset_*_r` (ns) | `offset_*_r` / `chunk_sum_r` → `u_l1_seq` (ns) |
 | --- | ---: | ---: | ---: |
